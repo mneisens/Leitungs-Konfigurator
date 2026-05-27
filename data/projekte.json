@@ -1,0 +1,181 @@
+{
+  "version": "1.0",
+  "exportDate": "2026-05-27T10:40:42.226Z",
+  "projects": [
+    {
+      "id": "proj-1779873459840-yb6ql3u68",
+      "projektnummer": "sdfsd",
+      "name": "dsgfdfg",
+      "kunde": "sdfs",
+      "liefertermin": "2026-06-04",
+      "notiz": "dfsf",
+      "erstellt": "2026-05-27T09:17:39.840Z",
+      "leitungen": [
+        {
+          "id": "ltg-1779877663253-xvnjwrq6p",
+          "position": 1,
+          "bezeichnung": "",
+          "kategorie": "sonstiges",
+          "hersteller": "",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779876376714-fpn2sa1sn",
+          "position": 2,
+          "bezeichnung": "",
+          "kategorie": "ethercat",
+          "hersteller": "Beckhoff",
+          "artikelnummer": "ZK1090-3131-0003",
+          "artikelCustom": "",
+          "laenge": 0.3,
+          "steckerA": "M8 4-polig gerade",
+          "steckerB": "M8 4-polig gerade",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779876467758-3r7dkse6u",
+          "position": 3,
+          "bezeichnung": "",
+          "kategorie": "ethercat",
+          "hersteller": "",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0.3,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779876508594-zvkxvrw3g",
+          "position": 4,
+          "bezeichnung": "",
+          "kategorie": "ethercat",
+          "hersteller": "Beckhoff",
+          "artikelnummer": "ZK1090-3131-0003",
+          "artikelCustom": "",
+          "laenge": 0.3,
+          "steckerA": "M8 4-polig gerade",
+          "steckerB": "M8 4-polig gerade",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779876621415-iz01vbjti",
+          "position": 5,
+          "bezeichnung": "",
+          "kategorie": "",
+          "hersteller": "",
+          "artikelnummer": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877663253-cxopxpscr",
+          "position": 6,
+          "bezeichnung": "",
+          "kategorie": "sonstiges",
+          "hersteller": "",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877678618-gh5b4nxgf",
+          "position": 7,
+          "bezeichnung": "",
+          "kategorie": "sonstiges",
+          "hersteller": "",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877679200-luoolqhke",
+          "position": 8,
+          "bezeichnung": "",
+          "kategorie": "sonstiges",
+          "hersteller": "",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877683558-sepjmtphs",
+          "position": 9,
+          "bezeichnung": "",
+          "kategorie": "",
+          "hersteller": "",
+          "artikelnummer": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877833526-060zhrtxe",
+          "position": 10,
+          "bezeichnung": "",
+          "kategorie": "sonstiges",
+          "hersteller": "Beckhoff",
+          "artikelnummer": "",
+          "artikelCustom": "",
+          "laenge": 0,
+          "steckerA": "7/8\" 5-polig",
+          "steckerB": "offen",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877852614-0msr2etoz",
+          "position": 11,
+          "bezeichnung": "",
+          "kategorie": "",
+          "hersteller": "",
+          "artikelnummer": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779877954939-c1m7oxe5z",
+          "position": 12,
+          "bezeichnung": "",
+          "kategorie": "",
+          "hersteller": "",
+          "artikelnummer": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        },
+        {
+          "id": "ltg-1779878157956-dqjtxx5t0",
+          "position": 13,
+          "bezeichnung": "",
+          "kategorie": "",
+          "hersteller": "",
+          "artikelnummer": "",
+          "laenge": 0,
+          "steckerA": "",
+          "steckerB": "",
+          "notiz": ""
+        }
+      ]
+    }
+  ]
+}
