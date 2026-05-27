@@ -133,7 +133,7 @@ function backToOverview() {
 
 function saveLeitungAndNotify() {
     saveCurrentLeitung();
-    showModal('Leitung wurde gespeichert.', { type: 'success', title: 'Gespeichert' });
+    showView('uebersicht');
 }
 
 // ===== Projekt-Management =====
@@ -247,7 +247,7 @@ function loadProjects() {
     empty.style.display = 'none';
     
     liste.innerHTML = projects.map(p => `
-        <div class="projekt-card">
+        <div class="projekt-card" onclick="openProjekt('${p.id}')" title="Projekt öffnen">
             <div class="projekt-info">
                 <h3>
                     <span class="projekt-nummer">${escapeHtml(p.projektnummer)}</span>
@@ -260,10 +260,10 @@ function loadProjects() {
                 </div>
             </div>
             <div class="projekt-actions">
-                <button class="btn btn-primary btn-small" onclick="openProjekt('${p.id}')">
+                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); openProjekt('${p.id}')">
                     Öffnen
                 </button>
-                <button class="btn btn-danger btn-small" onclick="deleteProjekt('${p.id}')">
+                <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteProjekt('${p.id}')">
                     Löschen
                 </button>
             </div>
@@ -413,6 +413,27 @@ function onKategorieFilterChange() {
     
     // Stecker-Dropdowns neu laden (mit Kategorie-Filter)
     onHerstellerChange();
+
+    // Für EtherCAT gewünschte Defaults setzen, sofern verfügbar
+    if (kategorie === 'ethercat') {
+        const steckerASelect = document.getElementById('leitung-stecker-a');
+        const steckerBSelect = document.getElementById('leitung-stecker-b');
+        const defaultStecker = 'M8 4-polig';
+
+        const hasSteckerA = Array.from(steckerASelect.options).some(option => option.value === defaultStecker);
+        if (hasSteckerA) {
+            steckerASelect.value = defaultStecker;
+            onSteckerChange();
+        }
+
+        const hasSteckerB = Array.from(steckerBSelect.options).some(option => option.value === defaultStecker);
+        if (hasSteckerB) {
+            steckerBSelect.value = defaultStecker;
+        }
+
+        loadLaengen();
+        updateArtikelVorschlag();
+    }
 }
 
 function populateHerstellerDropdown() {
@@ -556,16 +577,21 @@ function getUniqueSteckerB(hersteller, steckerABase, ausrichtungA) {
         // Bei Kategorie-Filter nur passende Artikel
         if (kategorie && a.kategorie !== kategorie) return;
         
-        // Prüfen ob Stecker A passt (mit Ausrichtung wenn relevant)
+        // Prüfen ob ausgewählter Stecker auf einer der beiden Seiten passt
         if (steckerABase) {
-            const artikelBaseA = getBaseSteckerTyp(a.steckerA);
-            if (artikelBaseA !== steckerABase) return;
-            
-            // Wenn Stecker A Ausrichtung hat, muss diese auch passen
-            if (hasAusrichtung(steckerABase) && ausrichtungA) {
-                const fullSteckerA = getFullSteckerTyp(steckerABase, ausrichtungA);
-                if (a.steckerA !== fullSteckerA) return;
-            }
+            const fullSteckerA = hasAusrichtung(steckerABase)
+                ? getFullSteckerTyp(steckerABase, ausrichtungA || 'gerade')
+                : steckerABase;
+            const matchesOnA = a.steckerA === fullSteckerA;
+            const matchesOnB = a.steckerB === fullSteckerA;
+            if (!matchesOnA && !matchesOnB) return;
+
+            // Gegenstück zur gematchten Seite als mögliche Stecker-B-Option verwenden
+            const otherStecker = matchesOnA ? a.steckerB : a.steckerA;
+            const baseTypOther = getBaseSteckerTyp(otherStecker);
+            if (!isSteckerErlaubtFuerKategorie(baseTypOther, kategorie)) return;
+            stecker.add(baseTypOther);
+            return;
         }
         
         const baseTypB = getBaseSteckerTyp(a.steckerB);
@@ -597,10 +623,10 @@ function getAvailableLaengen(hersteller, steckerA, steckerB) {
         // Kategorie-Filter
         if (kategorie && a.kategorie !== kategorie) return;
         
-        const matchA = !steckerA || a.steckerA === steckerA;
-        const matchB = !steckerB || a.steckerB === steckerB;
+        const directMatch = (!steckerA || a.steckerA === steckerA) && (!steckerB || a.steckerB === steckerB);
+        const swappedMatch = (!steckerA || a.steckerB === steckerA) && (!steckerB || a.steckerA === steckerB);
         
-        if (matchA && matchB && a.laenge > 0) {
+        if ((directMatch || swappedMatch) && a.laenge > 0) {
             laengen.add(a.laenge);
         }
     });
@@ -621,8 +647,10 @@ function findArtikel(hersteller, steckerA, steckerB, laenge) {
     // Exakte Übereinstimmung suchen (mit Kategorie-Filter)
     const exactMatch = katalog.artikel.find(a => 
         a.hersteller === hersteller &&
-        a.steckerA === steckerA &&
-        a.steckerB === steckerB &&
+        (
+            (a.steckerA === steckerA && a.steckerB === steckerB) ||
+            (a.steckerA === steckerB && a.steckerB === steckerA)
+        ) &&
         a.laenge === laengeNum &&
         (!kategorie || a.kategorie === kategorie)
     );
@@ -632,8 +660,10 @@ function findArtikel(hersteller, steckerA, steckerB, laenge) {
     // Partielle Übereinstimmungen (mit Kategorie-Filter)
     const partialMatches = katalog.artikel.filter(a =>
         a.hersteller === hersteller &&
-        a.steckerA === steckerA &&
-        a.steckerB === steckerB &&
+        (
+            (a.steckerA === steckerA && a.steckerB === steckerB) ||
+            (a.steckerA === steckerB && a.steckerB === steckerA)
+        ) &&
         (!kategorie || a.kategorie === kategorie)
     );
     
@@ -887,8 +917,15 @@ function renderLeitungForm() {
     document.getElementById('konfig-position').textContent = `Leitung ${position}`;
     document.getElementById('konfig-total').textContent = total;
     
-    document.getElementById('btn-prev').disabled = currentLeitungIndex === 0;
-    document.getElementById('btn-next').disabled = currentLeitungIndex >= total - 1;
+    const prevBtn = document.getElementById('btn-prev');
+    const nextBtn = document.getElementById('btn-next');
+    const hasPrev = currentLeitungIndex > 0;
+    const hasNext = currentLeitungIndex < total - 1;
+
+    prevBtn.disabled = !hasPrev;
+    nextBtn.disabled = !hasNext;
+    prevBtn.style.display = hasPrev ? 'inline-flex' : 'none';
+    nextBtn.style.display = hasNext ? 'inline-flex' : 'none';
     
     const leitung = currentProjekt.leitungen[currentLeitungIndex];
     if (leitung) {
@@ -1231,7 +1268,7 @@ function renderLeitungTable() {
                         </thead>
                         <tbody>
                             ${leitungen.map(l => `
-                                <tr>
+                                <tr onclick="editLeitung(${l.originalIndex})" title="Leitung bearbeiten">
                                     <td>${l.position || l.originalIndex + 1}</td>
                                     <td>${escapeHtml(l.bezeichnung || '-')}</td>
                                     <td>${escapeHtml(l.hersteller || '-')}</td>
@@ -1240,10 +1277,10 @@ function renderLeitungTable() {
                                     <td>${escapeHtml(l.steckerA || '-')}</td>
                                     <td>${escapeHtml(l.steckerB || '-')}</td>
                                     <td class="table-actions">
-                                        <button class="btn btn-secondary btn-small btn-icon" onclick="editLeitung(${l.originalIndex})" title="Bearbeiten">
+                                        <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="Bearbeiten">
                                             ✏️
                                         </button>
-                                        <button class="btn btn-danger btn-small btn-icon" onclick="deleteLeitung(${l.originalIndex})" title="Löschen">
+                                        <button class="btn btn-danger btn-small btn-icon" onclick="event.stopPropagation(); deleteLeitung(${l.originalIndex})" title="Löschen">
                                             🗑️
                                         </button>
                                     </td>

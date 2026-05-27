@@ -238,6 +238,7 @@ body {
     align-items: flex-start;
     gap: 1rem;
     transition: box-shadow 0.2s;
+    cursor: pointer;
 }
 
 .projekt-card:hover {
@@ -491,6 +492,10 @@ body {
 
 .leitung-table tbody tr:hover {
     background: #f9fafb;
+}
+
+.leitung-table tbody tr {
+    cursor: pointer;
 }
 
 .leitung-table tbody tr:last-child td {
