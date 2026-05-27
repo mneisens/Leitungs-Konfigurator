@@ -1,0 +1,383 @@
+{
+  "quelle": "/Users/michaelneisens/Library/Mobile Documents/com~apple~CloudDocs/synchropress Schaltplan Gruppen.xlsx",
+  "gruppen": [
+    {
+      "code": "=000",
+      "bezeichnung": "Einspeisung",
+      "bemerkung": "",
+      "label": "=000 - Einspeisung"
+    },
+    {
+      "code": "=001",
+      "bezeichnung": "Steuerspannungsversorgung",
+      "bemerkung": "",
+      "label": "=001 - Steuerspannungsversorgung"
+    },
+    {
+      "code": "=002",
+      "bezeichnung": "IPC und Panel",
+      "bemerkung": "",
+      "label": "=002 - IPC und Panel"
+    },
+    {
+      "code": "=003",
+      "bezeichnung": "Allgemein",
+      "bemerkung": "erstmal als Platzhalter",
+      "label": "=003 - Allgemein"
+    },
+    {
+      "code": "=004",
+      "bezeichnung": "Reserve",
+      "bemerkung": "",
+      "label": "=004 - Reserve"
+    },
+    {
+      "code": "=005",
+      "bezeichnung": "Reserve",
+      "bemerkung": "",
+      "label": "=005 - Reserve"
+    },
+    {
+      "code": "=006",
+      "bezeichnung": "Sicherheitstechnik",
+      "bemerkung": "",
+      "label": "=006 - Sicherheitstechnik"
+    },
+    {
+      "code": "=007",
+      "bezeichnung": "SPS-Aufbau Schaltschrank",
+      "bemerkung": "",
+      "label": "=007 - SPS-Aufbau Schaltschrank"
+    },
+    {
+      "code": "=008",
+      "bezeichnung": "Netzwerk und Bustopologie",
+      "bemerkung": "ehem. Feldbusübersicht",
+      "label": "=008 - Netzwerk und Bustopologie"
+    },
+    {
+      "code": "=009",
+      "bezeichnung": "Regler Aufbau",
+      "bemerkung": "Übersicht des Regler-Aufbaus und Platzierung für NWR, falls vorhanden",
+      "label": "=009 - Regler Aufbau"
+    },
+    {
+      "code": "=010",
+      "bezeichnung": "Spindel 1 Antrieb",
+      "bemerkung": "",
+      "label": "=010 - Spindel 1 Antrieb"
+    },
+    {
+      "code": "=011",
+      "bezeichnung": "Spindel 1 Bremse",
+      "bemerkung": "",
+      "label": "=011 - Spindel 1 Bremse"
+    },
+    {
+      "code": "=012",
+      "bezeichnung": "Spindel 1 Linearmaßstab",
+      "bemerkung": "",
+      "label": "=012 - Spindel 1 Linearmaßstab"
+    },
+    {
+      "code": "=013",
+      "bezeichnung": "Spindel 1 Drucksensoren",
+      "bemerkung": "",
+      "label": "=013 - Spindel 1 Drucksensoren"
+    },
+    {
+      "code": "=014",
+      "bezeichnung": "Spindel 1 Temperatursensoren",
+      "bemerkung": "",
+      "label": "=014 - Spindel 1 Temperatursensoren"
+    },
+    {
+      "code": "=015",
+      "bezeichnung": "Spindel 1 Zusatzbedienung",
+      "bemerkung": "",
+      "label": "=015 - Spindel 1 Zusatzbedienung"
+    },
+    {
+      "code": "=016",
+      "bezeichnung": "Spindel 1 Beleuchtung",
+      "bemerkung": "",
+      "label": "=016 - Spindel 1 Beleuchtung"
+    },
+    {
+      "code": "=020",
+      "bezeichnung": "Spindel 2 Antrieb",
+      "bemerkung": "",
+      "label": "=020 - Spindel 2 Antrieb"
+    },
+    {
+      "code": "=021",
+      "bezeichnung": "Spindel 2 Bremse",
+      "bemerkung": "",
+      "label": "=021 - Spindel 2 Bremse"
+    },
+    {
+      "code": "=022",
+      "bezeichnung": "Spindel 2 Linearmaßstab",
+      "bemerkung": "",
+      "label": "=022 - Spindel 2 Linearmaßstab"
+    },
+    {
+      "code": "=023",
+      "bezeichnung": "Spindel 2 Drucksensoren",
+      "bemerkung": "",
+      "label": "=023 - Spindel 2 Drucksensoren"
+    },
+    {
+      "code": "=024",
+      "bezeichnung": "Spindel 2 Temperatursensoren",
+      "bemerkung": "",
+      "label": "=024 - Spindel 2 Temperatursensoren"
+    },
+    {
+      "code": "=025",
+      "bezeichnung": "Spindel 2 Zusatzbedienung",
+      "bemerkung": "",
+      "label": "=025 - Spindel 2 Zusatzbedienung"
+    },
+    {
+      "code": "=026",
+      "bezeichnung": "Spindel 2 Beleuchtung",
+      "bemerkung": "",
+      "label": "=026 - Spindel 2 Beleuchtung"
+    },
+    {
+      "code": "=030",
+      "bezeichnung": "Spindel 3 Antrieb",
+      "bemerkung": "",
+      "label": "=030 - Spindel 3 Antrieb"
+    },
+    {
+      "code": "=031",
+      "bezeichnung": "Spindel 3 Bremse",
+      "bemerkung": "",
+      "label": "=031 - Spindel 3 Bremse"
+    },
+    {
+      "code": "=032",
+      "bezeichnung": "Spindel 3 Linearmaßstab",
+      "bemerkung": "",
+      "label": "=032 - Spindel 3 Linearmaßstab"
+    },
+    {
+      "code": "=033",
+      "bezeichnung": "Spindel 3 Drucksensoren",
+      "bemerkung": "",
+      "label": "=033 - Spindel 3 Drucksensoren"
+    },
+    {
+      "code": "=034",
+      "bezeichnung": "Spindel 3 Temperatursensoren",
+      "bemerkung": "",
+      "label": "=034 - Spindel 3 Temperatursensoren"
+    },
+    {
+      "code": "=035",
+      "bezeichnung": "Spindel 3 Zusatzbedienung",
+      "bemerkung": "",
+      "label": "=035 - Spindel 3 Zusatzbedienung"
+    },
+    {
+      "code": "=036",
+      "bezeichnung": "Spindel 3 Beleuchtung",
+      "bemerkung": "",
+      "label": "=036 - Spindel 3 Beleuchtung"
+    },
+    {
+      "code": "=040",
+      "bezeichnung": "Spindel 4 Antrieb",
+      "bemerkung": "",
+      "label": "=040 - Spindel 4 Antrieb"
+    },
+    {
+      "code": "=041",
+      "bezeichnung": "Spindel 4 Bremse",
+      "bemerkung": "",
+      "label": "=041 - Spindel 4 Bremse"
+    },
+    {
+      "code": "=042",
+      "bezeichnung": "Spindel 4 Linearmaßstab",
+      "bemerkung": "",
+      "label": "=042 - Spindel 4 Linearmaßstab"
+    },
+    {
+      "code": "=043",
+      "bezeichnung": "Spindel 4 Drucksensoren",
+      "bemerkung": "",
+      "label": "=043 - Spindel 4 Drucksensoren"
+    },
+    {
+      "code": "=044",
+      "bezeichnung": "Spindel 4 Temperatursensoren",
+      "bemerkung": "",
+      "label": "=044 - Spindel 4 Temperatursensoren"
+    },
+    {
+      "code": "=045",
+      "bezeichnung": "Spindel 4 Zusatzbedienung",
+      "bemerkung": "",
+      "label": "=045 - Spindel 4 Zusatzbedienung"
+    },
+    {
+      "code": "=046",
+      "bezeichnung": "Spindel 4 Beleuchtung",
+      "bemerkung": "",
+      "label": "=046 - Spindel 4 Beleuchtung"
+    },
+    {
+      "code": "=050",
+      "bezeichnung": "Ziehkissen 1",
+      "bemerkung": "unter Vorbehalt",
+      "label": "=050 - Ziehkissen 1"
+    },
+    {
+      "code": "=060",
+      "bezeichnung": "Ziehkissen 2",
+      "bemerkung": "unter Vorbehalt",
+      "label": "=060 - Ziehkissen 2"
+    },
+    {
+      "code": "=070",
+      "bezeichnung": "Ziehkissen 3",
+      "bemerkung": "unter Vorbehalt",
+      "label": "=070 - Ziehkissen 3"
+    },
+    {
+      "code": "=080",
+      "bezeichnung": "Ziehkissen 4",
+      "bemerkung": "unter Vorbehalt",
+      "label": "=080 - Ziehkissen 4"
+    },
+    {
+      "code": "=090",
+      "bezeichnung": "Ausstoßer",
+      "bemerkung": "unter Vorbehalt",
+      "label": "=090 - Ausstoßer"
+    },
+    {
+      "code": "=100",
+      "bezeichnung": "Vorschub",
+      "bemerkung": "",
+      "label": "=100 - Vorschub"
+    },
+    {
+      "code": "=101",
+      "bezeichnung": "Vorschub Höhenverstellung",
+      "bemerkung": "",
+      "label": "=101 - Vorschub Höhenverstellung"
+    },
+    {
+      "code": "=105",
+      "bezeichnung": "Beölung",
+      "bemerkung": "",
+      "label": "=105 - Beölung"
+    },
+    {
+      "code": "=110",
+      "bezeichnung": "externe Peripherie (Haspel)",
+      "bemerkung": "",
+      "label": "=110 - externe Peripherie (Haspel)"
+    },
+    {
+      "code": "=200",
+      "bezeichnung": "Kühlung",
+      "bemerkung": "",
+      "label": "=200 - Kühlung"
+    },
+    {
+      "code": "=210",
+      "bezeichnung": "Schmierung",
+      "bemerkung": "",
+      "label": "=210 - Schmierung"
+    },
+    {
+      "code": "=220",
+      "bezeichnung": "Türantriebe",
+      "bemerkung": "",
+      "label": "=220 - Türantriebe"
+    },
+    {
+      "code": "=230",
+      "bezeichnung": "Joystick",
+      "bemerkung": "",
+      "label": "=230 - Joystick"
+    },
+    {
+      "code": "=240",
+      "bezeichnung": "Transportband",
+      "bemerkung": "",
+      "label": "=240 - Transportband"
+    },
+    {
+      "code": "=250",
+      "bezeichnung": "Steckdosen",
+      "bemerkung": "",
+      "label": "=250 - Steckdosen"
+    },
+    {
+      "code": "=260",
+      "bezeichnung": "E/A Boxen",
+      "bemerkung": "",
+      "label": "=260 - E/A Boxen"
+    },
+    {
+      "code": "=270",
+      "bezeichnung": "Druckluft",
+      "bemerkung": "",
+      "label": "=270 - Druckluft"
+    },
+    {
+      "code": "=300",
+      "bezeichnung": "EtherCAT-Module Allgemein",
+      "bemerkung": "",
+      "label": "=300 - EtherCAT-Module Allgemein"
+    },
+    {
+      "code": "=301",
+      "bezeichnung": "EtherCAT-Module Stößel",
+      "bemerkung": "",
+      "label": "=301 - EtherCAT-Module Stößel"
+    },
+    {
+      "code": "=302",
+      "bezeichnung": "EtherCAT-Module Tisch",
+      "bemerkung": "",
+      "label": "=302 - EtherCAT-Module Tisch"
+    },
+    {
+      "code": "=303",
+      "bezeichnung": "EtherCAT-Module Bedienseite",
+      "bemerkung": "",
+      "label": "=303 - EtherCAT-Module Bedienseite"
+    },
+    {
+      "code": "=304",
+      "bezeichnung": "EtherCAT-Module Rückseite",
+      "bemerkung": "",
+      "label": "=304 - EtherCAT-Module Rückseite"
+    },
+    {
+      "code": "=305",
+      "bezeichnung": "EtherCAT-Module Links",
+      "bemerkung": "",
+      "label": "=305 - EtherCAT-Module Links"
+    },
+    {
+      "code": "=306",
+      "bezeichnung": "EtherCAT-Module Rechts",
+      "bemerkung": "",
+      "label": "=306 - EtherCAT-Module Rechts"
+    },
+    {
+      "code": "=400",
+      "bezeichnung": "Klemmkästen",
+      "bemerkung": "",
+      "label": "=400 - Klemmkästen"
+    }
+  ]
+}

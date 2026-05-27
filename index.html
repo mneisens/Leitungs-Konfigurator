@@ -98,112 +98,131 @@
             </div>
             
             <div class="konfigurator-container">
-                <div class="konfig-progress">
-                    <span id="konfig-position">Leitung 1</span>
-                    <span class="progress-divider">von</span>
-                    <span id="konfig-total">1</span>
+                <div class="konfigurator-layout">
+                    <div class="konfigurator-main">
+                        <div class="konfig-progress">
+                            <span id="konfig-position">Leitung 1</span>
+                            <span class="progress-divider">von</span>
+                            <span id="konfig-total">1</span>
+                        </div>
+                        
+                        <form id="leitung-form" class="form-card" onsubmit="saveLeitung(event)">
+                            <input type="hidden" id="leitung-id">
+                            <input type="hidden" id="leitung-position">
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="leitung-bezeichnung">Bezeichnung / Beschreibung *</label>
+                                    <input type="text" id="leitung-bezeichnung" required 
+                                           placeholder="z.B. Motor M1 zu SPS Klemme X1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="leitung-kategorie">Kategorie</label>
+                                    <select id="leitung-kategorie" onchange="onKategorieFilterChange()">
+                                        <option value="">-- Bitte wählen --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="leitung-gruppe">Gruppe</label>
+                                <select id="leitung-gruppe">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leitung-hersteller">1. Hersteller wählen</label>
+                                <select id="leitung-hersteller" onchange="onHerstellerChange()">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="leitung-stecker-a">2. Stecker Seite A</label>
+                                    <select id="leitung-stecker-a" onchange="onSteckerChange()">
+                                        <option value="">-- Bitte wählen --</option>
+                                    </select>
+                                    <div class="ausrichtung-toggle">
+                                        <button type="button" id="ausrichtung-a" class="toggle-btn" onclick="toggleAusrichtung('a')">
+                                            <span class="toggle-icon">↑</span>
+                                            <span class="toggle-text">gerade</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="leitung-stecker-b">3. Stecker Seite B</label>
+                                    <select id="leitung-stecker-b" onchange="onSteckerChange()">
+                                        <option value="">-- Bitte wählen --</option>
+                                    </select>
+                                    <div class="ausrichtung-toggle">
+                                        <button type="button" id="ausrichtung-b" class="toggle-btn" onclick="toggleAusrichtung('b')">
+                                            <span class="toggle-icon">↑</span>
+                                            <span class="toggle-text">gerade</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="leitung-laenge">4. Länge (Meter) *</label>
+                                    <select id="leitung-laenge-select" onchange="onLaengeChange()">
+                                        <option value="">-- Länge wählen --</option>
+                                    </select>
+                                    <input type="number" id="leitung-laenge" 
+                                           min="0.1" step="0.1" placeholder="Oder Länge eingeben..."
+                                           style="margin-top: 0.5rem;" onchange="onLaengeChange()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="leitung-artikel">5. Artikelnummer (automatisch)</label>
+                                    <div class="artikel-vorschlag" id="artikel-vorschlag">
+                                        <span class="artikel-label">Kein Artikel gefunden</span>
+                                    </div>
+                                    <input type="text" id="leitung-artikel-custom" 
+                                           placeholder="Oder manuell eingeben..." 
+                                           style="margin-top: 0.5rem;">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leitung-notiz">Notiz</label>
+                                <textarea id="leitung-notiz" rows="2" placeholder="Optionale Bemerkung..."></textarea>
+                            </div>
+                            
+                            <div class="form-actions konfig-actions">
+                                <div class="konfig-nav">
+                                    <button type="button" class="btn btn-secondary" id="btn-prev" onclick="prevLeitung()">
+                                        ← Vorherige
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="btn-next" onclick="nextLeitung()">
+                                        Nächste →
+                                    </button>
+                                </div>
+                                <div class="konfig-main-actions">
+                                    <button type="button" class="btn btn-success" onclick="saveLeitungAndNotify()">
+                                        💾 Speichern
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="addNewLeitung()">
+                                        + Neue Leitung
+                                    </button>
+                                    <button type="button" class="btn btn-primary" onclick="backToOverview()">
+                                        Zur Übersicht
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <aside class="form-card konfig-list-card">
+                        <h3>Leitungen nach Gruppe</h3>
+                        <p>Sortiert nach Gruppe, mit Artikelnummer und Anzahl.</p>
+                        <div id="konfig-gruppenliste">
+                            <!-- Live-Gruppenliste wird hier eingefügt -->
+                        </div>
+                    </aside>
                 </div>
-                
-                <form id="leitung-form" class="form-card" onsubmit="saveLeitung(event)">
-                    <input type="hidden" id="leitung-id">
-                    <input type="hidden" id="leitung-position">
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="leitung-bezeichnung">Bezeichnung / Beschreibung *</label>
-                            <input type="text" id="leitung-bezeichnung" required 
-                                   placeholder="z.B. Motor M1 zu SPS Klemme X1">
-                        </div>
-                        <div class="form-group">
-                            <label for="leitung-kategorie">Kategorie</label>
-                            <select id="leitung-kategorie" onchange="onKategorieFilterChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="leitung-hersteller">1. Hersteller wählen</label>
-                        <select id="leitung-hersteller" onchange="onHerstellerChange()">
-                            <option value="">-- Bitte wählen --</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="leitung-stecker-a">2. Stecker Seite A</label>
-                            <select id="leitung-stecker-a" onchange="onSteckerChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                            <div class="ausrichtung-toggle">
-                                <button type="button" id="ausrichtung-a" class="toggle-btn" onclick="toggleAusrichtung('a')">
-                                    <span class="toggle-icon">↑</span>
-                                    <span class="toggle-text">gerade</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="leitung-stecker-b">3. Stecker Seite B</label>
-                            <select id="leitung-stecker-b" onchange="onSteckerChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                            <div class="ausrichtung-toggle">
-                                <button type="button" id="ausrichtung-b" class="toggle-btn" onclick="toggleAusrichtung('b')">
-                                    <span class="toggle-icon">↑</span>
-                                    <span class="toggle-text">gerade</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="leitung-laenge">4. Länge (Meter) *</label>
-                            <select id="leitung-laenge-select" onchange="onLaengeChange()">
-                                <option value="">-- Länge wählen --</option>
-                            </select>
-                            <input type="number" id="leitung-laenge" 
-                                   min="0.1" step="0.1" placeholder="Oder Länge eingeben..."
-                                   style="margin-top: 0.5rem;" onchange="onLaengeChange()">
-                        </div>
-                        <div class="form-group">
-                            <label for="leitung-artikel">5. Artikelnummer (automatisch)</label>
-                            <div class="artikel-vorschlag" id="artikel-vorschlag">
-                                <span class="artikel-label">Kein Artikel gefunden</span>
-                            </div>
-                            <input type="text" id="leitung-artikel-custom" 
-                                   placeholder="Oder manuell eingeben..." 
-                                   style="margin-top: 0.5rem;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="leitung-notiz">Notiz</label>
-                        <textarea id="leitung-notiz" rows="2" placeholder="Optionale Bemerkung..."></textarea>
-                    </div>
-                    
-                    <div class="form-actions konfig-actions">
-                        <div class="konfig-nav">
-                            <button type="button" class="btn btn-secondary" id="btn-prev" onclick="prevLeitung()">
-                                ← Vorherige
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="btn-next" onclick="nextLeitung()">
-                                Nächste →
-                            </button>
-                        </div>
-                        <div class="konfig-main-actions">
-                            <button type="button" class="btn btn-success" onclick="saveLeitungAndNotify()">
-                                💾 Speichern
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="addNewLeitung()">
-                                + Neue Leitung
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="backToOverview()">
-                                Zur Übersicht
-                            </button>
-                        </div>
-                    </div>
-                </form>
             </div>
         </section>
 

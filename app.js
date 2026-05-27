@@ -5,6 +5,7 @@
 
 // ===== Globale Variablen =====
 let katalog = null;
+let leitungGruppen = [];
 let currentProjekt = null;
 let currentLeitungIndex = 0;
 let currentArtikelVorschlag = null;
@@ -142,9 +143,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadKatalog() {
     try {
-        const response = await fetch('data/leitungen.json');
-        katalog = await response.json();
+        const [katalogResponse, gruppenResponse] = await Promise.all([
+            fetch('data/leitungen.json'),
+            fetch('data/gruppen.json')
+        ]);
+
+        katalog = await katalogResponse.json();
+        const gruppenData = await gruppenResponse.json();
+        leitungGruppen = Array.isArray(gruppenData.gruppen) ? gruppenData.gruppen : [];
         console.log('Katalog geladen:', katalog);
+        console.log('Leitungsgruppen geladen:', leitungGruppen.length);
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         katalog = {
@@ -153,6 +161,7 @@ async function loadKatalog() {
             steckertypen: [],
             standardlaengen: []
         };
+        leitungGruppen = [];
     }
 }
 
@@ -451,12 +460,111 @@ function initKonfigurator() {
     
     populateHerstellerDropdown();
     populateKategorieDropdown();
+    populateGruppenDropdown();
     
     if (!currentProjekt.leitungen || currentProjekt.leitungen.length === 0) {
         addNewLeitung();
     }
     
     renderLeitungForm();
+}
+
+function populateGruppenDropdown() {
+    const select = document.getElementById('leitung-gruppe');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+
+    leitungGruppen.forEach(gruppe => {
+        const option = document.createElement('option');
+        option.value = gruppe.code;
+        option.textContent = gruppe.label || gruppe.code;
+        if (gruppe.bemerkung) {
+            option.title = gruppe.bemerkung;
+        }
+        select.appendChild(option);
+    });
+
+    if (currentValue) {
+        select.value = currentValue;
+    }
+}
+
+function getGruppeDisplay(gruppeCode) {
+    if (!gruppeCode) return '-';
+    const gruppe = leitungGruppen.find(g => g.code === gruppeCode);
+    return gruppe ? (gruppe.label || gruppe.code) : gruppeCode;
+}
+
+function compareGruppenCode(a, b) {
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+
+    const numA = parseInt(String(a).replace('=', ''), 10);
+    const numB = parseInt(String(b).replace('=', ''), 10);
+
+    if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+        return numA - numB;
+    }
+
+    return String(a).localeCompare(String(b), 'de');
+}
+
+function renderKonfigGruppenliste() {
+    const container = document.getElementById('konfig-gruppenliste');
+    if (!container || !currentProjekt) return;
+
+    const leitungen = currentProjekt.leitungen || [];
+    if (leitungen.length === 0) {
+        container.innerHTML = '<p class="konfig-list-empty">Noch keine Leitungen vorhanden.</p>';
+        return;
+    }
+
+    const gruppenMap = new Map();
+
+    leitungen.forEach(leitung => {
+        const gruppe = leitung.gruppe || '';
+        const artikelnummer = (leitung.artikelnummer || leitung.artikelCustom || '').trim();
+        if (!artikelnummer) return;
+
+        if (!gruppenMap.has(gruppe)) {
+            gruppenMap.set(gruppe, new Map());
+        }
+
+        const artikelMap = gruppenMap.get(gruppe);
+        artikelMap.set(artikelnummer, (artikelMap.get(artikelnummer) || 0) + 1);
+    });
+
+    if (gruppenMap.size === 0) {
+        container.innerHTML = '<p class="konfig-list-empty">Noch keine Artikelnummern vorhanden.</p>';
+        return;
+    }
+
+    const gruppenCodes = Array.from(gruppenMap.keys()).sort(compareGruppenCode);
+    const html = gruppenCodes.map(code => {
+        const artikelMap = gruppenMap.get(code);
+        const artikelRows = Array.from(artikelMap.entries())
+            .sort((a, b) => a[0].localeCompare(b[0], 'de'))
+            .map(([artikel, count]) => `
+                <li>
+                    <span class="artikel">${escapeHtml(artikel)}</span>
+                    <span class="count">${count}</span>
+                </li>
+            `).join('');
+
+        return `
+            <div class="konfig-group-block">
+                <h4>${escapeHtml(code ? getGruppeDisplay(code) : 'Ohne Gruppe')}</h4>
+                <ul>
+                    ${artikelRows}
+                </ul>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
 }
 
 function populateKategorieDropdown() {
@@ -1004,6 +1112,7 @@ function renderLeitungForm() {
         document.getElementById('leitung-position').value = leitung.position || position;
         document.getElementById('leitung-bezeichnung').value = leitung.bezeichnung || '';
         document.getElementById('leitung-kategorie').value = leitung.kategorie || '';
+        document.getElementById('leitung-gruppe').value = leitung.gruppe || '';
         document.getElementById('leitung-hersteller').value = leitung.hersteller || '';
         
         // Ausrichtung aus gespeicherten Steckern extrahieren
@@ -1072,12 +1181,15 @@ function renderLeitungForm() {
     } else {
         clearLeitungForm();
     }
+
+    renderKonfigGruppenliste();
 }
 
 function clearLeitungForm() {
     document.getElementById('leitung-id').value = '';
     document.getElementById('leitung-bezeichnung').value = '';
     document.getElementById('leitung-kategorie').value = '';
+    document.getElementById('leitung-gruppe').value = '';
     document.getElementById('leitung-hersteller').value = '';
     document.getElementById('leitung-stecker-a').innerHTML = '<option value="">-- Bitte wählen --</option>';
     document.getElementById('leitung-stecker-b').innerHTML = '<option value="">-- Bitte wählen --</option>';
@@ -1095,6 +1207,7 @@ function clearLeitungForm() {
     vorschlagDiv.innerHTML = '<span class="artikel-label">Bitte alle Felder ausfüllen</span>';
     
     currentArtikelVorschlag = null;
+    renderKonfigGruppenliste();
 }
 
 function saveCurrentLeitung() {
@@ -1135,6 +1248,7 @@ function saveCurrentLeitung() {
         position: currentLeitungIndex + 1,
         bezeichnung: document.getElementById('leitung-bezeichnung').value.trim(),
         kategorie: kategorie,
+        gruppe: document.getElementById('leitung-gruppe').value,
         hersteller: document.getElementById('leitung-hersteller').value,
         artikelnummer: artikelnummer,
         artikelCustom: artikelCustom,
@@ -1156,6 +1270,8 @@ function saveCurrentLeitung() {
         projects[idx] = currentProjekt;
         saveProjects(projects);
     }
+
+    renderKonfigGruppenliste();
 }
 
 function saveLeitung(event) {
@@ -1199,6 +1315,7 @@ function addNewLeitung() {
         position: currentProjekt.leitungen.length + 1,
         bezeichnung: '',
         kategorie: '',
+        gruppe: '',
         hersteller: '',
         artikelnummer: '',
         laenge: 0,
@@ -1334,6 +1451,7 @@ function renderLeitungTable() {
                             <tr>
                                 <th>Pos.</th>
                                 <th>Bezeichnung</th>
+                                <th>Gruppe</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnr.</th>
                                 <th>Länge</th>
@@ -1347,6 +1465,7 @@ function renderLeitungTable() {
                                 <tr onclick="editLeitung(${l.originalIndex})" title="Leitung bearbeiten">
                                     <td>${l.position || l.originalIndex + 1}</td>
                                     <td>${escapeHtml(l.bezeichnung || '-')}</td>
+                                    <td>${escapeHtml(getGruppeDisplay(l.gruppe))}</td>
                                     <td>${escapeHtml(l.hersteller || '-')}</td>
                                     <td>${escapeHtml(l.artikelnummer || l.artikelCustom || '-')}</td>
                                     <td>${l.laenge ? l.laenge + ' m' : '-'}</td>
@@ -1496,7 +1615,7 @@ function exportCSV() {
         grouped[kat].push(l);
     });
     
-    const headers = ['Position', 'Bezeichnung', 'Hersteller', 'Artikelnummer', 'Länge (m)', 'Stecker A', 'Stecker B', 'Notiz'];
+    const headers = ['Position', 'Bezeichnung', 'Gruppe', 'Hersteller', 'Artikelnummer', 'Länge (m)', 'Stecker A', 'Stecker B', 'Notiz'];
     
     let csvRows = [
         `# Projekt: ${currentProjekt.projektnummer} - ${currentProjekt.name}`,
@@ -1518,6 +1637,7 @@ function exportCSV() {
             const row = [
                 l.position,
                 l.bezeichnung || '',
+                getGruppeDisplay(l.gruppe) === '-' ? '' : getGruppeDisplay(l.gruppe),
                 l.hersteller || '',
                 l.artikelnummer || l.artikelCustom || '',
                 l.laenge || '',

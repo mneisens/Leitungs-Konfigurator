@@ -390,7 +390,82 @@ body {
 
 /* ===== Konfigurator ===== */
 .konfigurator-container {
-    max-width: 800px;
+    max-width: 1400px;
+}
+
+.konfigurator-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.konfigurator-main {
+    min-width: 0;
+}
+
+.konfig-list-card h3 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.05rem;
+}
+
+.konfig-list-card > p {
+    margin: 0 0 1rem 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+#konfig-gruppenliste {
+    max-height: 70vh;
+    overflow: auto;
+    padding-right: 0.25rem;
+}
+
+.konfig-list-empty {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.konfig-group-block {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #fff;
+}
+
+.konfig-group-block h4 {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+}
+
+.konfig-group-block ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.konfig-group-block li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.konfig-group-block li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.konfig-group-block .artikel {
+    font-family: monospace;
+}
+
+.konfig-group-block .count {
+    font-weight: 600;
 }
 
 .konfig-progress {
@@ -579,6 +654,14 @@ body {
     
     .konfig-main-actions {
         align-items: stretch;
+    }
+
+    .konfigurator-layout {
+        grid-template-columns: 1fr;
+    }
+
+    #konfig-gruppenliste {
+        max-height: none;
     }
     
     .table-container {
