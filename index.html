@@ -29,7 +29,7 @@
                         📂 Projekte laden
                         <input type="file" id="import-file" accept=".json" onchange="importProjects(event)" style="display: none;">
                     </label>
-                    <button class="btn btn-primary" onclick="showView('projekt-form')">
+                    <button class="btn btn-primary" onclick="openNewProjektForm()">
                         + Neues Projekt
                     </button>
                 </div>
@@ -41,7 +41,7 @@
                 <div class="empty-icon">📋</div>
                 <h3>Keine Projekte vorhanden</h3>
                 <p>Erstellen Sie Ihr erstes Projekt, um mit der Leitungskonfiguration zu beginnen.</p>
-                <button class="btn btn-primary" onclick="showView('projekt-form')">
+                <button class="btn btn-primary" onclick="openNewProjektForm()">
                     Projekt anlegen
                 </button>
             </div>
@@ -85,7 +85,7 @@
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="showView('home')">Abbrechen</button>
-                    <button type="submit" class="btn btn-primary">Speichern & Konfigurator starten</button>
+                    <button type="submit" class="btn btn-primary">Speichern & Übersicht öffnen</button>
                 </div>
             </form>
         </section>
@@ -223,6 +223,9 @@
                     + Neue Leitung anlegen
                 </button>
                 <div class="export-buttons">
+                    <button class="btn btn-secondary" onclick="showView('stueckliste')">
+                        📦 Stückliste
+                    </button>
                     <button class="btn btn-success" onclick="exportCSV()">
                         📊 Export CSV
                     </button>
@@ -243,6 +246,40 @@
                 <button class="btn btn-primary" onclick="showView('konfigurator')">
                     Konfigurator starten
                 </button>
+            </div>
+        </section>
+
+        <!-- View: Stückliste -->
+        <section id="view-stueckliste" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="stueckliste-titel">Stückliste</h2>
+            </div>
+
+            <div class="form-card">
+                <div class="table-container">
+                    <table class="leitung-table">
+                        <thead>
+                            <tr>
+                                <th>Leitungstyp</th>
+                                <th>Hersteller</th>
+                                <th>Artikelnummer</th>
+                                <th>Anzahl</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stueckliste-body">
+                            <!-- Stückliste wird dynamisch eingefügt -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="keine-stueckliste" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📦</div>
+                    <h3>Keine Leitungen vorhanden</h3>
+                    <p>Legen Sie zuerst Leitungen an, um eine Stückliste zu erhalten.</p>
+                    <button class="btn btn-primary" onclick="showView('konfigurator')">
+                        Leitung anlegen
+                    </button>
+                </div>
             </div>
         </section>
     </main>

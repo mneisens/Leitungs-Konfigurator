@@ -115,7 +115,6 @@ function showView(viewName) {
             loadProjects();
             break;
         case 'projekt-form':
-            resetProjektForm();
             break;
         case 'konfigurator':
             initKonfigurator();
@@ -123,7 +122,16 @@ function showView(viewName) {
         case 'uebersicht':
             renderUebersicht();
             break;
+        case 'stueckliste':
+            renderStueckliste();
+            break;
     }
+}
+
+function openNewProjektForm() {
+    resetProjektForm();
+    currentProjekt = null;
+    showView('projekt-form');
 }
 
 function backToOverview() {
@@ -263,6 +271,9 @@ function loadProjects() {
                 <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); openProjekt('${p.id}')">
                     Öffnen
                 </button>
+                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editProjekt('${p.id}')">
+                    Bearbeiten
+                </button>
                 <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteProjekt('${p.id}')">
                     Löschen
                 </button>
@@ -308,12 +319,9 @@ function saveProjekt(event) {
     saveProjects(projects);
     currentProjekt = projekt;
     currentLeitungIndex = 0;
-    
-    if (projekt.leitungen.length === 0) {
-        addNewLeitung();
-    }
-    
-    showView('konfigurator');
+
+    // Nach dem Speichern immer zuerst in die Projektübersicht wechseln
+    showView('uebersicht');
 }
 
 function openProjekt(id) {
@@ -1110,11 +1118,14 @@ function nextLeitung() {
 
 function addNewLeitung() {
     if (!currentProjekt) return;
-    
-    // Zur Konfigurator-Ansicht wechseln
-    showView('konfigurator');
-    
-    saveCurrentLeitung();
+
+    const isKonfiguratorActive = document.getElementById('view-konfigurator').classList.contains('active');
+
+    // Nur im aktiven Konfigurator die aktuelle Leitung mitspeichern.
+    // So vermeiden wir, dass alte Formularwerte aus anderen Views übernommen werden.
+    if (isKonfiguratorActive && currentProjekt.leitungen && currentProjekt.leitungen.length > 0) {
+        saveCurrentLeitung();
+    }
     
     if (!currentProjekt.leitungen) {
         currentProjekt.leitungen = [];
@@ -1142,10 +1153,12 @@ function addNewLeitung() {
         projects[idx] = currentProjekt;
         saveProjects(projects);
     }
-    
-    renderLeitungForm();
-    clearLeitungForm();
-    document.getElementById('leitung-id').value = newLeitung.id;
+
+    if (isKonfiguratorActive) {
+        renderLeitungForm();
+    } else {
+        showView('konfigurator');
+    }
 }
 
 // ===== Übersicht =====
@@ -1294,6 +1307,71 @@ function renderLeitungTable() {
     });
     
     container.innerHTML = html;
+}
+
+function getLeitungstypText(leitung) {
+    const kategorie = leitung.kategorie || 'sonstiges';
+    const steckerA = leitung.steckerA || '-';
+    const steckerB = leitung.steckerB || '-';
+    const laenge = leitung.laenge ? `${leitung.laenge} m` : '-';
+    return `${kategorie} | ${steckerA} -> ${steckerB} | ${laenge}`;
+}
+
+function renderStueckliste() {
+    if (!currentProjekt) {
+        showView('home');
+        return;
+    }
+
+    document.getElementById('stueckliste-titel').textContent =
+        `Stückliste - ${currentProjekt.projektnummer} - ${currentProjekt.name}`;
+
+    const tbody = document.getElementById('stueckliste-body');
+    const emptyState = document.getElementById('keine-stueckliste');
+    const tableContainer = tbody.closest('.table-container');
+    const leitungen = currentProjekt.leitungen || [];
+
+    if (leitungen.length === 0) {
+        tbody.innerHTML = '';
+        tableContainer.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    const grouped = new Map();
+    leitungen.forEach(l => {
+        const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
+        const hersteller = (l.hersteller || '-').trim() || '-';
+        const typText = getLeitungstypText(l);
+        const key = `${artikelnummer}|||${hersteller}|||${typText}`;
+        const existing = grouped.get(key);
+
+        if (existing) {
+            existing.count += 1;
+        } else {
+            grouped.set(key, {
+                artikelnummer,
+                hersteller,
+                typText,
+                count: 1
+            });
+        }
+    });
+
+    const rows = Array.from(grouped.values())
+        .sort((a, b) => b.count - a.count || a.typText.localeCompare(b.typText, 'de'))
+        .map(entry => `
+            <tr>
+                <td>${escapeHtml(entry.typText)}</td>
+                <td>${escapeHtml(entry.hersteller)}</td>
+                <td>${escapeHtml(entry.artikelnummer)}</td>
+                <td>${entry.count}</td>
+            </tr>
+        `).join('');
+
+    tbody.innerHTML = rows;
+    tableContainer.style.display = 'block';
+    emptyState.style.display = 'none';
 }
 
 function editLeitung(index) {
