@@ -16,6 +16,7 @@ function showModal(message, options = {}) {
     const icon = document.getElementById('modal-icon');
     const title = document.getElementById('modal-title');
     const messageEl = document.getElementById('modal-message');
+    const bodyEl = messageEl.parentElement;
     const cancelBtn = document.getElementById('modal-cancel');
     const confirmBtn = document.getElementById('modal-confirm');
     
@@ -25,6 +26,10 @@ function showModal(message, options = {}) {
     const confirmText = options.confirmText || 'OK';
     const cancelText = options.cancelText || 'Abbrechen';
     const showCancel = options.showCancel !== undefined ? options.showCancel : false;
+    const requireTextMatch = options.requireTextMatch || false;
+    const expectedText = options.expectedText || '';
+    const textMatchLabel = options.textMatchLabel || 'Bestätigung';
+    const textMatchPlaceholder = options.textMatchPlaceholder || '';
     
     // Icons basierend auf Typ
     const icons = {
@@ -46,6 +51,49 @@ function showModal(message, options = {}) {
     
     // Setze Button-Stil basierend auf Typ
     confirmBtn.className = type === 'danger' ? 'btn btn-danger' : 'btn btn-primary';
+
+    // Eventhandler zurücksetzen, damit bei wiederholtem Öffnen nichts doppelt hängt
+    confirmBtn.onclick = () => closeModal(true);
+    cancelBtn.onclick = () => closeModal(false);
+
+    // Vorhandene dynamische Eingaben entfernen
+    const existingConfirmInput = document.getElementById('modal-text-confirm-group');
+    if (existingConfirmInput) {
+        existingConfirmInput.remove();
+    }
+
+    if (requireTextMatch) {
+        const inputGroup = document.createElement('div');
+        inputGroup.id = 'modal-text-confirm-group';
+        inputGroup.className = 'modal-text-confirm-group';
+
+        const label = document.createElement('label');
+        label.setAttribute('for', 'modal-text-confirm-input');
+        label.textContent = textMatchLabel;
+        label.className = 'modal-text-confirm-label';
+
+        const input = document.createElement('input');
+        input.id = 'modal-text-confirm-input';
+        input.type = 'text';
+        input.placeholder = textMatchPlaceholder;
+        input.autocomplete = 'off';
+        input.className = 'modal-text-confirm-input';
+
+        inputGroup.appendChild(label);
+        inputGroup.appendChild(input);
+        bodyEl.appendChild(inputGroup);
+
+        const validateInput = () => {
+            const matches = input.value.trim() === expectedText;
+            confirmBtn.disabled = !matches;
+        };
+
+        confirmBtn.disabled = true;
+        input.addEventListener('input', validateInput);
+        setTimeout(() => input.focus(), 0);
+    } else {
+        confirmBtn.disabled = false;
+    }
     
     // Entferne alte Typ-Klassen und füge neue hinzu
     overlay.className = 'modal-overlay active modal-' + type;
@@ -58,6 +106,13 @@ function showModal(message, options = {}) {
 
 function closeModal(result = true) {
     const overlay = document.getElementById('modal-overlay');
+    const confirmBtn = document.getElementById('modal-confirm');
+
+    // Bestätigen blockieren, solange Pflicht-Eingabe nicht erfüllt ist
+    if (result === true && confirmBtn && confirmBtn.disabled) {
+        return;
+    }
+
     overlay.classList.remove('active');
     
     if (modalResolve) {
@@ -353,21 +408,29 @@ function editProjekt(id) {
 }
 
 async function deleteProjekt(id) {
+    const projects = getProjects();
+    const projekt = projects.find(p => p.id === id);
+    if (!projekt) return;
+
     const confirmed = await showModal(
-        'Möchten Sie dieses Projekt wirklich löschen?\n\nAlle Leitungsdaten gehen verloren.',
+        `Möchten Sie das Projekt "${projekt.name}" wirklich löschen?\n\nAlle Leitungsdaten gehen verloren.\n\nBitte geben Sie zur Bestätigung den Projektnamen ein.`,
         { 
             type: 'danger', 
             title: 'Projekt löschen',
             showCancel: true,
             confirmText: 'Löschen',
-            cancelText: 'Abbrechen'
+            cancelText: 'Abbrechen',
+            requireTextMatch: true,
+            expectedText: projekt.name,
+            textMatchLabel: 'Projektnamen zur Bestätigung eingeben',
+            textMatchPlaceholder: projekt.name
         }
     );
     
     if (!confirmed) return;
-    
-    const projects = getProjects().filter(p => p.id !== id);
-    saveProjects(projects);
+
+    const updatedProjects = projects.filter(p => p.id !== id);
+    saveProjects(updatedProjects);
     
     if (currentProjekt && currentProjekt.id === id) {
         currentProjekt = null;

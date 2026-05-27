@@ -163,6 +163,20 @@ body {
     white-space: nowrap;
 }
 
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-primary:disabled,
+.btn-danger:disabled,
+.btn-success:disabled,
+.btn-secondary:disabled {
+    filter: grayscale(0.15);
+}
+
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
@@ -844,6 +858,35 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     white-space: pre-line;
+}
+
+.modal-text-confirm-group {
+    margin-top: 1rem;
+}
+
+.modal-text-confirm-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.modal-text-confirm-input {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    background: #fff;
+    color: var(--text-color);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-text-confirm-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(242, 124, 34, 0.15);
 }
 
 .modal-footer {
