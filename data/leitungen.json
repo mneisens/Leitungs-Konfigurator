@@ -10,11 +10,31 @@
     "ifm electronic"
   ],
   "kategorien": [
-    { "id": "ethercat", "name": "EtherCAT Leitung", "icon": "🔗" },
-    { "id": "power", "name": "Power Leitung", "icon": "⚡" },
-    { "id": "sensor", "name": "Sensorleitung", "icon": "📡" },
-    { "id": "oelflex", "name": "Ölflexleitung", "icon": "🔌" },
-    { "id": "sonstiges", "name": "Sonstiges", "icon": "📦" }
+    {
+      "id": "ethercat",
+      "name": "EtherCAT Leitung",
+      "icon": "🔗"
+    },
+    {
+      "id": "power",
+      "name": "Power Leitung",
+      "icon": "⚡"
+    },
+    {
+      "id": "sensor",
+      "name": "Sensorleitung",
+      "icon": "📡"
+    },
+    {
+      "id": "oelflex",
+      "name": "Ölflexleitung",
+      "icon": "🔌"
+    },
+    {
+      "id": "sonstiges",
+      "name": "Sonstiges",
+      "icon": "📦"
+    }
   ],
   "artikel": [
     {
@@ -3357,6 +3377,609 @@
       "kategorie": "sensor"
     },
     {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0004",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 0.40m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 0.4,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0010",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 1.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 1.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0012",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 1.20m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 1.2,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0015",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 1.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 1.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0017",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 1.70m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 1.7,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0020",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 2.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 2.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0030",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 3.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 3.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0045",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 4.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 4.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0050",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 5.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 5.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0075",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 7.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 7.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0080",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 8.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 8.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0100",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 10.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 10.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0150",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 15.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 15.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0170",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 17.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 17.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2132-0200",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 20.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 4-polig Buchse gerade",
+      "laenge": 20.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0005",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 0.50m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 0.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0006",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 0.60m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 0.6,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0010",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 1.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 1.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0015",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 1.50m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 1.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0020",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 2.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 2.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0040",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 4.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 4.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0050",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 5.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 5.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0060",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 6.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 6.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0075",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 7.50m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 7.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0080",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 8.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 8.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0100",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 10.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 10.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0150",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 15.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 15.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6200-0200",
+      "beschreibung": "Sensor M12 4p Buchse gerade - offen 20.00m",
+      "steckerA": "M12 4-polig Buchse gerade",
+      "steckerB": "offen",
+      "laenge": 20.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0005",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 0.50m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 0.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0010",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 1.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 1.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0030",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 3.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 3.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0050",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 5.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 5.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0075",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 7.50m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 7.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0100",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 10.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 10.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0200",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 20.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 20.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-6400-0300",
+      "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 30.00m",
+      "steckerA": "M12 4-polig Buchse gewinkelt",
+      "steckerB": "offen",
+      "laenge": 30.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0005",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 0.50m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0010",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 1.00m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 1.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0020",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 2.00m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 2.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0030",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 3.00m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 3.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0036",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 3.60m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 3.6,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0039",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 3.90m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 3.9,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-7122-0050",
+      "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 5.00m",
+      "steckerA": "M12 5-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 5.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0001",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.13m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.13,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0002",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.20m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.2,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0003",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.30m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.3,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0005",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0006",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.60m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.6,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0007",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 0.70m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 0.7,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0010",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 1.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 1.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0012",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 1.20m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 1.2,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0015",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 1.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 1.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0020",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 2.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 2.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0025",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 2.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 2.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0027",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 2.70m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 2.7,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0030",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 3.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 3.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0035",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 3.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 3.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0040",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 4.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 4.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0045",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 4.50m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 4.5,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0050",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 5.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 5.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0060",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 6.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 6.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0070",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 7.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 7.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0080",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 8.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 8.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0100",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 10.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 10.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0150",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 15.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 15.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0200",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 20.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 20.0,
+      "kategorie": "sensor"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZK2000-2122-0300",
+      "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 30.00m",
+      "steckerA": "M8 3-polig Stecker gerade",
+      "steckerB": "M8 3-polig Buchse gerade",
+      "laenge": 30.0,
+      "kategorie": "sensor"
+    },
+    {
       "hersteller": "Lapp Kabel",
       "artikelnummer": "0021803",
       "beschreibung": "ÖLFLEX CLASSIC 110 3G0,75",
@@ -3475,5 +4098,15 @@
     "Wago 2060",
     "offen"
   ],
-  "standardlaengen": [1, 2, 3, 5, 10, 15, 20, 25, 30]
+  "standardlaengen": [
+    1,
+    2,
+    3,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30
+  ]
 }
