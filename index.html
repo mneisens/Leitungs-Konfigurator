@@ -90,6 +90,119 @@
             </form>
         </section>
 
+        <!-- View: Schaltplan-Assistent -->
+        <section id="view-projekt-wizard" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="wizard-titel">Schaltplan-Assistent</h2>
+            </div>
+
+            <div class="form-card wizard-card">
+                <button type="button" class="wizard-progress wizard-progress-btn" id="wizard-progress" onclick="wizardJumpToQuestion()">
+                    Frage 1 von 1
+                </button>
+                <div class="wizard-jump-box" id="wizard-jump-box" style="display: none;">
+                    <label for="wizard-jump-input">Zu Frage springen</label>
+                    <input type="number" id="wizard-jump-input" min="1" step="1" placeholder="z. B. 35">
+                    <button type="button" class="btn btn-primary btn-small" onclick="wizardApplyJump()">Springen</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="wizardCancelJump()">Abbrechen</button>
+                </div>
+                <div class="wizard-meta">
+                    <span class="wizard-group" id="wizard-gruppe">=000</span>
+                    <span class="wizard-hint">Antwort optional - leer lassen und weiter ist möglich.</span>
+                </div>
+
+                <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
+
+                <div class="form-group">
+                    <label for="wizard-antwort">Eingabe</label>
+                    <textarea id="wizard-antwort" rows="5" placeholder="z. B. Artikelnummern, Leitungsbezeichnungen oder Notizen"></textarea>
+                </div>
+
+                <div class="wizard-divider"></div>
+
+                <h3>Leitungen direkt anlegen</h3>
+                <div class="wizard-connector-box">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="wizard-kategorie">Leitungstyp</label>
+                            <select id="wizard-kategorie" onchange="onWizardKategorieChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="wizard-hersteller">Hersteller</label>
+                            <select id="wizard-hersteller" onchange="onWizardHerstellerChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="wizard-stecker-a">Stecker Seite A</label>
+                            <select id="wizard-stecker-a" onchange="onWizardSteckerAChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="wizard-stecker-b">Stecker Seite B</label>
+                            <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="wizard-laenge">Länge</label>
+                            <select id="wizard-laenge" onchange="onWizardLaengeChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="wizard-auto-result" id="wizard-auto-artikel">
+                        <span class="artikel-label">Bitte Hersteller, Stecker A/B und Länge wählen</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="wizard-artikelnummer">Artikelnummer</label>
+                        <input type="text" id="wizard-artikelnummer" list="wizard-artikel-vorschlaege" placeholder="z. B. ZK2000-2122-0010">
+                        <datalist id="wizard-artikel-vorschlaege"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="wizard-anzahl">Anzahl</label>
+                        <input type="number" id="wizard-anzahl" min="1" step="1" value="1">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="wizard-leitungsbezeichnung">Bezeichnung (optional)</label>
+                    <input type="text" id="wizard-leitungsbezeichnung" placeholder="Wenn leer, wird die Frage als Bezeichnung verwendet">
+                </div>
+
+                <div class="wizard-inline-actions">
+                    <button type="button" class="btn btn-success" onclick="wizardAddLeitungFromStep()">
+                        + Leitung anlegen
+                    </button>
+                </div>
+
+                <div id="wizard-created-list" class="wizard-created-list"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="wizard-prev" onclick="wizardPrev()">
+                        ← Vorherige Frage
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">
+                        Zur Übersicht
+                    </button>
+                    <button type="button" class="btn btn-primary" id="wizard-next" onclick="wizardNext()">
+                        Weiter →
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- View: Leitungs-Konfigurator -->
         <section id="view-konfigurator" class="view">
             <div class="view-header">
@@ -242,6 +355,12 @@
                     + Neue Leitung anlegen
                 </button>
                 <div class="export-buttons">
+                    <button class="btn btn-secondary" onclick="startProjektWizard()">
+                        📝 Schaltplan-Assistent
+                    </button>
+                    <button class="btn btn-secondary" onclick="startAbarbeitung()">
+                        🧭 Abarbeitung starten
+                    </button>
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
                         📦 Stückliste
                     </button>
@@ -265,6 +384,75 @@
                 <button class="btn btn-primary" onclick="showView('konfigurator')">
                     Konfigurator starten
                 </button>
+            </div>
+        </section>
+
+        <!-- View: Abarbeitung -->
+        <section id="view-abarbeitung" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="abarbeitung-titel">Abarbeitung Leitungen</h2>
+            </div>
+
+            <div class="abarbeitung-layout">
+                <div class="form-card">
+                    <div class="abarbeitung-progress" id="abarbeitung-progress">Schritt 0 von 0</div>
+                    <div id="abarbeitung-empty" class="empty-state" style="display: none;">
+                        <div class="empty-icon">🧭</div>
+                        <h3>Keine Leitungen vorhanden</h3>
+                        <p>Legen Sie zuerst Leitungen an, um die Abarbeitung zu starten.</p>
+                        <button class="btn btn-primary" onclick="showView('konfigurator')">
+                            Leitung anlegen
+                        </button>
+                    </div>
+
+                    <div id="abarbeitung-card" style="display: none;">
+                        <div class="abarbeitung-info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Gruppe</span>
+                                <span class="info-value" id="abarbeitung-gruppe">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Position</span>
+                                <span class="info-value" id="abarbeitung-position">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Artikelnummer</span>
+                                <span class="info-value" id="abarbeitung-artikel">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Bezeichnung</span>
+                                <span class="info-value" id="abarbeitung-bezeichnung">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Status</span>
+                                <span class="info-value" id="abarbeitung-status">-</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="abarbeitung-prev" onclick="abarbeitungPrev()">
+                                ← Vorherige Leitung
+                            </button>
+                            <button type="button" class="btn btn-success" id="abarbeitung-toggle" onclick="abarbeitungToggleErledigt()">
+                                Als erledigt markieren
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="abarbeitungOpenAktuell()">
+                                Im Konfigurator öffnen
+                            </button>
+                            <button type="button" class="btn btn-primary" id="abarbeitung-next" onclick="abarbeitungNext()">
+                                Nächste Leitung →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="form-card">
+                    <h3>Nächste Leitungen</h3>
+                    <div id="abarbeitung-next-list" class="abarbeitung-next-list">
+                        <!-- Nächste Leitungen werden hier angezeigt -->
+                    </div>
+                </aside>
             </div>
         </section>
 

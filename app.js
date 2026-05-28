@@ -9,7 +9,54 @@ let leitungGruppen = [];
 let currentProjekt = null;
 let currentLeitungIndex = 0;
 let currentArtikelVorschlag = null;
+let wizardStepIndex = 0;
+let abarbeitungOrder = [];
+let abarbeitungCursor = 0;
 let modalResolve = null;
+
+const SCHALTPLAN_WIZARD_STEPS = [
+    { id: '000-zuleitung', gruppe: '=000', frage: 'Zuleitung?' },
+    { id: '004-ethercat-1', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 1?' },
+    { id: '004-ethercat-2', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 2?' },
+    { id: '004-ethercat-3', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 3?' },
+    { id: '005-panel-ipc', gruppe: '=005', frage: 'Panel und IPC?' },
+    { id: '007-tuerschalter', gruppe: '=007', frage: 'Türschalter?' },
+    { id: '007-lichtschranken', gruppe: '=007', frage: 'Lichtschranken?' },
+    { id: '007-fussschalter', gruppe: '=007', frage: 'Fußschalter?' },
+    { id: '007-zweihand', gruppe: '=007', frage: 'Zweihand Bedienpult?' },
+    { id: '010-motorleitung', gruppe: '=010', frage: 'Motorleitung?' },
+    { id: '010-geberleitung', gruppe: '=010', frage: 'Geberleitung?' },
+    { id: '011-bremsen', gruppe: '=011', frage: 'Bremsen, Sensorleitung?' },
+    { id: '012-mts-power', gruppe: '=012', frage: 'MTS, Powerleitung?' },
+    { id: '013-dms', gruppe: '=013', frage: 'DMS Sensoren mit M12 Stecker?' },
+    { id: '014-temp-tisch', gruppe: '=014', frage: 'Temperatursensor Tisch, Sensorleitung?' },
+    { id: '014-temp-stoessel', gruppe: '=014', frage: 'Temperatursensor Stößel, Sensorleitung?' },
+    { id: '016-nothalt', gruppe: '=016', frage: 'Not-Halt, Sensorleitung?' },
+    { id: '020-motorleitung', gruppe: '=020', frage: 'Motorleitung?' },
+    { id: '020-geberleitung', gruppe: '=020', frage: 'Geberleitung?' },
+    { id: '021-bremsen', gruppe: '=021', frage: 'Bremsen, Sensorleitung?' },
+    { id: '022-mts-power', gruppe: '=022', frage: 'MTS, Powerleitung?' },
+    { id: '023-dms', gruppe: '=023', frage: 'DMS Sensoren mit M12 Stecker?' },
+    { id: '024-temp-tisch', gruppe: '=024', frage: 'Temperatursensor Tisch, Sensorleitung?' },
+    { id: '024-temp-stoessel', gruppe: '=024', frage: 'Temperatursensor Stößel, Sensorleitung?' },
+    { id: '026-nothalt', gruppe: '=026', frage: 'Not-Halt, Sensorleitung?' },
+    { id: '030-motorleitung', gruppe: '=030', frage: 'Motorleitung?' },
+    { id: '030-geberleitung', gruppe: '=030', frage: 'Geberleitung?' },
+    { id: '031-bremsen', gruppe: '=031', frage: 'Bremsen, Sensorleitung?' },
+    { id: '032-mts-power', gruppe: '=032', frage: 'MTS, Powerleitung?' },
+    { id: '033-dms', gruppe: '=033', frage: 'DMS Sensoren mit M12 Stecker?' },
+    { id: '034-temp-tisch', gruppe: '=034', frage: 'Temperatursensor Tisch, Sensorleitung?' },
+    { id: '034-temp-stoessel', gruppe: '=034', frage: 'Temperatursensor Stößel, Sensorleitung?' },
+    { id: '036-nothalt', gruppe: '=036', frage: 'Not-Halt, Sensorleitung?' },
+    { id: '040-motorleitung', gruppe: '=040', frage: 'Motorleitung?' },
+    { id: '040-geberleitung', gruppe: '=040', frage: 'Geberleitung?' },
+    { id: '041-bremsen', gruppe: '=041', frage: 'Bremsen, Sensorleitung?' },
+    { id: '042-mts-power', gruppe: '=042', frage: 'MTS, Powerleitung?' },
+    { id: '043-dms', gruppe: '=043', frage: 'DMS Sensoren mit M12 Stecker?' },
+    { id: '044-temp-tisch', gruppe: '=044', frage: 'Temperatursensor Tisch, Sensorleitung?' },
+    { id: '044-temp-stoessel', gruppe: '=044', frage: 'Temperatursensor Stößel, Sensorleitung?' },
+    { id: '046-nothalt', gruppe: '=046', frage: 'Not-Halt, Sensorleitung?' }
+];
 
 // ===== Modal Dialog Funktionen =====
 function showModal(message, options = {}) {
@@ -180,6 +227,9 @@ function showView(viewName) {
             break;
         case 'projekt-form':
             break;
+        case 'projekt-wizard':
+            renderProjektWizard();
+            break;
         case 'konfigurator':
             initKonfigurator();
             break;
@@ -188,6 +238,9 @@ function showView(viewName) {
             break;
         case 'stueckliste':
             renderStueckliste();
+            break;
+        case 'abarbeitung':
+            renderAbarbeitung();
             break;
     }
 }
@@ -216,6 +269,23 @@ function getProjects() {
 
 function saveProjects(projects) {
     localStorage.setItem('leitungskonfigurator_projekte', JSON.stringify(projects));
+}
+
+function persistCurrentProjekt() {
+    if (!currentProjekt) return;
+    const projects = getProjects();
+    const idx = projects.findIndex(p => p.id === currentProjekt.id);
+    if (idx >= 0) {
+        projects[idx] = currentProjekt;
+        saveProjects(projects);
+    }
+}
+
+function ensureWizardAnswers(projekt) {
+    if (!projekt) return;
+    if (!projekt.wizardAnswers || typeof projekt.wizardAnswers !== 'object') {
+        projekt.wizardAnswers = {};
+    }
 }
 
 // ===== Export / Import Funktionen =====
@@ -366,7 +436,8 @@ function saveProjekt(event) {
         liefertermin: document.getElementById('liefertermin').value,
         notiz: document.getElementById('projekt-notiz').value.trim(),
         erstellt: isNew ? new Date().toISOString() : undefined,
-        leitungen: []
+        leitungen: [],
+        wizardAnswers: {}
     };
     
     const projects = getProjects();
@@ -375,6 +446,7 @@ function saveProjekt(event) {
     if (existingIndex >= 0) {
         projekt.erstellt = projects[existingIndex].erstellt;
         projekt.leitungen = projects[existingIndex].leitungen || [];
+        projekt.wizardAnswers = projects[existingIndex].wizardAnswers || {};
         projects[existingIndex] = projekt;
     } else {
         projects.unshift(projekt);
@@ -383,9 +455,14 @@ function saveProjekt(event) {
     saveProjects(projects);
     currentProjekt = projekt;
     currentLeitungIndex = 0;
+    ensureWizardAnswers(currentProjekt);
+    wizardStepIndex = 0;
 
-    // Nach dem Speichern immer zuerst in die Projektübersicht wechseln
-    showView('uebersicht');
+    if (isNew) {
+        showView('projekt-wizard');
+    } else {
+        showView('uebersicht');
+    }
 }
 
 function openProjekt(id) {
@@ -394,6 +471,7 @@ function openProjekt(id) {
     
     if (currentProjekt) {
         currentLeitungIndex = 0;
+        ensureWizardAnswers(currentProjekt);
         showView('uebersicht');
     }
 }
@@ -412,8 +490,502 @@ function editProjekt(id) {
         document.getElementById('projekt-notiz').value = projekt.notiz || '';
         
         currentProjekt = projekt;
+        ensureWizardAnswers(currentProjekt);
         showView('projekt-form');
     }
+}
+
+function startProjektWizard() {
+    if (!currentProjekt) return;
+    ensureWizardAnswers(currentProjekt);
+
+    const firstOpen = SCHALTPLAN_WIZARD_STEPS.findIndex(step => {
+        const val = currentProjekt.wizardAnswers[step.id];
+        return !val || !String(val).trim();
+    });
+    wizardStepIndex = firstOpen >= 0 ? firstOpen : 0;
+    showView('projekt-wizard');
+}
+
+function getArtikelByNummer(artikelnummer) {
+    if (!katalog || !Array.isArray(katalog.artikel) || !artikelnummer) return null;
+    const gesucht = artikelnummer.trim().toLowerCase();
+    return katalog.artikel.find(a => (a.artikelnummer || '').toLowerCase() === gesucht) || null;
+}
+
+function getWizardDefaultBezeichnung(step) {
+    if (!step || !step.frage) return '';
+    return step.frage.replace(/\?+$/, '').trim();
+}
+
+function getWizardArtikelPool() {
+    return (katalog && Array.isArray(katalog.artikel)) ? katalog.artikel : [];
+}
+
+function getWizardDefaultKategorie(step) {
+    const text = (step?.frage || '').toLowerCase();
+    if (text.includes('ethercat')) return 'ethercat';
+    if (text.includes('power')) return 'power';
+    if (text.includes('sensor') || text.includes('geber') || text.includes('lichtschranken') || text.includes('not-halt')) {
+        return 'sensor';
+    }
+    return '';
+}
+
+function getWizardKategorie() {
+    const select = document.getElementById('wizard-kategorie');
+    return select ? select.value : '';
+}
+
+function getWizardArtikelByKategorie() {
+    const kategorie = getWizardKategorie();
+    if (!kategorie) return getWizardArtikelPool();
+    return getWizardArtikelPool().filter(a => a.kategorie === kategorie);
+}
+
+function populateWizardKategorieDropdown() {
+    const select = document.getElementById('wizard-kategorie');
+    if (!select) return;
+
+    const currentValue = select.value;
+    const kategorien = (katalog?.kategorien || [])
+        .map(k => ({ value: k.id, label: k.name }))
+        .filter(k => k.value);
+
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    kategorien.forEach(k => {
+        const option = document.createElement('option');
+        option.value = k.value;
+        option.textContent = k.label;
+        select.appendChild(option);
+    });
+
+    if (currentValue && kategorien.some(k => k.value === currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+function populateWizardHerstellerDropdown() {
+    const select = document.getElementById('wizard-hersteller');
+    if (!select) return;
+
+    const currentValue = select.value;
+    const hersteller = Array.from(new Set(getWizardArtikelByKategorie().map(a => a.hersteller).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, 'de'));
+
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    hersteller.forEach(h => {
+        const option = document.createElement('option');
+        option.value = h;
+        option.textContent = h;
+        select.appendChild(option);
+    });
+
+    if (currentValue && hersteller.includes(currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+function getWizardArtikelByHersteller(hersteller) {
+    return getWizardArtikelByKategorie().filter(a => a.hersteller === hersteller);
+}
+
+function getWizardPairMatches(hersteller, steckerABase, steckerBBase) {
+    const artikel = getWizardArtikelByHersteller(hersteller);
+    return artikel.filter(a =>
+        (getBaseSteckerTyp(a.steckerA) === steckerABase && getBaseSteckerTyp(a.steckerB) === steckerBBase) ||
+        (getBaseSteckerTyp(a.steckerA) === steckerBBase && getBaseSteckerTyp(a.steckerB) === steckerABase)
+    );
+}
+
+function onWizardKategorieChange() {
+    const steckerASelect = document.getElementById('wizard-stecker-a');
+    const steckerBSelect = document.getElementById('wizard-stecker-b');
+    const laengeSelect = document.getElementById('wizard-laenge');
+    steckerASelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    steckerBSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    laengeSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    populateWizardHerstellerDropdown();
+    onWizardHerstellerChange();
+}
+
+function onWizardHerstellerChange() {
+    const hersteller = document.getElementById('wizard-hersteller').value;
+    const steckerASelect = document.getElementById('wizard-stecker-a');
+    const steckerBSelect = document.getElementById('wizard-stecker-b');
+    const laengeSelect = document.getElementById('wizard-laenge');
+
+    steckerASelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    steckerBSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    laengeSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+
+    if (!hersteller) {
+        updateWizardAutoArtikel();
+        return;
+    }
+
+    const steckerAOptions = new Set();
+    getWizardArtikelByHersteller(hersteller).forEach(a => {
+        if (a.steckerA) steckerAOptions.add(getBaseSteckerTyp(a.steckerA));
+        if (a.steckerB) steckerAOptions.add(getBaseSteckerTyp(a.steckerB));
+    });
+
+    Array.from(steckerAOptions).sort((a, b) => a.localeCompare(b, 'de')).forEach(s => {
+        const option = document.createElement('option');
+        option.value = s;
+        option.textContent = s;
+        steckerASelect.appendChild(option);
+    });
+
+    updateWizardAutoArtikel();
+}
+
+function onWizardSteckerAChange() {
+    const hersteller = document.getElementById('wizard-hersteller').value;
+    const steckerABase = document.getElementById('wizard-stecker-a').value;
+    const steckerBSelect = document.getElementById('wizard-stecker-b');
+    const laengeSelect = document.getElementById('wizard-laenge');
+
+    steckerBSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    laengeSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+
+    if (!hersteller || !steckerABase) {
+        updateWizardAutoArtikel();
+        return;
+    }
+
+    const steckerBOptions = new Set();
+    getWizardArtikelByHersteller(hersteller).forEach(a => {
+        const baseA = getBaseSteckerTyp(a.steckerA);
+        const baseB = getBaseSteckerTyp(a.steckerB);
+        if (baseA === steckerABase && baseB) steckerBOptions.add(baseB);
+        if (baseB === steckerABase && baseA) steckerBOptions.add(baseA);
+    });
+
+    Array.from(steckerBOptions)
+        .sort((a, b) => a.localeCompare(b, 'de'))
+        .forEach(s => {
+            const option = document.createElement('option');
+            option.value = s;
+            option.textContent = s;
+            steckerBSelect.appendChild(option);
+        });
+
+    updateWizardAutoArtikel();
+}
+
+function onWizardSteckerBChange() {
+    const hersteller = document.getElementById('wizard-hersteller').value;
+    const steckerABase = document.getElementById('wizard-stecker-a').value;
+    const steckerBBase = document.getElementById('wizard-stecker-b').value;
+    const laengeSelect = document.getElementById('wizard-laenge');
+
+    laengeSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+
+    if (!hersteller || !steckerABase || !steckerBBase) {
+        updateWizardAutoArtikel();
+        return;
+    }
+
+    const laengen = Array.from(new Set(
+        getWizardPairMatches(hersteller, steckerABase, steckerBBase)
+            .map(a => a.laenge)
+            .filter(l => typeof l === 'number' && l > 0)
+    )).sort((a, b) => a - b);
+
+    laengen.forEach(l => {
+        const option = document.createElement('option');
+        option.value = String(l);
+        option.textContent = `${l} m`;
+        laengeSelect.appendChild(option);
+    });
+
+    updateWizardAutoArtikel();
+}
+
+function onWizardLaengeChange() {
+    updateWizardAutoArtikel();
+}
+
+function updateWizardAutoArtikel() {
+    const resultDiv = document.getElementById('wizard-auto-artikel');
+    const artikelInput = document.getElementById('wizard-artikelnummer');
+    if (!resultDiv || !artikelInput) return;
+
+    const hersteller = document.getElementById('wizard-hersteller').value;
+    const steckerABase = document.getElementById('wizard-stecker-a').value;
+    const steckerBBase = document.getElementById('wizard-stecker-b').value;
+    const laengeRaw = document.getElementById('wizard-laenge').value;
+    const laenge = laengeRaw ? parseFloat(laengeRaw) : null;
+
+    if (!hersteller || !steckerABase || !steckerBBase) {
+        resultDiv.className = 'wizard-auto-result no-match';
+        resultDiv.innerHTML = '<span class="artikel-label">Bitte Hersteller, Stecker A/B und Länge wählen</span>';
+        return;
+    }
+
+    const matches = getWizardPairMatches(hersteller, steckerABase, steckerBBase);
+    if (matches.length === 0) {
+        resultDiv.className = 'wizard-auto-result no-match';
+        resultDiv.innerHTML = '<span class="artikel-label">Keine passende Leitung gefunden</span>';
+        return;
+    }
+
+    let artikel = null;
+    if (laenge !== null && !Number.isNaN(laenge)) {
+        artikel = matches
+            .filter(a => a.laenge === laenge)
+            .sort((a, b) => {
+                const aScore = (a.steckerA.includes('gewinkelt') ? 1 : 0) + (a.steckerB.includes('gewinkelt') ? 1 : 0);
+                const bScore = (b.steckerA.includes('gewinkelt') ? 1 : 0) + (b.steckerB.includes('gewinkelt') ? 1 : 0);
+                return aScore - bScore;
+            })[0] || null;
+        if (!artikel) {
+            resultDiv.className = 'wizard-auto-result no-match';
+            resultDiv.innerHTML = '<span class="artikel-label">Für diese Länge wurde kein Artikel gefunden</span>';
+            return;
+        }
+    } else if (matches.length === 1) {
+        artikel = matches[0];
+    } else {
+        resultDiv.className = 'wizard-auto-result no-match';
+        resultDiv.innerHTML = '<span class="artikel-label">Mehrere Treffer - bitte Länge wählen</span>';
+        return;
+    }
+
+    artikelInput.value = artikel.artikelnummer || '';
+    resultDiv.className = 'wizard-auto-result';
+    resultDiv.innerHTML = `
+        <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer || '')}</span>
+        <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung || '')}</span>
+    `;
+}
+
+function populateWizardArtikelVorschlaege() {
+    const datalist = document.getElementById('wizard-artikel-vorschlaege');
+    if (!datalist || !katalog || !Array.isArray(katalog.artikel)) return;
+
+    const uniqueArtikel = Array.from(new Set(
+        katalog.artikel
+            .map(a => a.artikelnummer)
+            .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b, 'de'));
+
+    datalist.innerHTML = uniqueArtikel
+        .map(nr => `<option value="${escapeHtml(nr)}"></option>`)
+        .join('');
+}
+
+function renderWizardCreatedLeitungen(step) {
+    const container = document.getElementById('wizard-created-list');
+    if (!container || !currentProjekt || !step) return;
+
+    const leitungen = (currentProjekt.leitungen || []).filter(l => l.wizardStepId === step.id);
+    if (leitungen.length === 0) {
+        container.innerHTML = '<p class="konfig-list-empty">Noch keine Leitungen zu dieser Frage angelegt.</p>';
+        return;
+    }
+
+    const grouped = new Map();
+    leitungen.forEach(l => {
+        const artikel = l.artikelnummer || l.artikelCustom || '(ohne Artikelnummer)';
+        const bezeichnung = l.bezeichnung || '-';
+        const key = `${artikel}|||${bezeichnung}`;
+        if (!grouped.has(key)) {
+            grouped.set(key, { artikel, bezeichnung, count: 0 });
+        }
+        grouped.get(key).count += 1;
+    });
+
+    const rows = Array.from(grouped.values())
+        .sort((a, b) => a.artikel.localeCompare(b.artikel, 'de'))
+        .map(item => `
+            <li>
+                <span class="artikel">${escapeHtml(item.artikel)}</span>
+                <span>${escapeHtml(item.bezeichnung)}</span>
+                <span class="count">${item.count}</span>
+            </li>
+        `).join('');
+
+    container.innerHTML = `
+        <h4>Zu dieser Frage angelegte Leitungen (${leitungen.length})</h4>
+        <ul>${rows}</ul>
+    `;
+}
+
+function wizardAddLeitungFromStep() {
+    if (!currentProjekt) return;
+    ensureWizardAnswers(currentProjekt);
+
+    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    if (!step) return;
+
+    const artikelInput = document.getElementById('wizard-artikelnummer');
+    const anzahlInput = document.getElementById('wizard-anzahl');
+    const bezInput = document.getElementById('wizard-leitungsbezeichnung');
+
+    const artikelnummerRaw = artikelInput.value.trim();
+    if (!artikelnummerRaw) {
+        showModal('Bitte eine Artikelnummer eingeben, um eine Leitung anzulegen.', {
+            type: 'warning',
+            title: 'Artikelnummer fehlt'
+        });
+        return;
+    }
+
+    let anzahl = parseInt(anzahlInput.value, 10);
+    if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
+    if (anzahl > 200) anzahl = 200;
+
+    const artikel = getArtikelByNummer(artikelnummerRaw);
+    const bezeichnung = bezInput.value.trim() || getWizardDefaultBezeichnung(step);
+
+    if (!Array.isArray(currentProjekt.leitungen)) {
+        currentProjekt.leitungen = [];
+    }
+
+    for (let i = 0; i < anzahl; i++) {
+        const leitung = {
+            id: generateId('ltg'),
+            position: currentProjekt.leitungen.length + 1,
+            bezeichnung: bezeichnung,
+            kategorie: artikel?.kategorie || 'sonstiges',
+            gruppe: step.gruppe,
+            hersteller: artikel?.hersteller || '',
+            artikelnummer: artikel ? artikel.artikelnummer : artikelnummerRaw,
+            artikelCustom: '',
+            laenge: artikel?.laenge || 0,
+            steckerA: artikel?.steckerA || '',
+            steckerB: artikel?.steckerB || '',
+            notiz: artikel ? '' : 'Im Schaltplan-Assistent ohne Katalogtreffer angelegt',
+            erledigt: false,
+            wizardStepId: step.id
+        };
+        currentProjekt.leitungen.push(leitung);
+    }
+
+    currentProjekt.leitungen.forEach((l, idx) => {
+        l.position = idx + 1;
+    });
+
+    persistCurrentProjekt();
+    artikelInput.value = '';
+    anzahlInput.value = '1';
+    renderWizardCreatedLeitungen(step);
+}
+
+function saveCurrentWizardAnswer() {
+    if (!currentProjekt) return;
+    ensureWizardAnswers(currentProjekt);
+    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    if (!step) return;
+
+    const textarea = document.getElementById('wizard-antwort');
+    currentProjekt.wizardAnswers[step.id] = textarea ? textarea.value.trim() : '';
+    persistCurrentProjekt();
+}
+
+function renderProjektWizard() {
+    if (!currentProjekt) {
+        showView('home');
+        return;
+    }
+
+    ensureWizardAnswers(currentProjekt);
+
+    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    if (wizardStepIndex < 0) wizardStepIndex = 0;
+    if (wizardStepIndex >= total) wizardStepIndex = total - 1;
+
+    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    const answer = currentProjekt.wizardAnswers[step.id] || '';
+
+    document.getElementById('wizard-titel').textContent =
+        `Schaltplan-Assistent - ${currentProjekt.projektnummer} - ${currentProjekt.name}`;
+    document.getElementById('wizard-progress').textContent = `Frage ${wizardStepIndex + 1} von ${total}`;
+    document.getElementById('wizard-gruppe').textContent = step.gruppe;
+    document.getElementById('wizard-frage').textContent = step.frage;
+    document.getElementById('wizard-antwort').value = answer;
+    document.getElementById('wizard-hersteller').value = 'Beckhoff';
+    document.getElementById('wizard-stecker-a').innerHTML = '<option value="">-- Bitte wählen --</option>';
+    document.getElementById('wizard-stecker-b').innerHTML = '<option value="">-- Bitte wählen --</option>';
+    document.getElementById('wizard-laenge').innerHTML = '<option value="">-- Bitte wählen --</option>';
+    document.getElementById('wizard-artikelnummer').value = '';
+    document.getElementById('wizard-anzahl').value = '1';
+    document.getElementById('wizard-leitungsbezeichnung').value = '';
+    document.getElementById('wizard-leitungsbezeichnung').placeholder = getWizardDefaultBezeichnung(step);
+
+    const prevBtn = document.getElementById('wizard-prev');
+    const nextBtn = document.getElementById('wizard-next');
+    prevBtn.style.display = wizardStepIndex > 0 ? 'inline-flex' : 'none';
+    nextBtn.textContent = wizardStepIndex === total - 1 ? 'Fertig zur Übersicht' : 'Weiter →';
+
+    populateWizardArtikelVorschlaege();
+    populateWizardKategorieDropdown();
+    document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
+    populateWizardHerstellerDropdown();
+    onWizardHerstellerChange();
+    renderWizardCreatedLeitungen(step);
+}
+
+function wizardPrev() {
+    if (wizardStepIndex <= 0) return;
+    saveCurrentWizardAnswer();
+    wizardStepIndex--;
+    renderProjektWizard();
+}
+
+function wizardNext() {
+    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    saveCurrentWizardAnswer();
+
+    if (wizardStepIndex >= total - 1) {
+        showView('uebersicht');
+        return;
+    }
+
+    wizardStepIndex++;
+    renderProjektWizard();
+}
+
+function wizardJumpToQuestion() {
+    const jumpBox = document.getElementById('wizard-jump-box');
+    const jumpInput = document.getElementById('wizard-jump-input');
+    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    if (!jumpBox || !jumpInput || total === 0) return;
+
+    jumpBox.style.display = jumpBox.style.display === 'none' ? 'flex' : 'none';
+    if (jumpBox.style.display === 'flex') {
+        jumpInput.value = String(wizardStepIndex + 1);
+        jumpInput.max = String(total);
+        setTimeout(() => jumpInput.focus(), 0);
+    }
+}
+
+function wizardCancelJump() {
+    const jumpBox = document.getElementById('wizard-jump-box');
+    if (!jumpBox) return;
+    jumpBox.style.display = 'none';
+}
+
+function wizardApplyJump() {
+    const jumpInput = document.getElementById('wizard-jump-input');
+    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    if (!jumpInput || total === 0) return;
+
+    const target = parseInt(jumpInput.value, 10);
+    if (Number.isNaN(target) || target < 1 || target > total) {
+        showModal(`Bitte eine gültige Zahl zwischen 1 und ${total} eingeben.`, {
+            type: 'warning',
+            title: 'Ungültige Eingabe'
+        });
+        return;
+    }
+
+    saveCurrentWizardAnswer();
+    wizardStepIndex = target - 1;
+    wizardCancelJump();
+    renderProjektWizard();
 }
 
 async function deleteProjekt(id) {
@@ -510,6 +1082,131 @@ function compareGruppenCode(a, b) {
     }
 
     return String(a).localeCompare(String(b), 'de');
+}
+
+function buildAbarbeitungOrder() {
+    if (!currentProjekt || !Array.isArray(currentProjekt.leitungen)) return [];
+
+    return currentProjekt.leitungen
+        .map((leitung, index) => ({
+            index,
+            gruppe: leitung.gruppe || '',
+            position: leitung.position || index + 1
+        }))
+        .sort((a, b) =>
+            compareGruppenCode(a.gruppe, b.gruppe) ||
+            a.position - b.position ||
+            a.index - b.index
+        );
+}
+
+function startAbarbeitung() {
+    if (!currentProjekt) return;
+    abarbeitungOrder = buildAbarbeitungOrder();
+    const firstOpenIndex = abarbeitungOrder.findIndex(entry => !currentProjekt.leitungen[entry.index]?.erledigt);
+    abarbeitungCursor = firstOpenIndex >= 0 ? firstOpenIndex : 0;
+    showView('abarbeitung');
+}
+
+function renderAbarbeitung() {
+    if (!currentProjekt) {
+        showView('home');
+        return;
+    }
+
+    abarbeitungOrder = buildAbarbeitungOrder();
+    if (abarbeitungCursor >= abarbeitungOrder.length) {
+        abarbeitungCursor = Math.max(abarbeitungOrder.length - 1, 0);
+    }
+
+    document.getElementById('abarbeitung-titel').textContent =
+        `Abarbeitung - ${currentProjekt.projektnummer} - ${currentProjekt.name}`;
+
+    const progressEl = document.getElementById('abarbeitung-progress');
+    const emptyEl = document.getElementById('abarbeitung-empty');
+    const cardEl = document.getElementById('abarbeitung-card');
+    const nextListEl = document.getElementById('abarbeitung-next-list');
+    const prevBtn = document.getElementById('abarbeitung-prev');
+    const nextBtn = document.getElementById('abarbeitung-next');
+    const toggleBtn = document.getElementById('abarbeitung-toggle');
+
+    if (abarbeitungOrder.length === 0) {
+        progressEl.textContent = 'Schritt 0 von 0';
+        emptyEl.style.display = 'block';
+        cardEl.style.display = 'none';
+        nextListEl.innerHTML = '<p class="konfig-list-empty">Noch keine Leitungen vorhanden.</p>';
+        return;
+    }
+
+    emptyEl.style.display = 'none';
+    cardEl.style.display = 'block';
+
+    const total = abarbeitungOrder.length;
+    const currentStep = abarbeitungCursor + 1;
+    const currentEntry = abarbeitungOrder[abarbeitungCursor];
+    const leitung = currentProjekt.leitungen[currentEntry.index];
+    const artikelnummer = leitung.artikelnummer || leitung.artikelCustom || '-';
+    const isErledigt = !!leitung.erledigt;
+
+    progressEl.textContent = `Schritt ${currentStep} von ${total}`;
+    document.getElementById('abarbeitung-gruppe').textContent = getGruppeDisplay(leitung.gruppe || '');
+    document.getElementById('abarbeitung-position').textContent = String(leitung.position || currentEntry.index + 1);
+    document.getElementById('abarbeitung-artikel').textContent = artikelnummer;
+    document.getElementById('abarbeitung-bezeichnung').textContent = leitung.bezeichnung || '-';
+    document.getElementById('abarbeitung-status').textContent = isErledigt ? 'Erledigt' : 'Offen';
+
+    prevBtn.style.display = currentStep > 1 ? 'inline-flex' : 'none';
+    nextBtn.style.display = currentStep < total ? 'inline-flex' : 'none';
+    toggleBtn.textContent = isErledigt ? 'Als offen markieren' : 'Als erledigt markieren';
+    toggleBtn.className = isErledigt ? 'btn btn-secondary' : 'btn btn-success';
+
+    const previewEntries = abarbeitungOrder
+        .slice(abarbeitungCursor + 1, abarbeitungCursor + 7)
+        .map(entry => {
+            const nextLeitung = currentProjekt.leitungen[entry.index];
+            const nextArtikel = nextLeitung.artikelnummer || nextLeitung.artikelCustom || '-';
+            const nextStatus = nextLeitung.erledigt ? '✅' : '⬜';
+            return `
+                <li>
+                    <span>${nextStatus} ${escapeHtml(getGruppeDisplay(nextLeitung.gruppe || ''))}</span>
+                    <span>${escapeHtml(nextArtikel)}</span>
+                </li>
+            `;
+        }).join('');
+
+    nextListEl.innerHTML = previewEntries
+        ? `<ul>${previewEntries}</ul>`
+        : '<p class="konfig-list-empty">Keine weiteren Leitungen mehr.</p>';
+}
+
+function abarbeitungPrev() {
+    if (abarbeitungCursor <= 0) return;
+    abarbeitungCursor--;
+    renderAbarbeitung();
+}
+
+function abarbeitungNext() {
+    if (abarbeitungCursor >= abarbeitungOrder.length - 1) return;
+    abarbeitungCursor++;
+    renderAbarbeitung();
+}
+
+function abarbeitungOpenAktuell() {
+    if (!abarbeitungOrder.length) return;
+    currentLeitungIndex = abarbeitungOrder[abarbeitungCursor].index;
+    showView('konfigurator');
+}
+
+function abarbeitungToggleErledigt() {
+    if (!abarbeitungOrder.length || !currentProjekt) return;
+    const currentEntry = abarbeitungOrder[abarbeitungCursor];
+    const leitung = currentProjekt.leitungen[currentEntry.index];
+    if (!leitung) return;
+
+    leitung.erledigt = !leitung.erledigt;
+    persistCurrentProjekt();
+    renderAbarbeitung();
+    renderKonfigGruppenliste();
 }
 
 function renderKonfigGruppenliste() {
@@ -1255,7 +1952,8 @@ function saveCurrentLeitung() {
         laenge: laenge,
         steckerA: fullSteckerA,
         steckerB: fullSteckerB,
-        notiz: document.getElementById('leitung-notiz').value.trim()
+        notiz: document.getElementById('leitung-notiz').value.trim(),
+        erledigt: !!(currentProjekt.leitungen[currentLeitungIndex] && currentProjekt.leitungen[currentLeitungIndex].erledigt)
     };
     
     if (!currentProjekt.leitungen) {
@@ -1264,12 +1962,7 @@ function saveCurrentLeitung() {
     
     currentProjekt.leitungen[currentLeitungIndex] = leitung;
     
-    const projects = getProjects();
-    const idx = projects.findIndex(p => p.id === currentProjekt.id);
-    if (idx >= 0) {
-        projects[idx] = currentProjekt;
-        saveProjects(projects);
-    }
+    persistCurrentProjekt();
 
     renderKonfigGruppenliste();
 }
@@ -1321,18 +2014,14 @@ function addNewLeitung() {
         laenge: 0,
         steckerA: '',
         steckerB: '',
-        notiz: ''
+        notiz: '',
+        erledigt: false
     };
     
     currentProjekt.leitungen.push(newLeitung);
     currentLeitungIndex = currentProjekt.leitungen.length - 1;
     
-    const projects = getProjects();
-    const idx = projects.findIndex(p => p.id === currentProjekt.id);
-    if (idx >= 0) {
-        projects[idx] = currentProjekt;
-        saveProjects(projects);
-    }
+    persistCurrentProjekt();
 
     if (isKonfiguratorActive) {
         renderLeitungForm();

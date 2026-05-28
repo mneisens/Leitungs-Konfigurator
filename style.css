@@ -379,6 +379,153 @@ body {
     min-height: 80px;
 }
 
+/* ===== Schaltplan-Assistent ===== */
+.wizard-card {
+    max-width: 920px;
+}
+
+.wizard-progress {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+}
+
+.wizard-progress-btn {
+    background: #fff8f3;
+    border: 1px solid #ffd8bc;
+    border-radius: var(--radius-md);
+    padding: 0.35rem 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.wizard-progress-btn:hover {
+    background: #fff1e6;
+    border-color: #ffc89e;
+}
+
+.wizard-jump-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.wizard-jump-box label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.wizard-jump-box input {
+    width: 120px;
+}
+
+.wizard-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.wizard-group {
+    background: #fff8f3;
+    color: var(--primary-color);
+    border: 1px solid #ffd8bc;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-weight: 600;
+}
+
+.wizard-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.wizard-question {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.wizard-divider {
+    border-top: 1px solid var(--border-color);
+    margin: 1.25rem 0;
+}
+
+.wizard-inline-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+}
+
+.wizard-connector-box {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.wizard-auto-result {
+    margin-top: 0.25rem;
+    border: 1px solid #d6e8f9;
+    background: #f3f9ff;
+    border-radius: var(--radius-md);
+    padding: 0.7rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.wizard-auto-result.no-match {
+    border-color: #f3d8d8;
+    background: #fff7f7;
+}
+
+.wizard-created-list {
+    margin-top: 1rem;
+    padding: 0.85rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: #fff;
+}
+
+.wizard-created-list h4 {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.95rem;
+}
+
+.wizard-created-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.wizard-created-list li {
+    display: grid;
+    grid-template-columns: minmax(130px, 1.2fr) minmax(180px, 2fr) auto;
+    gap: 0.65rem;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--border-color);
+    font-size: 0.9rem;
+}
+
+.wizard-created-list li:last-child {
+    border-bottom: none;
+}
+
+.wizard-created-list .artikel {
+    font-family: monospace;
+}
+
+.wizard-created-list .count {
+    font-weight: 600;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -550,6 +697,45 @@ body {
     gap: 0.75rem;
 }
 
+/* ===== Abarbeitung ===== */
+.abarbeitung-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.abarbeitung-progress {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.abarbeitung-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+}
+
+.abarbeitung-next-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.abarbeitung-next-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px dashed var(--border-color);
+    font-size: 0.9rem;
+}
+
+.abarbeitung-next-list li:last-child {
+    border-bottom: none;
+}
+
 /* ===== Table ===== */
 .table-container {
     background: var(--card-bg);
@@ -645,6 +831,10 @@ body {
     
     .export-buttons {
         justify-content: center;
+    }
+
+    .abarbeitung-layout {
+        grid-template-columns: 1fr;
     }
     
     .konfig-nav,
