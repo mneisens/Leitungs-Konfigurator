@@ -13,8 +13,17 @@ let wizardStepIndex = 0;
 let abarbeitungOrder = [];
 let abarbeitungCursor = 0;
 let modalResolve = null;
+let projectsCache = [];
+let wizardSteps = [];
+let firebaseReady = false;
+let firebaseAuth = null;
+let firebaseDb = null;
+let currentUser = null;
+let currentUserRole = 'user';
+let firebaseInitError = '';
+let firestoreErrorShown = false;
 
-const SCHALTPLAN_WIZARD_STEPS = [
+const DEFAULT_WIZARD_STEPS = [
     { id: '000-zuleitung', gruppe: '=000', frage: 'Zuleitung?' },
     { id: '004-ethercat-1', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 1?' },
     { id: '004-ethercat-2', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 2?' },
@@ -184,9 +193,207 @@ document.addEventListener('keydown', (e) => {
 // ===== Initialisierung =====
 document.addEventListener('DOMContentLoaded', async () => {
     await loadKatalog();
-    loadProjects();
-    showView('home');
+    wizardSteps = [...DEFAULT_WIZARD_STEPS];
+    initFirebase();
+
+    if (firebaseReady) {
+        firebaseAuth.onAuthStateChanged(async user => {
+            if (!user) {
+                currentUser = null;
+                currentUserRole = 'user';
+                currentProjekt = null;
+                projectsCache = [];
+                updateAuthUI();
+                showView('auth');
+                return;
+            }
+
+            currentUser = user;
+            await ensureUserProfile(user);
+            await loadWizardQuestions();
+            await loadProjects();
+            updateAuthUI();
+            showView('home');
+        });
+    } else {
+        await loadProjects();
+        updateAuthUI();
+        showView('home');
+        if (window.firebaseConfig?.apiKey) {
+            showModal(
+                `Firebase konnte nicht aktiviert werden.\n\n${firebaseInitError || 'Unbekannter Fehler'}\n\nAktuell läuft die App nur lokal.`,
+                { type: 'warning', title: 'Firebase-Problem' }
+            );
+        }
+    }
 });
+
+function initFirebase() {
+    if (!window.firebase || !window.firebaseConfig || !window.firebaseConfig.apiKey) {
+        console.warn('Firebase nicht konfiguriert - lokale Speicherung aktiv.');
+        firebaseReady = false;
+        firebaseInitError = 'Firebase-Konfiguration fehlt oder ist unvollständig.';
+        return;
+    }
+
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(window.firebaseConfig);
+        }
+        firebaseAuth = firebase.auth();
+        firebaseDb = firebase.firestore();
+        firebaseReady = true;
+        firebaseInitError = '';
+    } catch (error) {
+        console.error('Firebase Initialisierung fehlgeschlagen:', error);
+        firebaseReady = false;
+        firebaseInitError = error?.message || 'Firebase konnte nicht initialisiert werden.';
+    }
+}
+
+function getProjectsStorageKey() {
+    const userPart = currentUser?.uid || 'local';
+    return `leitungskonfigurator_projekte_${userPart}`;
+}
+
+function getUserProjectsDoc() {
+    if (!firebaseReady || !currentUser || !firebaseDb) return null;
+    return firebaseDb.collection('users').doc(currentUser.uid).collection('app').doc('projects');
+}
+
+function getWizardConfigDoc() {
+    if (!firebaseReady || !firebaseDb) return null;
+    return firebaseDb.collection('config').doc('wizardQuestions');
+}
+
+async function ensureUserProfile(user) {
+    if (!firebaseReady || !firebaseDb || !user) return;
+
+    const ref = firebaseDb.collection('users').doc(user.uid);
+    const snap = await ref.get();
+    if (!snap.exists) {
+        await ref.set({
+            email: user.email || '',
+            role: 'user',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        currentUserRole = 'user';
+    } else {
+        const data = snap.data() || {};
+        currentUserRole = data.role || 'user';
+    }
+}
+
+async function loadWizardQuestions() {
+    wizardSteps = [...DEFAULT_WIZARD_STEPS];
+    if (!firebaseReady) return;
+
+    try {
+        const ref = getWizardConfigDoc();
+        if (!ref) return;
+        const snap = await ref.get();
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        if (!Array.isArray(data.steps) || data.steps.length === 0) return;
+
+        const valid = data.steps.filter(step =>
+            step && step.id && step.gruppe && step.frage
+        );
+        if (valid.length > 0) {
+            wizardSteps = valid;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Wizard-Fragen:', error);
+    }
+}
+
+function updateAuthUI() {
+    const navLogout = document.getElementById('nav-logout');
+    const navUser = document.getElementById('nav-user');
+    const navAdmin = document.getElementById('nav-admin');
+    if (!navLogout || !navUser || !navAdmin) return;
+
+    if (currentUser) {
+        navLogout.classList.remove('hidden');
+        navUser.classList.remove('hidden');
+        navUser.textContent = currentUser.email || '';
+        if (currentUserRole === 'admin') {
+            navAdmin.classList.remove('hidden');
+        } else {
+            navAdmin.classList.add('hidden');
+        }
+    } else {
+        navLogout.classList.add('hidden');
+        navUser.classList.add('hidden');
+        navAdmin.classList.add('hidden');
+        navUser.textContent = '';
+    }
+}
+
+async function loginUser() {
+    if (!firebaseReady || !firebaseAuth) {
+        await showModal('Firebase ist nicht konfiguriert. Bitte zuerst `firebase-config.js` ausfüllen.', {
+            type: 'warning',
+            title: 'Firebase fehlt'
+        });
+        return;
+    }
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) {
+        showModal('Bitte E-Mail und Passwort eingeben.', { type: 'warning', title: 'Fehlende Eingabe' });
+        return;
+    }
+    try {
+        await firebaseAuth.signInWithEmailAndPassword(email, password);
+        await loadProjects();
+        updateAuthUI();
+        showView('home');
+    } catch (error) {
+        showModal(`Anmeldung fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
+}
+
+async function registerUser() {
+    if (!firebaseReady || !firebaseAuth) {
+        await showModal('Firebase ist nicht konfiguriert. Bitte zuerst `firebase-config.js` ausfüllen.', {
+            type: 'warning',
+            title: 'Firebase fehlt'
+        });
+        return;
+    }
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const repeat = document.getElementById('auth-password-repeat').value;
+    if (!email || !password) {
+        showModal('Bitte E-Mail und Passwort eingeben.', { type: 'warning', title: 'Fehlende Eingabe' });
+        return;
+    }
+    if (password !== repeat) {
+        showModal('Passwort und Wiederholung stimmen nicht überein.', { type: 'warning', title: 'Eingabe prüfen' });
+        return;
+    }
+    try {
+        await firebaseAuth.createUserWithEmailAndPassword(email, password);
+        showModal('Registrierung erfolgreich. Sie sind jetzt angemeldet.', { type: 'success', title: 'Erfolg' });
+    } catch (error) {
+        showModal(`Registrierung fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
+}
+
+async function logoutUser() {
+    if (!currentUser) {
+        showView('auth');
+        return;
+    }
+
+    if (firebaseReady && firebaseAuth) {
+        await firebaseAuth.signOut();
+    } else {
+        currentUser = null;
+        showView('auth');
+    }
+}
 
 async function loadKatalog() {
     try {
@@ -214,6 +421,10 @@ async function loadKatalog() {
 
 // ===== Navigation =====
 function showView(viewName) {
+    if (firebaseReady && !currentUser && viewName !== 'auth') {
+        viewName = 'auth';
+    }
+
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     
     const view = document.getElementById('view-' + viewName);
@@ -222,8 +433,13 @@ function showView(viewName) {
     }
     
     switch(viewName) {
+        case 'auth':
+            break;
         case 'home':
             loadProjects();
+            break;
+        case 'admin':
+            renderAdminView();
             break;
         case 'projekt-form':
             break;
@@ -263,12 +479,32 @@ function saveLeitungAndNotify() {
 
 // ===== Projekt-Management =====
 function getProjects() {
-    const data = localStorage.getItem('leitungskonfigurator_projekte');
-    return data ? JSON.parse(data) : [];
+    return Array.isArray(projectsCache) ? projectsCache : [];
 }
 
 function saveProjects(projects) {
-    localStorage.setItem('leitungskonfigurator_projekte', JSON.stringify(projects));
+    projectsCache = Array.isArray(projects) ? projects : [];
+    localStorage.setItem(getProjectsStorageKey(), JSON.stringify(projectsCache));
+    if (!currentUser) {
+        localStorage.setItem('leitungskonfigurator_projekte', JSON.stringify(projectsCache));
+    }
+
+    const ref = getUserProjectsDoc();
+    if (ref) {
+        ref.set({
+            projects: projectsCache,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(error => {
+            console.error('Fehler beim Speichern in Firestore:', error);
+            if (!firestoreErrorShown) {
+                firestoreErrorShown = true;
+                showModal(`Firestore-Speichern fehlgeschlagen:\n${error.message}`, {
+                    type: 'danger',
+                    title: 'Firebase Fehler'
+                });
+            }
+        });
+    }
 }
 
 function persistCurrentProjekt() {
@@ -279,6 +515,74 @@ function persistCurrentProjekt() {
         projects[idx] = currentProjekt;
         saveProjects(projects);
     }
+}
+
+async function loadProjects() {
+    const liste = document.getElementById('projekt-liste');
+    const empty = document.getElementById('keine-projekte');
+
+    if (firebaseReady && currentUser) {
+        try {
+            const ref = getUserProjectsDoc();
+            const snap = ref ? await ref.get() : null;
+            const remoteProjects = snap?.exists ? (snap.data().projects || []) : [];
+            projectsCache = Array.isArray(remoteProjects) ? remoteProjects : [];
+            localStorage.setItem(getProjectsStorageKey(), JSON.stringify(projectsCache));
+        } catch (error) {
+            console.error('Fehler beim Laden aus Firestore:', error);
+            if (!firestoreErrorShown) {
+                firestoreErrorShown = true;
+                showModal(`Firestore-Laden fehlgeschlagen:\n${error.message}`, {
+                    type: 'danger',
+                    title: 'Firebase Fehler'
+                });
+            }
+            const fallback = localStorage.getItem(getProjectsStorageKey());
+            projectsCache = fallback ? JSON.parse(fallback) : [];
+        }
+    } else {
+        const data = localStorage.getItem(getProjectsStorageKey()) || localStorage.getItem('leitungskonfigurator_projekte');
+        projectsCache = data ? JSON.parse(data) : [];
+    }
+    
+    const projects = getProjects();
+    
+    if (projects.length === 0) {
+        liste.innerHTML = '';
+        liste.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    
+    liste.style.display = 'grid';
+    empty.style.display = 'none';
+    
+    liste.innerHTML = projects.map(p => `
+        <div class="projekt-card" onclick="openProjekt('${p.id}')" title="Projekt öffnen">
+            <div class="projekt-info">
+                <h3>
+                    <span class="projekt-nummer">${escapeHtml(p.projektnummer)}</span>
+                    ${escapeHtml(p.name)}
+                </h3>
+                <div class="projekt-meta">
+                    ${p.kunde ? `<span>Kunde: ${escapeHtml(p.kunde)}</span>` : ''}
+                    ${p.liefertermin ? `<span>Liefertermin: ${formatDate(p.liefertermin)}</span>` : ''}
+                    <span>Leitungen: ${p.leitungen ? p.leitungen.length : 0}</span>
+                </div>
+            </div>
+            <div class="projekt-actions">
+                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); openProjekt('${p.id}')">
+                    Öffnen
+                </button>
+                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editProjekt('${p.id}')">
+                    Bearbeiten
+                </button>
+                <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteProjekt('${p.id}')">
+                    Löschen
+                </button>
+            </div>
+        </div>
+    `).join('');
 }
 
 function ensureWizardAnswers(projekt) {
@@ -373,49 +677,6 @@ function importProjects(event) {
     reader.readAsText(file);
 }
 
-function loadProjects() {
-    const projects = getProjects();
-    const liste = document.getElementById('projekt-liste');
-    const empty = document.getElementById('keine-projekte');
-    
-    if (projects.length === 0) {
-        liste.innerHTML = '';
-        liste.style.display = 'none';
-        empty.style.display = 'block';
-        return;
-    }
-    
-    liste.style.display = 'grid';
-    empty.style.display = 'none';
-    
-    liste.innerHTML = projects.map(p => `
-        <div class="projekt-card" onclick="openProjekt('${p.id}')" title="Projekt öffnen">
-            <div class="projekt-info">
-                <h3>
-                    <span class="projekt-nummer">${escapeHtml(p.projektnummer)}</span>
-                    ${escapeHtml(p.name)}
-                </h3>
-                <div class="projekt-meta">
-                    ${p.kunde ? `<span>Kunde: ${escapeHtml(p.kunde)}</span>` : ''}
-                    ${p.liefertermin ? `<span>Liefertermin: ${formatDate(p.liefertermin)}</span>` : ''}
-                    <span>Leitungen: ${p.leitungen ? p.leitungen.length : 0}</span>
-                </div>
-            </div>
-            <div class="projekt-actions">
-                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); openProjekt('${p.id}')">
-                    Öffnen
-                </button>
-                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editProjekt('${p.id}')">
-                    Bearbeiten
-                </button>
-                <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteProjekt('${p.id}')">
-                    Löschen
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
 function resetProjektForm() {
     document.getElementById('projekt-form-titel').textContent = 'Neues Projekt anlegen';
     document.getElementById('projekt-form').reset();
@@ -498,8 +759,15 @@ function editProjekt(id) {
 function startProjektWizard() {
     if (!currentProjekt) return;
     ensureWizardAnswers(currentProjekt);
+    if (!wizardSteps.length) {
+        showModal('Keine Assistent-Fragen vorhanden. Bitte als Admin Fragen konfigurieren.', {
+            type: 'warning',
+            title: 'Assistent leer'
+        });
+        return;
+    }
 
-    const firstOpen = SCHALTPLAN_WIZARD_STEPS.findIndex(step => {
+    const firstOpen = wizardSteps.findIndex(step => {
         const val = currentProjekt.wizardAnswers[step.id];
         return !val || !String(val).trim();
     });
@@ -522,7 +790,15 @@ function getWizardArtikelPool() {
     return (katalog && Array.isArray(katalog.artikel)) ? katalog.artikel : [];
 }
 
+function getCurrentWizardStep() {
+    return wizardSteps[wizardStepIndex] || null;
+}
+
 function getWizardDefaultKategorie(step) {
+    if (step?.defaultCategory) return step.defaultCategory;
+    if (Array.isArray(step?.allowedCategories) && step.allowedCategories.length === 1) {
+        return step.allowedCategories[0];
+    }
     const text = (step?.frage || '').toLowerCase();
     if (text.includes('ethercat')) return 'ethercat';
     if (text.includes('power')) return 'power';
@@ -548,9 +824,11 @@ function populateWizardKategorieDropdown() {
     if (!select) return;
 
     const currentValue = select.value;
+    const step = getCurrentWizardStep();
+    const allowed = Array.isArray(step?.allowedCategories) ? step.allowedCategories : null;
     const kategorien = (katalog?.kategorien || [])
         .map(k => ({ value: k.id, label: k.name }))
-        .filter(k => k.value);
+        .filter(k => k.value && (!allowed || allowed.includes(k.value)));
 
     select.innerHTML = '<option value="">-- Bitte wählen --</option>';
     kategorien.forEach(k => {
@@ -817,7 +1095,7 @@ function wizardAddLeitungFromStep() {
     if (!currentProjekt) return;
     ensureWizardAnswers(currentProjekt);
 
-    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    const step = wizardSteps[wizardStepIndex];
     if (!step) return;
 
     const artikelInput = document.getElementById('wizard-artikelnummer');
@@ -877,7 +1155,7 @@ function wizardAddLeitungFromStep() {
 function saveCurrentWizardAnswer() {
     if (!currentProjekt) return;
     ensureWizardAnswers(currentProjekt);
-    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    const step = wizardSteps[wizardStepIndex];
     if (!step) return;
 
     const textarea = document.getElementById('wizard-antwort');
@@ -893,11 +1171,19 @@ function renderProjektWizard() {
 
     ensureWizardAnswers(currentProjekt);
 
-    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    const total = wizardSteps.length;
+    if (total === 0) {
+        showModal('Keine Assistent-Fragen vorhanden. Bitte als Admin Fragen konfigurieren.', {
+            type: 'warning',
+            title: 'Assistent leer'
+        });
+        showView('uebersicht');
+        return;
+    }
     if (wizardStepIndex < 0) wizardStepIndex = 0;
     if (wizardStepIndex >= total) wizardStepIndex = total - 1;
 
-    const step = SCHALTPLAN_WIZARD_STEPS[wizardStepIndex];
+    const step = getCurrentWizardStep();
     const answer = currentProjekt.wizardAnswers[step.id] || '';
 
     document.getElementById('wizard-titel').textContent =
@@ -936,7 +1222,7 @@ function wizardPrev() {
 }
 
 function wizardNext() {
-    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    const total = wizardSteps.length;
     saveCurrentWizardAnswer();
 
     if (wizardStepIndex >= total - 1) {
@@ -951,7 +1237,7 @@ function wizardNext() {
 function wizardJumpToQuestion() {
     const jumpBox = document.getElementById('wizard-jump-box');
     const jumpInput = document.getElementById('wizard-jump-input');
-    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    const total = wizardSteps.length;
     if (!jumpBox || !jumpInput || total === 0) return;
 
     jumpBox.style.display = jumpBox.style.display === 'none' ? 'flex' : 'none';
@@ -970,7 +1256,7 @@ function wizardCancelJump() {
 
 function wizardApplyJump() {
     const jumpInput = document.getElementById('wizard-jump-input');
-    const total = SCHALTPLAN_WIZARD_STEPS.length;
+    const total = wizardSteps.length;
     if (!jumpInput || total === 0) return;
 
     const target = parseInt(jumpInput.value, 10);
@@ -986,6 +1272,69 @@ function wizardApplyJump() {
     wizardStepIndex = target - 1;
     wizardCancelJump();
     renderProjektWizard();
+}
+
+function renderAdminView() {
+    if (currentUserRole !== 'admin') {
+        showModal('Nur Admin-Benutzer dürfen diese Seite öffnen.', { type: 'warning', title: 'Kein Zugriff' });
+        showView('home');
+        return;
+    }
+
+    const textarea = document.getElementById('admin-wizard-json');
+    if (!textarea) return;
+    textarea.value = JSON.stringify(wizardSteps, null, 2);
+}
+
+async function saveAdminWizardConfig() {
+    if (currentUserRole !== 'admin') {
+        showModal('Nur Admin-Benutzer dürfen speichern.', { type: 'warning', title: 'Kein Zugriff' });
+        return;
+    }
+
+    const textarea = document.getElementById('admin-wizard-json');
+    if (!textarea) return;
+
+    let parsed = null;
+    try {
+        parsed = JSON.parse(textarea.value);
+    } catch (error) {
+        showModal(`JSON ungültig: ${error.message}`, { type: 'danger', title: 'Fehler' });
+        return;
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+        showModal('Bitte ein Array mit mindestens einer Frage angeben.', { type: 'warning', title: 'Formatfehler' });
+        return;
+    }
+
+    const isValid = parsed.every(step =>
+        step && typeof step.id === 'string' && typeof step.gruppe === 'string' && typeof step.frage === 'string'
+    );
+    if (!isValid) {
+        showModal('Jeder Eintrag braucht mindestens id, gruppe und frage als Text.', { type: 'warning', title: 'Formatfehler' });
+        return;
+    }
+
+    wizardSteps = parsed;
+
+    if (firebaseReady) {
+        try {
+            const ref = getWizardConfigDoc();
+            if (ref) {
+                await ref.set({
+                    steps: parsed,
+                    updatedBy: currentUser?.uid || '',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        } catch (error) {
+            showModal(`Speichern in Firestore fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+            return;
+        }
+    }
+
+    showModal('Assistent-Fragen wurden gespeichert.', { type: 'success', title: 'Gespeichert' });
 }
 
 async function deleteProjekt(id) {

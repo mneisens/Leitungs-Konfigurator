@@ -87,6 +87,14 @@ body {
     opacity: 0.8;
 }
 
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .nav-btn {
     background: none;
     border: none;
@@ -100,6 +108,22 @@ body {
 
 .nav-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-user {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+    .nav-user {
+        display: none !important;
+    }
 }
 
 /* ===== Main Content ===== */
@@ -328,6 +352,15 @@ body {
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
+}
+
+.auth-card {
+    max-width: 760px;
+}
+
+.auth-actions {
+    display: flex;
+    gap: 0.75rem;
 }
 
 .form-row {
