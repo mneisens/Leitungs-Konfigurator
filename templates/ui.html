@@ -1,0 +1,20 @@
+<template id="tpl-project-card">
+    <div class="projekt-card" title="Projekt öffnen">
+        <div class="projekt-info">
+            <h3>
+                <span class="projekt-nummer" data-field="nummer"></span>
+                <span data-field="name"></span>
+            </h3>
+            <div class="projekt-meta">
+                <span data-field="kunde" hidden></span>
+                <span data-field="liefertermin" hidden></span>
+                <span data-field="leitungen-count"></span>
+            </div>
+        </div>
+        <div class="projekt-actions">
+            <button type="button" class="btn btn-primary btn-small" data-action="open">Öffnen</button>
+            <button type="button" class="btn btn-secondary btn-small" data-action="edit">Bearbeiten</button>
+            <button type="button" class="btn btn-danger btn-small" data-action="delete">Löschen</button>
+        </div>
+    </div>
+</template>
