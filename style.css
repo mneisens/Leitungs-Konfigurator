@@ -1221,3 +1221,99 @@ body {
 .modal-overlay.modal-info .modal-header {
     background: linear-gradient(135deg, #fff8f3, #fff);
 }
+
+/* Wizard & Admin Erweiterungen */
+.wizard-section {
+    margin-top: 1rem;
+}
+
+.wizard-bauteil-form {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fafafa;
+}
+
+.wizard-bauteil-form h4 {
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+}
+
+.wizard-bauteil-action {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.wizard-created-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.wizard-created-list li {
+    display: grid;
+    grid-template-columns: 1.2fr 2fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.wizard-created-list .count {
+    font-weight: 600;
+    text-align: center;
+}
+
+.admin-steps-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-step-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    background: #fafafa;
+}
+
+.admin-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.admin-step-actions {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.admin-check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+}
+
+.admin-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.admin-editor-actions {
+    margin-top: 1rem;
+}
+
+.admin-json-fallback {
+    margin-top: 1.5rem;
+}
+
+.admin-json-fallback summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}

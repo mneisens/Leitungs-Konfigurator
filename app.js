@@ -5,6 +5,7 @@
 
 // ===== Globale Variablen =====
 let katalog = null;
+let bauteileKatalog = null;
 let leitungGruppen = [];
 let currentProjekt = null;
 let currentLeitungIndex = 0;
@@ -23,48 +24,63 @@ let currentUserRole = 'user';
 let firebaseInitError = '';
 let firestoreErrorShown = false;
 
+const WIZARD_CAT = {
+    ethercat: ['ethercat'],
+    sensor: ['sensor'],
+    power: ['power', 'sonstiges'],
+    oelflex: ['oelflex'],
+    antrieb: ['power', 'sonstiges'],
+    geber: ['sensor', 'power'],
+    mts: ['power', 'sensor'],
+    zuleitung: ['oelflex', 'sonstiges'],
+    panel: ['ethercat', 'power']
+};
+
 const DEFAULT_WIZARD_STEPS = [
-    { id: '000-zuleitung', gruppe: '=000', frage: 'Zuleitung?' },
-    { id: '004-ethercat-1', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 1?' },
-    { id: '004-ethercat-2', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 2?' },
-    { id: '004-ethercat-3', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 3?' },
-    { id: '005-panel-ipc', gruppe: '=005', frage: 'Panel und IPC?' },
-    { id: '007-tuerschalter', gruppe: '=007', frage: 'Türschalter?' },
-    { id: '007-lichtschranken', gruppe: '=007', frage: 'Lichtschranken?' },
-    { id: '007-fussschalter', gruppe: '=007', frage: 'Fußschalter?' },
-    { id: '007-zweihand', gruppe: '=007', frage: 'Zweihand Bedienpult?' },
-    { id: '010-motorleitung', gruppe: '=010', frage: 'Motorleitung?' },
-    { id: '010-geberleitung', gruppe: '=010', frage: 'Geberleitung?' },
-    { id: '011-bremsen', gruppe: '=011', frage: 'Bremsen, Sensorleitung?' },
-    { id: '012-mts-power', gruppe: '=012', frage: 'MTS, Powerleitung?' },
-    { id: '013-dms', gruppe: '=013', frage: 'DMS Sensoren mit M12 Stecker?' },
-    { id: '014-temp-tisch', gruppe: '=014', frage: 'Temperatursensor Tisch, Sensorleitung?' },
-    { id: '014-temp-stoessel', gruppe: '=014', frage: 'Temperatursensor Stößel, Sensorleitung?' },
-    { id: '016-nothalt', gruppe: '=016', frage: 'Not-Halt, Sensorleitung?' },
-    { id: '020-motorleitung', gruppe: '=020', frage: 'Motorleitung?' },
-    { id: '020-geberleitung', gruppe: '=020', frage: 'Geberleitung?' },
-    { id: '021-bremsen', gruppe: '=021', frage: 'Bremsen, Sensorleitung?' },
-    { id: '022-mts-power', gruppe: '=022', frage: 'MTS, Powerleitung?' },
-    { id: '023-dms', gruppe: '=023', frage: 'DMS Sensoren mit M12 Stecker?' },
-    { id: '024-temp-tisch', gruppe: '=024', frage: 'Temperatursensor Tisch, Sensorleitung?' },
-    { id: '024-temp-stoessel', gruppe: '=024', frage: 'Temperatursensor Stößel, Sensorleitung?' },
-    { id: '026-nothalt', gruppe: '=026', frage: 'Not-Halt, Sensorleitung?' },
-    { id: '030-motorleitung', gruppe: '=030', frage: 'Motorleitung?' },
-    { id: '030-geberleitung', gruppe: '=030', frage: 'Geberleitung?' },
-    { id: '031-bremsen', gruppe: '=031', frage: 'Bremsen, Sensorleitung?' },
-    { id: '032-mts-power', gruppe: '=032', frage: 'MTS, Powerleitung?' },
-    { id: '033-dms', gruppe: '=033', frage: 'DMS Sensoren mit M12 Stecker?' },
-    { id: '034-temp-tisch', gruppe: '=034', frage: 'Temperatursensor Tisch, Sensorleitung?' },
-    { id: '034-temp-stoessel', gruppe: '=034', frage: 'Temperatursensor Stößel, Sensorleitung?' },
-    { id: '036-nothalt', gruppe: '=036', frage: 'Not-Halt, Sensorleitung?' },
-    { id: '040-motorleitung', gruppe: '=040', frage: 'Motorleitung?' },
-    { id: '040-geberleitung', gruppe: '=040', frage: 'Geberleitung?' },
-    { id: '041-bremsen', gruppe: '=041', frage: 'Bremsen, Sensorleitung?' },
-    { id: '042-mts-power', gruppe: '=042', frage: 'MTS, Powerleitung?' },
-    { id: '043-dms', gruppe: '=043', frage: 'DMS Sensoren mit M12 Stecker?' },
-    { id: '044-temp-tisch', gruppe: '=044', frage: 'Temperatursensor Tisch, Sensorleitung?' },
-    { id: '044-temp-stoessel', gruppe: '=044', frage: 'Temperatursensor Stößel, Sensorleitung?' },
-    { id: '046-nothalt', gruppe: '=046', frage: 'Not-Halt, Sensorleitung?' }
+    { id: '000-zuleitung', gruppe: '=000', frage: 'Zuleitung?', allowedCategories: WIZARD_CAT.zuleitung },
+    { id: '000-kuehlgeraet', gruppe: '=000', frage: 'Kühlgerät?', allowedCategories: WIZARD_CAT.oelflex, bauteilTypen: ['kuehlgeraet', 'harting'], optional: true },
+    { id: '004-ethercat-1', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 1?', allowedCategories: WIZARD_CAT.ethercat, defaultCategory: 'ethercat' },
+    { id: '004-ethercat-2', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 2?', allowedCategories: WIZARD_CAT.ethercat, defaultCategory: 'ethercat' },
+    { id: '004-ethercat-3', gruppe: '=004', frage: 'Reihenfolge EtherCAT Strang 3?', allowedCategories: WIZARD_CAT.ethercat, defaultCategory: 'ethercat' },
+    { id: '005-panel-ipc', gruppe: '=005', frage: 'Panel und IPC?', allowedCategories: WIZARD_CAT.panel, defaultCategory: 'ethercat' },
+    { id: '007-tuerschalter', gruppe: '=007', frage: 'Türschalter?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '007-lichtschranken', gruppe: '=007', frage: 'Lichtschranken?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '007-fussschalter', gruppe: '=007', frage: 'Fußschalter?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '007-zweihand', gruppe: '=007', frage: 'Zweihand Bedienpult?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '010-motorleitung', gruppe: '=010', frage: 'Motor, Regler und Motorleitung?', allowedCategories: WIZARD_CAT.antrieb, bauteilTypen: ['motor', 'regler'], defaultCategory: 'power' },
+    { id: '010-geberleitung', gruppe: '=010', frage: 'Geberleitung?', allowedCategories: WIZARD_CAT.geber, defaultCategory: 'sensor' },
+    { id: '011-bremsen', gruppe: '=011', frage: 'Bremsen, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '012-mts-power', gruppe: '=012', frage: 'MTS, Powerleitung?', allowedCategories: WIZARD_CAT.mts, defaultCategory: 'power' },
+    { id: '013-dms', gruppe: '=013', frage: 'DMS Sensoren mit M12 Stecker?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '014-temp-tisch', gruppe: '=014', frage: 'Temperatursensor Tisch, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '014-temp-stoessel', gruppe: '=014', frage: 'Temperatursensor Stößel, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '016-nothalt', gruppe: '=016', frage: 'Not-Halt, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '018-vorschub', gruppe: '=018', frage: 'Vorschub (Motor, Regler, Leitungen)?', allowedCategories: ['power', 'sensor'], bauteilTypen: ['motor', 'regler'], defaultCategory: 'power' },
+    { id: '020-motorleitung', gruppe: '=020', frage: 'Motor, Regler und Motorleitung?', allowedCategories: WIZARD_CAT.antrieb, bauteilTypen: ['motor', 'regler'], defaultCategory: 'power' },
+    { id: '020-geberleitung', gruppe: '=020', frage: 'Geberleitung?', allowedCategories: WIZARD_CAT.geber, defaultCategory: 'sensor' },
+    { id: '021-bremsen', gruppe: '=021', frage: 'Bremsen, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '022-mts-power', gruppe: '=022', frage: 'MTS, Powerleitung?', allowedCategories: WIZARD_CAT.mts, defaultCategory: 'power' },
+    { id: '023-dms', gruppe: '=023', frage: 'DMS Sensoren mit M12 Stecker?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '024-temp-tisch', gruppe: '=024', frage: 'Temperatursensor Tisch, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '024-temp-stoessel', gruppe: '=024', frage: 'Temperatursensor Stößel, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '026-nothalt', gruppe: '=026', frage: 'Not-Halt, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '030-motorleitung', gruppe: '=030', frage: 'Motor, Regler und Motorleitung?', allowedCategories: WIZARD_CAT.antrieb, bauteilTypen: ['motor', 'regler'], defaultCategory: 'power' },
+    { id: '030-geberleitung', gruppe: '=030', frage: 'Geberleitung?', allowedCategories: WIZARD_CAT.geber, defaultCategory: 'sensor' },
+    { id: '031-bremsen', gruppe: '=031', frage: 'Bremsen, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '032-mts-power', gruppe: '=032', frage: 'MTS, Powerleitung?', allowedCategories: WIZARD_CAT.mts, defaultCategory: 'power' },
+    { id: '033-dms', gruppe: '=033', frage: 'DMS Sensoren mit M12 Stecker?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '034-temp-tisch', gruppe: '=034', frage: 'Temperatursensor Tisch, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '034-temp-stoessel', gruppe: '=034', frage: 'Temperatursensor Stößel, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '036-nothalt', gruppe: '=036', frage: 'Not-Halt, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '040-motorleitung', gruppe: '=040', frage: 'Motor, Regler und Motorleitung?', allowedCategories: WIZARD_CAT.antrieb, bauteilTypen: ['motor', 'regler'], defaultCategory: 'power' },
+    { id: '040-geberleitung', gruppe: '=040', frage: 'Geberleitung?', allowedCategories: WIZARD_CAT.geber, defaultCategory: 'sensor' },
+    { id: '041-bremsen', gruppe: '=041', frage: 'Bremsen, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '042-mts-power', gruppe: '=042', frage: 'MTS, Powerleitung?', allowedCategories: WIZARD_CAT.mts, defaultCategory: 'power' },
+    { id: '043-dms', gruppe: '=043', frage: 'DMS Sensoren mit M12 Stecker?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '044-temp-tisch', gruppe: '=044', frage: 'Temperatursensor Tisch, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '044-temp-stoessel', gruppe: '=044', frage: 'Temperatursensor Stößel, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '046-nothalt', gruppe: '=046', frage: 'Not-Halt, Sensorleitung?', allowedCategories: WIZARD_CAT.sensor, defaultCategory: 'sensor' },
+    { id: '250-steckdosen', gruppe: '=250', frage: 'Steckdosen schalten (XS1/XS4)?', allowedCategories: WIZARD_CAT.oelflex, bauteilTypen: ['steckdose'], mengenfeld: { aktiv: true, label: 'Anzahl Steckdosen' }, optional: true, defaultCategory: 'oelflex' }
 ];
 
 // ===== Modal Dialog Funktionen =====
@@ -300,7 +316,7 @@ async function loadWizardQuestions() {
             step && step.id && step.gruppe && step.frage
         );
         if (valid.length > 0) {
-            wizardSteps = valid;
+            wizardSteps = valid.map((s, i) => normalizeWizardStep(s, i));
         }
     } catch (error) {
         console.error('Fehler beim Laden der Wizard-Fragen:', error);
@@ -397,16 +413,19 @@ async function logoutUser() {
 
 async function loadKatalog() {
     try {
-        const [katalogResponse, gruppenResponse] = await Promise.all([
+        const [katalogResponse, gruppenResponse, bauteileResponse] = await Promise.all([
             fetch('data/leitungen.json'),
-            fetch('data/gruppen.json')
+            fetch('data/gruppen.json'),
+            fetch('data/bauteile.json')
         ]);
 
         katalog = await katalogResponse.json();
         const gruppenData = await gruppenResponse.json();
         leitungGruppen = Array.isArray(gruppenData.gruppen) ? gruppenData.gruppen : [];
+        bauteileKatalog = await bauteileResponse.json();
         console.log('Katalog geladen:', katalog);
         console.log('Leitungsgruppen geladen:', leitungGruppen.length);
+        console.log('Bauteile geladen:', bauteileKatalog?.artikel?.length || 0);
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         katalog = {
@@ -416,6 +435,7 @@ async function loadKatalog() {
             standardlaengen: []
         };
         leitungGruppen = [];
+        bauteileKatalog = { bauteiltypen: [], artikel: [] };
     }
 }
 
@@ -590,6 +610,9 @@ function ensureWizardAnswers(projekt) {
     if (!projekt.wizardAnswers || typeof projekt.wizardAnswers !== 'object') {
         projekt.wizardAnswers = {};
     }
+    if (!Array.isArray(projekt.bauteile)) {
+        projekt.bauteile = [];
+    }
 }
 
 // ===== Export / Import Funktionen =====
@@ -698,6 +721,7 @@ function saveProjekt(event) {
         notiz: document.getElementById('projekt-notiz').value.trim(),
         erstellt: isNew ? new Date().toISOString() : undefined,
         leitungen: [],
+        bauteile: [],
         wizardAnswers: {}
     };
     
@@ -707,6 +731,7 @@ function saveProjekt(event) {
     if (existingIndex >= 0) {
         projekt.erstellt = projects[existingIndex].erstellt;
         projekt.leitungen = projects[existingIndex].leitungen || [];
+        projekt.bauteile = projects[existingIndex].bauteile || [];
         projekt.wizardAnswers = projects[existingIndex].wizardAnswers || {};
         projects[existingIndex] = projekt;
     } else {
@@ -779,6 +804,295 @@ function getArtikelByNummer(artikelnummer) {
     if (!katalog || !Array.isArray(katalog.artikel) || !artikelnummer) return null;
     const gesucht = artikelnummer.trim().toLowerCase();
     return katalog.artikel.find(a => (a.artikelnummer || '').toLowerCase() === gesucht) || null;
+}
+
+function getBauteilByNummer(artikelnummer) {
+    if (!bauteileKatalog || !Array.isArray(bauteileKatalog.artikel) || !artikelnummer) return null;
+    const gesucht = artikelnummer.trim().toLowerCase();
+    return bauteileKatalog.artikel.find(a => (a.artikelnummer || '').toLowerCase() === gesucht) || null;
+}
+
+function getBauteilTypName(typId) {
+    const t = (bauteileKatalog?.bauteiltypen || []).find(x => x.id === typId);
+    return t ? t.name : typId;
+}
+
+function getBauteileByTyp(typ) {
+    return (bauteileKatalog?.artikel || []).filter(a => a.typ === typ);
+}
+
+function stepHasLeitungen(step) {
+    return Array.isArray(step?.allowedCategories) && step.allowedCategories.length > 0;
+}
+
+function stepHasBauteile(step) {
+    return Array.isArray(step?.bauteilTypen) && step.bauteilTypen.length > 0;
+}
+
+function stepHasMengenfeld(step) {
+    return step?.mengenfeld?.aktiv === true;
+}
+
+function stepIsOelflexWizard(step) {
+    const kategorie = getWizardKategorie();
+    if (kategorie === 'oelflex') return true;
+    const cats = step?.allowedCategories;
+    return Array.isArray(cats) && cats.length === 1 && cats[0] === 'oelflex';
+}
+
+function setWizardOelflexMode(active) {
+    const steckerRow = document.getElementById('wizard-stecker-row');
+    const steckerAGroup = document.getElementById('wizard-stecker-a-group');
+    const laengeGroup = document.getElementById('wizard-laenge-group');
+    const oelflexRow = document.getElementById('wizard-oelflex-row');
+    if (steckerRow) steckerRow.style.display = active ? 'none' : '';
+    if (steckerAGroup) steckerAGroup.style.display = active ? 'none' : '';
+    if (laengeGroup) laengeGroup.style.display = active ? 'none' : '';
+    if (oelflexRow) oelflexRow.style.display = active ? '' : 'none';
+}
+
+function populateWizardOelflexAdern() {
+    const adernSelect = document.getElementById('wizard-oelflex-adern');
+    if (!adernSelect) return;
+    const adern = new Set();
+    getOelflexArtikel().forEach(a => {
+        const v = parseOelflexVariante(a.beschreibung);
+        if (v) adern.add(v.adern);
+    });
+    const sorted = Array.from(adern).sort((a, b) => Number(a) - Number(b));
+    adernSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    sorted.forEach(n => {
+        const option = document.createElement('option');
+        option.value = n;
+        option.textContent = `${n} Adern`;
+        adernSelect.appendChild(option);
+    });
+    populateWizardOelflexQuerschnitt(adernSelect.value);
+}
+
+function populateWizardOelflexQuerschnitt(adern) {
+    const querschnittSelect = document.getElementById('wizard-oelflex-querschnitt');
+    if (!querschnittSelect) return;
+    const querschnitte = [];
+    getOelflexArtikel().forEach(a => {
+        const v = parseOelflexVariante(a.beschreibung);
+        if (v && (!adern || v.adern === String(adern)) && !querschnitte.includes(v.querschnitt)) {
+            querschnitte.push(v.querschnitt);
+        }
+    });
+    querschnitte.sort((a, b) => parseFloat(a.replace(',', '.')) - parseFloat(b.replace(',', '.')));
+    querschnittSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    querschnitte.forEach(q => {
+        const option = document.createElement('option');
+        option.value = q;
+        option.textContent = `${q} mm²`;
+        querschnittSelect.appendChild(option);
+    });
+}
+
+function onWizardOelflexChange() {
+    const adern = document.getElementById('wizard-oelflex-adern')?.value;
+    populateWizardOelflexQuerschnitt(adern);
+    updateWizardAutoArtikel();
+}
+
+function applyWizardStepVisibility(step) {
+    const leitungenSection = document.getElementById('wizard-leitungen-section');
+    const bauteileSection = document.getElementById('wizard-bauteile-section');
+    const mengenfeldSection = document.getElementById('wizard-mengenfeld-section');
+    const optionalHint = document.getElementById('wizard-optional-hint');
+
+    if (leitungenSection) {
+        leitungenSection.style.display = stepHasLeitungen(step) ? '' : 'none';
+    }
+    if (bauteileSection) {
+        bauteileSection.style.display = stepHasBauteile(step) ? '' : 'none';
+    }
+    if (mengenfeldSection) {
+        mengenfeldSection.style.display = stepHasMengenfeld(step) ? '' : 'none';
+        const label = document.getElementById('wizard-menge-label');
+        if (label && step?.mengenfeld?.label) {
+            label.textContent = step.mengenfeld.label;
+        }
+    }
+    if (optionalHint) {
+        optionalHint.textContent = step?.optional
+            ? 'Diese Frage ist optional – leer lassen und weiter ist möglich.'
+            : 'Bitte passende Leitungen und/oder Bauteile anlegen.';
+    }
+}
+
+function renderWizardBauteilForms(step) {
+    const container = document.getElementById('wizard-bauteil-forms');
+    if (!container || !step || !stepHasBauteile(step)) {
+        if (container) container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = step.bauteilTypen.map(typ => {
+        const bauteile = getBauteileByTyp(typ);
+        const hersteller = Array.from(new Set(bauteile.map(b => b.hersteller))).sort((a, b) => a.localeCompare(b, 'de'));
+        const herstellerOptions = hersteller.map(h =>
+            `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`
+        ).join('');
+        const artikelOptions = bauteile.map(b =>
+            `<option value="${escapeHtml(b.artikelnummer)}" data-hersteller="${escapeHtml(b.hersteller)}">${escapeHtml(b.artikelnummer)} – ${escapeHtml(b.beschreibung)}</option>`
+        ).join('');
+
+        return `
+            <div class="wizard-bauteil-form" data-bauteil-typ="${escapeHtml(typ)}">
+                <h4>${escapeHtml(getBauteilTypName(typ))}</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Hersteller</label>
+                        <select class="wizard-bauteil-hersteller" onchange="filterWizardBauteilSelect(this)">
+                            <option value="">-- Alle --</option>
+                            ${herstellerOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Bauteil</label>
+                        <select class="wizard-bauteil-select">
+                            <option value="">-- Bitte wählen --</option>
+                            ${artikelOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Anzahl</label>
+                        <input type="number" class="wizard-bauteil-anzahl" min="1" step="1" value="1">
+                    </div>
+                    <div class="form-group wizard-bauteil-action">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-success btn-small" onclick="wizardAddBauteilFromStep('${escapeHtml(typ)}')">+ Hinzufügen</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterWizardBauteilSelect(herstellerSelect) {
+    const form = herstellerSelect.closest('.wizard-bauteil-form');
+    if (!form) return;
+    const hersteller = herstellerSelect.value;
+    const select = form.querySelector('.wizard-bauteil-select');
+    if (!select) return;
+    Array.from(select.options).forEach((opt, idx) => {
+        if (idx === 0) return;
+        const match = !hersteller || opt.dataset.hersteller === hersteller;
+        opt.hidden = !match;
+        if (!match && opt.selected) opt.selected = false;
+    });
+}
+
+function renderWizardCreatedBauteile(step) {
+    const container = document.getElementById('wizard-created-bauteile-list');
+    if (!container || !currentProjekt || !step) return;
+
+    const bauteile = (currentProjekt.bauteile || []).filter(b => b.wizardStepId === step.id);
+    if (bauteile.length === 0) {
+        container.innerHTML = '<p class="konfig-list-empty">Noch keine Bauteile zu dieser Frage angelegt.</p>';
+        return;
+    }
+
+    const grouped = new Map();
+    bauteile.forEach(b => {
+        const key = `${b.artikelnummer}|||${b.bezeichnung || ''}`;
+        if (!grouped.has(key)) {
+            grouped.set(key, {
+                artikelnummer: b.artikelnummer,
+                bezeichnung: b.bezeichnung || '-',
+                typ: b.typ,
+                count: 0,
+                ids: []
+            });
+        }
+        const g = grouped.get(key);
+        g.count += b.anzahl || 1;
+        g.ids.push(b.id);
+    });
+
+    const rows = Array.from(grouped.values())
+        .sort((a, b) => a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
+        .map(item => `
+            <li>
+                <span class="artikel">${escapeHtml(item.artikelnummer)}</span>
+                <span>${escapeHtml(getBauteilTypName(item.typ))}: ${escapeHtml(item.bezeichnung)}</span>
+                <span class="count">${item.count}</span>
+                <button type="button" class="btn btn-danger btn-small btn-icon" onclick="wizardDeleteBauteil('${escapeHtml(item.ids[0])}')" title="Entfernen">🗑️</button>
+            </li>
+        `).join('');
+
+    container.innerHTML = `
+        <h4>Zu dieser Frage angelegte Bauteile (${bauteile.length})</h4>
+        <ul>${rows}</ul>
+    `;
+}
+
+function wizardAddBauteilFromStep(typ) {
+    if (!currentProjekt) return;
+    ensureWizardAnswers(currentProjekt);
+    const step = getCurrentWizardStep();
+    if (!step) return;
+
+    const form = document.querySelector(`.wizard-bauteil-form[data-bauteil-typ="${typ}"]`);
+    if (!form) return;
+
+    const select = form.querySelector('.wizard-bauteil-select');
+    const anzahlInput = form.querySelector('.wizard-bauteil-anzahl');
+    const artikelnummer = select?.value?.trim();
+    if (!artikelnummer) {
+        showModal('Bitte ein Bauteil auswählen.', { type: 'warning', title: 'Bauteil fehlt' });
+        return;
+    }
+
+    let anzahl = parseInt(anzahlInput?.value, 10);
+    if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
+
+    const bauteil = getBauteilByNummer(artikelnummer);
+    const entry = {
+        id: generateId('btl'),
+        wizardStepId: step.id,
+        gruppe: step.gruppe,
+        typ: typ,
+        hersteller: bauteil?.hersteller || '',
+        artikelnummer: bauteil ? bauteil.artikelnummer : artikelnummer,
+        bezeichnung: bauteil?.beschreibung || getBauteilTypName(typ),
+        anzahl: anzahl
+    };
+
+    currentProjekt.bauteile.push(entry);
+    persistCurrentProjekt();
+    if (select) select.value = '';
+    if (anzahlInput) anzahlInput.value = '1';
+    renderWizardCreatedBauteile(step);
+}
+
+function wizardDeleteBauteil(bauteilId) {
+    if (!currentProjekt || !bauteilId) return;
+    const step = getCurrentWizardStep();
+    currentProjekt.bauteile = (currentProjekt.bauteile || []).filter(b => b.id !== bauteilId);
+    persistCurrentProjekt();
+    renderWizardCreatedBauteile(step);
+}
+
+function wizardDeleteLeitungFromStep(leitungId) {
+    if (!currentProjekt || !leitungId) return;
+    const step = getCurrentWizardStep();
+    currentProjekt.leitungen = (currentProjekt.leitungen || []).filter(l => l.id !== leitungId);
+    currentProjekt.leitungen.forEach((l, idx) => { l.position = idx + 1; });
+    persistCurrentProjekt();
+    renderWizardCreatedLeitungen(step);
+}
+
+function wizardDeleteLeitungenGroup(idsCsv) {
+    if (!currentProjekt || !idsCsv) return;
+    const ids = idsCsv.split(',').map(s => s.trim()).filter(Boolean);
+    const step = getCurrentWizardStep();
+    currentProjekt.leitungen = (currentProjekt.leitungen || []).filter(l => !ids.includes(l.id));
+    currentProjekt.leitungen.forEach((l, idx) => { l.position = idx + 1; });
+    persistCurrentProjekt();
+    renderWizardCreatedLeitungen(step);
 }
 
 function getWizardDefaultBezeichnung(step) {
@@ -877,9 +1191,25 @@ function getWizardPairMatches(hersteller, steckerABase, steckerBBase) {
 }
 
 function onWizardKategorieChange() {
+    const step = getCurrentWizardStep();
+    const kategorie = getWizardKategorie();
     const steckerASelect = document.getElementById('wizard-stecker-a');
     const steckerBSelect = document.getElementById('wizard-stecker-b');
     const laengeSelect = document.getElementById('wizard-laenge');
+
+    if (kategorie === 'oelflex' || stepIsOelflexWizard(step)) {
+        setWizardOelflexMode(true);
+        populateWizardOelflexAdern();
+        const herstellerSelect = document.getElementById('wizard-hersteller');
+        const oelflexHersteller = getOelflexHersteller();
+        if (oelflexHersteller && herstellerSelect) {
+            herstellerSelect.value = oelflexHersteller;
+        }
+        updateWizardAutoArtikel();
+        return;
+    }
+
+    setWizardOelflexMode(false);
     steckerASelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
     steckerBSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
     laengeSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
@@ -990,6 +1320,38 @@ function updateWizardAutoArtikel() {
     const artikelInput = document.getElementById('wizard-artikelnummer');
     if (!resultDiv || !artikelInput) return;
 
+    const step = getCurrentWizardStep();
+    const kategorie = getWizardKategorie();
+
+    if (kategorie === 'oelflex' || stepIsOelflexWizard(step)) {
+        const adern = document.getElementById('wizard-oelflex-adern')?.value;
+        const querschnitt = document.getElementById('wizard-oelflex-querschnitt')?.value;
+        const laengeRaw = document.getElementById('wizard-oelflex-laenge')?.value;
+
+        if (!adern || !querschnitt) {
+            resultDiv.className = 'wizard-auto-result no-match';
+            resultDiv.innerHTML = '<span class="artikel-label">Aderzahl und Querschnitt wählen</span>';
+            return;
+        }
+
+        const artikel = findOelflexArtikel(adern, querschnitt);
+        if (!artikel) {
+            resultDiv.className = 'wizard-auto-result no-match';
+            resultDiv.innerHTML = '<span class="artikel-label">Kein passender Ölflex-Artikel gefunden</span>';
+            return;
+        }
+
+        artikelInput.value = artikel.artikelnummer || '';
+        const laengeHinweis = laengeRaw ? `${laengeRaw} m (Meterware)` : 'Bitte Länge in Metern eingeben';
+        resultDiv.className = 'wizard-auto-result';
+        resultDiv.innerHTML = `
+            <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer)}</span>
+            <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung)}</span>
+            <span class="artikel-hinweis">${escapeHtml(laengeHinweis)}</span>
+        `;
+        return;
+    }
+
     const hersteller = document.getElementById('wizard-hersteller').value;
     const steckerABase = document.getElementById('wizard-stecker-a').value;
     const steckerBBase = document.getElementById('wizard-stecker-b').value;
@@ -1070,9 +1432,11 @@ function renderWizardCreatedLeitungen(step) {
         const bezeichnung = l.bezeichnung || '-';
         const key = `${artikel}|||${bezeichnung}`;
         if (!grouped.has(key)) {
-            grouped.set(key, { artikel, bezeichnung, count: 0 });
+            grouped.set(key, { artikel, bezeichnung, count: 0, ids: [] });
         }
-        grouped.get(key).count += 1;
+        const g = grouped.get(key);
+        g.count += 1;
+        g.ids.push(l.id);
     });
 
     const rows = Array.from(grouped.values())
@@ -1082,6 +1446,7 @@ function renderWizardCreatedLeitungen(step) {
                 <span class="artikel">${escapeHtml(item.artikel)}</span>
                 <span>${escapeHtml(item.bezeichnung)}</span>
                 <span class="count">${item.count}</span>
+                <button type="button" class="btn btn-danger btn-small btn-icon" onclick="wizardDeleteLeitungenGroup('${escapeHtml(item.ids.join(','))}')" title="Entfernen">🗑️</button>
             </li>
         `).join('');
 
@@ -1117,6 +1482,15 @@ function wizardAddLeitungFromStep() {
 
     const artikel = getArtikelByNummer(artikelnummerRaw);
     const bezeichnung = bezInput.value.trim() || getWizardDefaultBezeichnung(step);
+    const kategorie = getWizardKategorie() || artikel?.kategorie || 'sonstiges';
+
+    let laenge = artikel?.laenge || 0;
+    if (kategorie === 'oelflex' || artikel?.meterware) {
+        const oelflexLaenge = parseFloat(document.getElementById('wizard-oelflex-laenge')?.value);
+        if (!Number.isNaN(oelflexLaenge) && oelflexLaenge > 0) {
+            laenge = oelflexLaenge;
+        }
+    }
 
     if (!Array.isArray(currentProjekt.leitungen)) {
         currentProjekt.leitungen = [];
@@ -1127,14 +1501,14 @@ function wizardAddLeitungFromStep() {
             id: generateId('ltg'),
             position: currentProjekt.leitungen.length + 1,
             bezeichnung: bezeichnung,
-            kategorie: artikel?.kategorie || 'sonstiges',
+            kategorie: kategorie,
             gruppe: step.gruppe,
             hersteller: artikel?.hersteller || '',
             artikelnummer: artikel ? artikel.artikelnummer : artikelnummerRaw,
             artikelCustom: '',
-            laenge: artikel?.laenge || 0,
-            steckerA: artikel?.steckerA || '',
-            steckerB: artikel?.steckerB || '',
+            laenge: laenge,
+            steckerA: artikel?.steckerA || (kategorie === 'oelflex' ? 'offen' : ''),
+            steckerB: artikel?.steckerB || (kategorie === 'oelflex' ? 'offen' : ''),
             notiz: artikel ? '' : 'Im Schaltplan-Assistent ohne Katalogtreffer angelegt',
             erledigt: false,
             wizardStepId: step.id
@@ -1200,18 +1574,29 @@ function renderProjektWizard() {
     document.getElementById('wizard-anzahl').value = '1';
     document.getElementById('wizard-leitungsbezeichnung').value = '';
     document.getElementById('wizard-leitungsbezeichnung').placeholder = getWizardDefaultBezeichnung(step);
+    document.getElementById('wizard-oelflex-laenge').value = '';
+    document.getElementById('wizard-menge').value = '1';
 
     const prevBtn = document.getElementById('wizard-prev');
     const nextBtn = document.getElementById('wizard-next');
     prevBtn.style.display = wizardStepIndex > 0 ? 'inline-flex' : 'none';
     nextBtn.textContent = wizardStepIndex === total - 1 ? 'Fertig zur Übersicht' : 'Weiter →';
 
-    populateWizardArtikelVorschlaege();
-    populateWizardKategorieDropdown();
-    document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
-    populateWizardHerstellerDropdown();
-    onWizardHerstellerChange();
-    renderWizardCreatedLeitungen(step);
+    applyWizardStepVisibility(step);
+    renderWizardBauteilForms(step);
+    renderWizardCreatedBauteile(step);
+
+    if (stepHasLeitungen(step)) {
+        populateWizardArtikelVorschlaege();
+        populateWizardKategorieDropdown();
+        document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
+        populateWizardHerstellerDropdown();
+        onWizardKategorieChange();
+        renderWizardCreatedLeitungen(step);
+    } else {
+        setWizardOelflexMode(false);
+        renderWizardCreatedLeitungen(step);
+    }
 }
 
 function wizardPrev() {
@@ -1274,6 +1659,228 @@ function wizardApplyJump() {
     renderProjektWizard();
 }
 
+function getAdminKategorieOptions() {
+    return (katalog?.kategorien || [
+        { id: 'ethercat', name: 'EtherCAT Leitung' },
+        { id: 'power', name: 'Power Leitung' },
+        { id: 'sensor', name: 'Sensorleitung' },
+        { id: 'oelflex', name: 'Ölflexleitung' },
+        { id: 'sonstiges', name: 'Sonstiges' }
+    ]).map(k => ({ value: k.id, label: k.name }));
+}
+
+function getAdminBauteilTypOptions() {
+    return (bauteileKatalog?.bauteiltypen || []).map(t => ({ value: t.id, label: t.name }));
+}
+
+function normalizeWizardStep(step, index) {
+    const normalized = {
+        id: String(step?.id || `frage-${index + 1}`).trim(),
+        gruppe: String(step?.gruppe || '=000').trim(),
+        frage: String(step?.frage || 'Neue Frage?').trim()
+    };
+    if (Array.isArray(step?.allowedCategories) && step.allowedCategories.length > 0) {
+        normalized.allowedCategories = step.allowedCategories.filter(Boolean);
+    }
+    if (Array.isArray(step?.bauteilTypen) && step.bauteilTypen.length > 0) {
+        normalized.bauteilTypen = step.bauteilTypen.filter(Boolean);
+    }
+    if (step?.defaultCategory) normalized.defaultCategory = step.defaultCategory;
+    if (step?.optional === true) normalized.optional = true;
+    if (step?.mengenfeld?.aktiv) {
+        normalized.mengenfeld = {
+            aktiv: true,
+            label: String(step.mengenfeld.label || 'Anzahl').trim()
+        };
+    }
+    return normalized;
+}
+
+function validateWizardSteps(steps) {
+    if (!Array.isArray(steps) || steps.length === 0) return { ok: false, message: 'Bitte mindestens eine Frage angeben.' };
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        if (!step?.id || !step?.gruppe || !step?.frage) {
+            return { ok: false, message: `Frage ${i + 1}: id, gruppe und frage sind Pflichtfelder.` };
+        }
+    }
+    const ids = steps.map(s => s.id);
+    if (new Set(ids).size !== ids.length) {
+        return { ok: false, message: 'Frage-IDs müssen eindeutig sein.' };
+    }
+    return { ok: true, steps: steps.map(normalizeWizardStep) };
+}
+
+function syncAdminJsonTextarea() {
+    const textarea = document.getElementById('admin-wizard-json');
+    if (textarea) {
+        textarea.value = JSON.stringify(wizardSteps, null, 2);
+    }
+}
+
+function renderAdminStepsEditor() {
+    const container = document.getElementById('admin-steps-editor');
+    if (!container) return;
+
+    const kategorien = getAdminKategorieOptions();
+    const bauteiltypen = getAdminBauteilTypOptions();
+
+    container.innerHTML = wizardSteps.map((step, index) => {
+        const allowed = step.allowedCategories || [];
+        const bauteilTypen = step.bauteilTypen || [];
+        const kategorieChecks = kategorien.map(k => `
+            <label class="admin-check">
+                <input type="checkbox" data-field="allowedCategories" value="${escapeHtml(k.value)}" ${allowed.includes(k.value) ? 'checked' : ''}>
+                ${escapeHtml(k.label)}
+            </label>
+        `).join('');
+        const bauteilChecks = bauteiltypen.map(t => `
+            <label class="admin-check">
+                <input type="checkbox" data-field="bauteilTypen" value="${escapeHtml(t.value)}" ${bauteilTypen.includes(t.value) ? 'checked' : ''}>
+                ${escapeHtml(t.label)}
+            </label>
+        `).join('');
+        const defaultOptions = ['', ...kategorien.map(k => k.value)].map(v => {
+            const label = v ? kategorien.find(k => k.value === v)?.label || v : '-- Keine --';
+            return `<option value="${escapeHtml(v)}" ${step.defaultCategory === v ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+        }).join('');
+
+        return `
+            <div class="admin-step-card" data-step-index="${index}">
+                <div class="admin-step-header">
+                    <strong>Frage ${index + 1}</strong>
+                    <div class="admin-step-actions">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="adminMoveWizardStep(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="adminMoveWizardStep(${index}, 1)" ${index === wizardSteps.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button type="button" class="btn btn-danger btn-small" onclick="adminRemoveWizardStep(${index})">Entfernen</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ID</label>
+                        <input type="text" data-field="id" value="${escapeHtml(step.id || '')}">
+                    </div>
+                    <div class="form-group">
+                        <label>Gruppe</label>
+                        <input type="text" data-field="gruppe" value="${escapeHtml(step.gruppe || '')}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Frage</label>
+                    <input type="text" data-field="frage" value="${escapeHtml(step.frage || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Erlaubte Leitungs-Kategorien</label>
+                    <div class="admin-check-group">${kategorieChecks}</div>
+                </div>
+                <div class="form-group">
+                    <label>Bauteiltypen</label>
+                    <div class="admin-check-group">${bauteilChecks || '<span class="text-muted">Keine Bauteiltypen im Katalog</span>'}</div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Standard-Kategorie</label>
+                        <select data-field="defaultCategory">${defaultOptions}</select>
+                    </div>
+                    <div class="form-group">
+                        <label class="admin-check">
+                            <input type="checkbox" data-field="optional" ${step.optional ? 'checked' : ''}>
+                            Optional
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="admin-check">
+                            <input type="checkbox" data-field="mengenfeldAktiv" ${step.mengenfeld?.aktiv ? 'checked' : ''}>
+                            Mengenfeld anzeigen
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Mengenfeld-Label</label>
+                        <input type="text" data-field="mengenfeldLabel" value="${escapeHtml(step.mengenfeld?.label || 'Anzahl')}">
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function collectAdminStepsFromEditor() {
+    const cards = document.querySelectorAll('.admin-step-card');
+    const steps = [];
+    cards.forEach(card => {
+        const getVal = field => card.querySelector(`[data-field="${field}"]`)?.value?.trim() || '';
+        const allowedCategories = Array.from(card.querySelectorAll('[data-field="allowedCategories"]:checked')).map(el => el.value);
+        const bauteilTypen = Array.from(card.querySelectorAll('[data-field="bauteilTypen"]:checked')).map(el => el.value);
+        const step = {
+            id: getVal('id'),
+            gruppe: getVal('gruppe'),
+            frage: getVal('frage')
+        };
+        if (allowedCategories.length) step.allowedCategories = allowedCategories;
+        if (bauteilTypen.length) step.bauteilTypen = bauteilTypen;
+        const defaultCategory = getVal('defaultCategory');
+        if (defaultCategory) step.defaultCategory = defaultCategory;
+        if (card.querySelector('[data-field="optional"]')?.checked) step.optional = true;
+        if (card.querySelector('[data-field="mengenfeldAktiv"]')?.checked) {
+            step.mengenfeld = {
+                aktiv: true,
+                label: getVal('mengenfeldLabel') || 'Anzahl'
+            };
+        }
+        steps.push(step);
+    });
+    return steps;
+}
+
+function adminAddWizardStep() {
+    wizardSteps.push({
+        id: `frage-${wizardSteps.length + 1}`,
+        gruppe: '=000',
+        frage: 'Neue Frage?',
+        allowedCategories: ['sensor'],
+        optional: true
+    });
+    renderAdminStepsEditor();
+    syncAdminJsonTextarea();
+}
+
+function adminRemoveWizardStep(index) {
+    if (index < 0 || index >= wizardSteps.length) return;
+    wizardSteps.splice(index, 1);
+    renderAdminStepsEditor();
+    syncAdminJsonTextarea();
+}
+
+function adminMoveWizardStep(index, delta) {
+    const newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= wizardSteps.length) return;
+    const tmp = wizardSteps[index];
+    wizardSteps[index] = wizardSteps[newIndex];
+    wizardSteps[newIndex] = tmp;
+    renderAdminStepsEditor();
+    syncAdminJsonTextarea();
+}
+
+function adminLoadFromJson() {
+    const textarea = document.getElementById('admin-wizard-json');
+    if (!textarea) return;
+    try {
+        const parsed = JSON.parse(textarea.value);
+        const result = validateWizardSteps(parsed);
+        if (!result.ok) {
+            showModal(result.message, { type: 'warning', title: 'Formatfehler' });
+            return;
+        }
+        wizardSteps = result.steps;
+        renderAdminStepsEditor();
+        syncAdminJsonTextarea();
+    } catch (error) {
+        showModal(`JSON ungültig: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
+}
+
 function renderAdminView() {
     if (currentUserRole !== 'admin') {
         showModal('Nur Admin-Benutzer dürfen diese Seite öffnen.', { type: 'warning', title: 'Kein Zugriff' });
@@ -1281,9 +1888,8 @@ function renderAdminView() {
         return;
     }
 
-    const textarea = document.getElementById('admin-wizard-json');
-    if (!textarea) return;
-    textarea.value = JSON.stringify(wizardSteps, null, 2);
+    renderAdminStepsEditor();
+    syncAdminJsonTextarea();
 }
 
 async function saveAdminWizardConfig() {
@@ -1292,38 +1898,22 @@ async function saveAdminWizardConfig() {
         return;
     }
 
-    const textarea = document.getElementById('admin-wizard-json');
-    if (!textarea) return;
-
-    let parsed = null;
-    try {
-        parsed = JSON.parse(textarea.value);
-    } catch (error) {
-        showModal(`JSON ungültig: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    const collected = collectAdminStepsFromEditor();
+    const result = validateWizardSteps(collected);
+    if (!result.ok) {
+        showModal(result.message, { type: 'warning', title: 'Formatfehler' });
         return;
     }
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-        showModal('Bitte ein Array mit mindestens einer Frage angeben.', { type: 'warning', title: 'Formatfehler' });
-        return;
-    }
-
-    const isValid = parsed.every(step =>
-        step && typeof step.id === 'string' && typeof step.gruppe === 'string' && typeof step.frage === 'string'
-    );
-    if (!isValid) {
-        showModal('Jeder Eintrag braucht mindestens id, gruppe und frage als Text.', { type: 'warning', title: 'Formatfehler' });
-        return;
-    }
-
-    wizardSteps = parsed;
+    wizardSteps = result.steps;
+    syncAdminJsonTextarea();
 
     if (firebaseReady) {
         try {
             const ref = getWizardConfigDoc();
             if (ref) {
                 await ref.set({
-                    steps: parsed,
+                    steps: wizardSteps,
                     updatedBy: currentUser?.uid || '',
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -1627,10 +2217,122 @@ function populateKategorieDropdown() {
     }
 }
 
+// ===== Ölflex (Meterware): Auswahl über Aderzahl + Querschnitt =====
+
+// Schaltet zwischen Stecker-Ansicht und Ölflex-Ansicht (Aderzahl/Querschnitt) um
+function setOelflexMode(active) {
+    const steckerRow = document.getElementById('stecker-row');
+    const oelflexRow = document.getElementById('oelflex-row');
+    const laengeSelect = document.getElementById('leitung-laenge-select');
+    if (steckerRow) steckerRow.style.display = active ? 'none' : '';
+    if (oelflexRow) oelflexRow.style.display = active ? '' : 'none';
+    // Bei Meterware nur das Meter-Eingabefeld, keine Längen-Auswahlliste
+    if (laengeSelect) laengeSelect.style.display = active ? 'none' : '';
+}
+
+// Liefert alle Ölflex-Artikel aus dem Katalog
+function getOelflexArtikel() {
+    if (!katalog || !katalog.artikel) return [];
+    return katalog.artikel.filter(a => a.kategorie === 'oelflex');
+}
+
+function getOelflexHersteller() {
+    const artikel = getOelflexArtikel();
+    return artikel.length > 0 ? artikel[0].hersteller : '';
+}
+
+// Zerlegt eine Ölflex-Beschreibung in Aderzahl und Querschnitt, z.B. "... 3G1,5" -> {adern:"3", querschnitt:"1,5"}
+function parseOelflexVariante(beschreibung) {
+    if (!beschreibung) return null;
+    const match = beschreibung.match(/(\d+)\s*[GgXx]\s*([\d.,]+)/);
+    if (!match) return null;
+    return { adern: match[1], querschnitt: match[2].replace('.', ',') };
+}
+
+// Findet den Ölflex-Artikel zu einer Aderzahl/Querschnitt-Kombination
+function findOelflexArtikel(adern, querschnitt) {
+    return getOelflexArtikel().find(a => {
+        const v = parseOelflexVariante(a.beschreibung);
+        return v && v.adern === String(adern) && v.querschnitt === String(querschnitt);
+    }) || null;
+}
+
+// Füllt die Aderzahl-Auswahl mit allen verfügbaren Werten
+function populateOelflexAdern(selectedAdern) {
+    const adernSelect = document.getElementById('oelflex-adern');
+    if (!adernSelect) return;
+    const adern = new Set();
+    getOelflexArtikel().forEach(a => {
+        const v = parseOelflexVariante(a.beschreibung);
+        if (v) adern.add(v.adern);
+    });
+    const sorted = Array.from(adern).sort((a, b) => Number(a) - Number(b));
+
+    adernSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    sorted.forEach(n => {
+        const option = document.createElement('option');
+        option.value = n;
+        option.textContent = `${n} Adern`;
+        adernSelect.appendChild(option);
+    });
+
+    if (selectedAdern && sorted.includes(String(selectedAdern))) {
+        adernSelect.value = String(selectedAdern);
+    }
+    populateOelflexQuerschnitt(adernSelect.value);
+}
+
+// Füllt die Querschnitt-Auswahl passend zur gewählten Aderzahl
+function populateOelflexQuerschnitt(adern, selectedQuerschnitt) {
+    const querschnittSelect = document.getElementById('oelflex-querschnitt');
+    if (!querschnittSelect) return;
+
+    const querschnitte = [];
+    getOelflexArtikel().forEach(a => {
+        const v = parseOelflexVariante(a.beschreibung);
+        if (v && (!adern || v.adern === String(adern)) && !querschnitte.includes(v.querschnitt)) {
+            querschnitte.push(v.querschnitt);
+        }
+    });
+    querschnitte.sort((a, b) => parseFloat(a.replace(',', '.')) - parseFloat(b.replace(',', '.')));
+
+    querschnittSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    querschnitte.forEach(q => {
+        const option = document.createElement('option');
+        option.value = q;
+        option.textContent = `${q} mm²`;
+        querschnittSelect.appendChild(option);
+    });
+
+    if (selectedQuerschnitt && querschnitte.includes(String(selectedQuerschnitt))) {
+        querschnittSelect.value = String(selectedQuerschnitt);
+    }
+}
+
+function onOelflexChange() {
+    const adern = document.getElementById('oelflex-adern').value;
+    populateOelflexQuerschnitt(adern, document.getElementById('oelflex-querschnitt').value);
+    updateArtikelVorschlag();
+}
+
 function onKategorieFilterChange() {
     const kategorie = document.getElementById('leitung-kategorie').value;
     const herstellerSelect = document.getElementById('leitung-hersteller');
-    
+
+    // Ölflex-Modus: keine Stecker, sondern Aderzahl + Querschnitt
+    if (kategorie === 'oelflex') {
+        setOelflexMode(true);
+        const oelflexHersteller = getOelflexHersteller();
+        if (oelflexHersteller) {
+            herstellerSelect.value = oelflexHersteller;
+        }
+        populateOelflexAdern();
+        updateArtikelVorschlag();
+        return;
+    }
+
+    setOelflexMode(false);
+
     // Bei EtherCAT, Power und Sensor automatisch Beckhoff auswählen
     if (kategorie === 'ethercat' || kategorie === 'power' || kategorie === 'sensor') {
         herstellerSelect.value = 'Beckhoff';
@@ -2081,7 +2783,41 @@ function updateArtikelVorschlag() {
     
     const vorschlagDiv = document.getElementById('artikel-vorschlag');
     const kategorieSelect = document.getElementById('leitung-kategorie');
-    
+
+    // Ölflex (Meterware): Artikel über Aderzahl + Querschnitt bestimmen, Länge frei in Metern
+    if (kategorieSelect.value === 'oelflex') {
+        const adern = document.getElementById('oelflex-adern').value;
+        const querschnitt = document.getElementById('oelflex-querschnitt').value;
+
+        if (!adern || !querschnitt) {
+            vorschlagDiv.className = 'artikel-vorschlag no-match';
+            vorschlagDiv.innerHTML = '<span class="artikel-label">Aderzahl und Querschnitt wählen</span>';
+            currentArtikelVorschlag = null;
+            return;
+        }
+
+        const artikel = findOelflexArtikel(adern, querschnitt);
+        if (!artikel) {
+            vorschlagDiv.className = 'artikel-vorschlag no-match';
+            vorschlagDiv.innerHTML = `
+                <span class="artikel-label">Kein passender Artikel gefunden</span>
+                <span class="artikel-hinweis">Artikelnummer manuell eingeben</span>
+            `;
+            currentArtikelVorschlag = null;
+            return;
+        }
+
+        currentArtikelVorschlag = artikel;
+        const laengeHinweis = laenge ? `${laenge} m (Meterware)` : 'Bitte Länge in Metern eingeben';
+        vorschlagDiv.className = 'artikel-vorschlag';
+        vorschlagDiv.innerHTML = `
+            <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer)}</span>
+            <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung)}</span>
+            <span class="artikel-hinweis">${escapeHtml(laengeHinweis)}</span>
+        `;
+        return;
+    }
+
     if (!hersteller || !steckerABase || !steckerBBase || !laenge) {
         vorschlagDiv.className = 'artikel-vorschlag no-match';
         vorschlagDiv.innerHTML = '<span class="artikel-label">Bitte alle Felder ausfüllen</span>';
@@ -2160,7 +2896,26 @@ function renderLeitungForm() {
         document.getElementById('leitung-kategorie').value = leitung.kategorie || '';
         document.getElementById('leitung-gruppe').value = leitung.gruppe || '';
         document.getElementById('leitung-hersteller').value = leitung.hersteller || '';
-        
+
+        // Ölflex (Meterware): über Aderzahl + Querschnitt rekonstruieren
+        if (leitung.kategorie === 'oelflex') {
+            onKategorieFilterChange();
+            const art = (katalog.artikel || []).find(a => a.artikelnummer === leitung.artikelnummer);
+            const v = art ? parseOelflexVariante(art.beschreibung) : null;
+            if (v) {
+                populateOelflexAdern(v.adern);
+                populateOelflexQuerschnitt(v.adern, v.querschnitt);
+            }
+            if (leitung.laenge) {
+                document.getElementById('leitung-laenge').value = leitung.laenge;
+            }
+            document.getElementById('leitung-artikel-custom').value = leitung.artikelCustom || '';
+            document.getElementById('leitung-notiz').value = leitung.notiz || '';
+            updateArtikelVorschlag();
+            renderKonfigGruppenliste();
+            return;
+        }
+
         // Ausrichtung aus gespeicherten Steckern extrahieren
         let ausrichtungA = 'gerade';
         let ausrichtungB = 'gerade';
@@ -2243,6 +2998,13 @@ function clearLeitungForm() {
     document.getElementById('leitung-laenge').value = '';
     document.getElementById('leitung-artikel-custom').value = '';
     document.getElementById('leitung-notiz').value = '';
+
+    // Ölflex-Felder zurücksetzen und wieder Stecker-Ansicht zeigen
+    const oelflexAdern = document.getElementById('oelflex-adern');
+    const oelflexQuerschnitt = document.getElementById('oelflex-querschnitt');
+    if (oelflexAdern) oelflexAdern.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    if (oelflexQuerschnitt) oelflexQuerschnitt.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    setOelflexMode(false);
     
     // Ausrichtung auf Standard (gerade) zurücksetzen
     setAusrichtung('a', false);
@@ -2282,12 +3044,19 @@ function saveCurrentLeitung() {
     }
     
     // Vollständige Steckertypen mit Ausrichtung erstellen
-    const steckerABase = document.getElementById('leitung-stecker-a').value;
-    const steckerBBase = document.getElementById('leitung-stecker-b').value;
-    const ausrichtungA = getAusrichtung('a');
-    const ausrichtungB = getAusrichtung('b');
-    const fullSteckerA = getFullSteckerTyp(steckerABase, ausrichtungA);
-    const fullSteckerB = getFullSteckerTyp(steckerBBase, ausrichtungB);
+    let fullSteckerA, fullSteckerB;
+    if (kategorie === 'oelflex') {
+        // Meterware ohne Stecker
+        fullSteckerA = 'offen';
+        fullSteckerB = 'offen';
+    } else {
+        const steckerABase = document.getElementById('leitung-stecker-a').value;
+        const steckerBBase = document.getElementById('leitung-stecker-b').value;
+        const ausrichtungA = getAusrichtung('a');
+        const ausrichtungB = getAusrichtung('b');
+        fullSteckerA = getFullSteckerTyp(steckerABase, ausrichtungA);
+        fullSteckerB = getFullSteckerTyp(steckerBBase, ausrichtungB);
+    }
     
     const leitung = {
         id: document.getElementById('leitung-id').value || generateId('ltg'),
@@ -2413,9 +3182,86 @@ function renderUebersicht() {
             <span class="info-label">Anzahl Leitungen</span>
             <span class="info-value">${currentProjekt.leitungen ? currentProjekt.leitungen.length : 0}</span>
         </div>
+        <div class="info-item">
+            <span class="info-label">Anzahl Bauteile</span>
+            <span class="info-value">${(currentProjekt.bauteile || []).reduce((sum, b) => sum + (b.anzahl || 1), 0)}</span>
+        </div>
     `;
     
     renderLeitungTable();
+    renderBauteileTable();
+
+    const empty = document.getElementById('keine-leitungen');
+    const hasLeitungen = currentProjekt.leitungen && currentProjekt.leitungen.length > 0;
+    const hasBauteile = currentProjekt.bauteile && currentProjekt.bauteile.length > 0;
+    if (empty) {
+        empty.style.display = (!hasLeitungen && !hasBauteile) ? 'block' : 'none';
+    }
+}
+
+function renderBauteileTable() {
+    const container = document.getElementById('bauteile-container');
+    if (!container) return;
+
+    const bauteile = currentProjekt.bauteile || [];
+    if (bauteile.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const grouped = new Map();
+    bauteile.forEach(b => {
+        const key = `${b.gruppe || ''}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
+        if (!grouped.has(key)) {
+            grouped.set(key, {
+                gruppe: b.gruppe || '-',
+                typ: b.typ,
+                hersteller: b.hersteller || '-',
+                artikelnummer: b.artikelnummer || '-',
+                bezeichnung: b.bezeichnung || '-',
+                count: 0
+            });
+        }
+        grouped.get(key).count += b.anzahl || 1;
+    });
+
+    const rows = Array.from(grouped.values())
+        .sort((a, b) => a.gruppe.localeCompare(b.gruppe, 'de') || a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
+        .map(item => `
+            <tr>
+                <td>${escapeHtml(getGruppeDisplay(item.gruppe))}</td>
+                <td>${escapeHtml(getBauteilTypName(item.typ))}</td>
+                <td>${escapeHtml(item.hersteller)}</td>
+                <td>${escapeHtml(item.artikelnummer)}</td>
+                <td>${escapeHtml(item.bezeichnung)}</td>
+                <td>${item.count}</td>
+            </tr>
+        `).join('');
+
+    container.innerHTML = `
+        <div class="kategorie-section">
+            <div class="kategorie-header sonstiges">
+                <span class="kategorie-icon">⚙️</span>
+                <span>Bauteile</span>
+                <span class="kategorie-count">${bauteile.reduce((s, b) => s + (b.anzahl || 1), 0)} Stück</span>
+            </div>
+            <div class="table-container">
+                <table class="leitung-table">
+                    <thead>
+                        <tr>
+                            <th>Gruppe</th>
+                            <th>Typ</th>
+                            <th>Hersteller</th>
+                            <th>Artikelnr.</th>
+                            <th>Bezeichnung</th>
+                            <th>Anzahl</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
 }
 
 function renderLeitungTable() {
@@ -2424,7 +3270,11 @@ function renderLeitungTable() {
     
     if (!currentProjekt.leitungen || currentProjekt.leitungen.length === 0) {
         container.innerHTML = '';
-        empty.style.display = 'block';
+        if (!currentProjekt.bauteile || currentProjekt.bauteile.length === 0) {
+            empty.style.display = 'block';
+        } else {
+            empty.style.display = 'none';
+        }
         return;
     }
     
@@ -2548,50 +3398,93 @@ function renderStueckliste() {
 
     const tbody = document.getElementById('stueckliste-body');
     const emptyState = document.getElementById('keine-stueckliste');
-    const tableContainer = tbody.closest('.table-container');
+    const tableContainer = document.getElementById('stueckliste-leitungen-table');
     const leitungen = currentProjekt.leitungen || [];
 
     if (leitungen.length === 0) {
         tbody.innerHTML = '';
-        tableContainer.style.display = 'none';
+        if (tableContainer) tableContainer.style.display = 'none';
         emptyState.style.display = 'block';
+    } else {
+        const grouped = new Map();
+        leitungen.forEach(l => {
+            const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
+            const hersteller = (l.hersteller || '-').trim() || '-';
+            const typText = getLeitungstypText(l);
+            const key = `${artikelnummer}|||${hersteller}|||${typText}`;
+            const existing = grouped.get(key);
+
+            if (existing) {
+                existing.count += 1;
+            } else {
+                grouped.set(key, {
+                    artikelnummer,
+                    hersteller,
+                    typText,
+                    count: 1
+                });
+            }
+        });
+
+        const rows = Array.from(grouped.values())
+            .sort((a, b) => b.count - a.count || a.typText.localeCompare(b.typText, 'de'))
+            .map(entry => `
+                <tr>
+                    <td>${escapeHtml(entry.typText)}</td>
+                    <td>${escapeHtml(entry.hersteller)}</td>
+                    <td>${escapeHtml(entry.artikelnummer)}</td>
+                    <td>${entry.count}</td>
+                </tr>
+            `).join('');
+
+        tbody.innerHTML = rows;
+        if (tableContainer) tableContainer.style.display = 'block';
+        emptyState.style.display = 'none';
+    }
+
+    const bauteileBody = document.getElementById('stueckliste-bauteile-body');
+    const bauteileEmpty = document.getElementById('keine-stueckliste-bauteile');
+    const bauteileTable = document.getElementById('stueckliste-bauteile-table');
+    const bauteile = currentProjekt.bauteile || [];
+
+    if (!bauteileBody || !bauteileEmpty) return;
+
+    if (bauteile.length === 0) {
+        bauteileBody.innerHTML = '';
+        if (bauteileTable) bauteileTable.style.display = 'none';
+        bauteileEmpty.style.display = 'block';
         return;
     }
 
-    const grouped = new Map();
-    leitungen.forEach(l => {
-        const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
-        const hersteller = (l.hersteller || '-').trim() || '-';
-        const typText = getLeitungstypText(l);
-        const key = `${artikelnummer}|||${hersteller}|||${typText}`;
-        const existing = grouped.get(key);
-
-        if (existing) {
-            existing.count += 1;
-        } else {
-            grouped.set(key, {
-                artikelnummer,
-                hersteller,
-                typText,
-                count: 1
+    const bGrouped = new Map();
+    bauteile.forEach(b => {
+        const key = `${b.gruppe || ''}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
+        if (!bGrouped.has(key)) {
+            bGrouped.set(key, {
+                gruppe: b.gruppe || '-',
+                typ: b.typ,
+                hersteller: b.hersteller || '-',
+                artikelnummer: b.artikelnummer || '-',
+                count: 0
             });
         }
+        bGrouped.get(key).count += b.anzahl || 1;
     });
 
-    const rows = Array.from(grouped.values())
-        .sort((a, b) => b.count - a.count || a.typText.localeCompare(b.typText, 'de'))
+    bauteileBody.innerHTML = Array.from(bGrouped.values())
+        .sort((a, b) => a.gruppe.localeCompare(b.gruppe, 'de') || a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
         .map(entry => `
             <tr>
-                <td>${escapeHtml(entry.typText)}</td>
+                <td>${escapeHtml(getGruppeDisplay(entry.gruppe))}</td>
+                <td>${escapeHtml(getBauteilTypName(entry.typ))}</td>
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
                 <td>${entry.count}</td>
             </tr>
         `).join('');
 
-    tbody.innerHTML = rows;
-    tableContainer.style.display = 'block';
-    emptyState.style.display = 'none';
+    if (bauteileTable) bauteileTable.style.display = 'block';
+    bauteileEmpty.style.display = 'none';
 }
 
 function editLeitung(index) {

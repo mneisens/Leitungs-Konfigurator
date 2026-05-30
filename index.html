@@ -90,13 +90,19 @@
                 <h2>Admin - Schaltplan-Assistent Fragen</h2>
             </div>
             <div class="form-card">
-                <p class="text-muted">JSON bearbeiten. Pro Eintrag: <code>id</code>, <code>gruppe</code>, <code>frage</code>, optional <code>allowedCategories</code> (z. B. <code>["ethercat","sensor"]</code>).</p>
-                <div class="form-group">
-                    <textarea id="admin-wizard-json" rows="18" style="font-family: monospace;"></textarea>
-                </div>
-                <div class="form-actions">
+                <p class="text-muted">Pro Frage: Gruppe, Frage, erlaubte Leitungs-Kategorien, Bauteiltypen und optionales Mengenfeld konfigurieren.</p>
+                <div id="admin-steps-editor" class="admin-steps-editor"></div>
+                <div class="form-actions admin-editor-actions">
+                    <button type="button" class="btn btn-secondary" onclick="adminAddWizardStep()">+ Frage hinzufügen</button>
                     <button type="button" class="btn btn-primary" onclick="saveAdminWizardConfig()">Fragen speichern</button>
                 </div>
+                <details class="admin-json-fallback">
+                    <summary>JSON (Profi-Ansicht)</summary>
+                    <div class="form-group">
+                        <textarea id="admin-wizard-json" rows="12" style="font-family: monospace;"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="adminLoadFromJson()">Aus JSON laden</button>
+                </details>
             </div>
         </section>
 
@@ -162,16 +168,31 @@
                 </div>
                 <div class="wizard-meta">
                     <span class="wizard-group" id="wizard-gruppe">=000</span>
-                    <span class="wizard-hint">Antwort optional - leer lassen und weiter ist möglich.</span>
+                    <span class="wizard-hint" id="wizard-optional-hint">Antwort optional - leer lassen und weiter ist möglich.</span>
                 </div>
 
                 <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
 
                 <div class="form-group">
-                    <label for="wizard-antwort">Eingabe</label>
-                    <textarea id="wizard-antwort" rows="5" placeholder="z. B. Artikelnummern, Leitungsbezeichnungen oder Notizen"></textarea>
+                    <label for="wizard-antwort">Notiz / Freitext</label>
+                    <textarea id="wizard-antwort" rows="3" placeholder="Optionale Notizen zu dieser Frage..."></textarea>
                 </div>
 
+                <div id="wizard-mengenfeld-section" class="wizard-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="wizard-menge" id="wizard-menge-label">Anzahl</label>
+                        <input type="number" id="wizard-menge" min="1" step="1" value="1">
+                    </div>
+                </div>
+
+                <div id="wizard-bauteile-section" class="wizard-section" style="display: none;">
+                    <div class="wizard-divider"></div>
+                    <h3>Bauteile auswählen</h3>
+                    <div id="wizard-bauteil-forms"></div>
+                    <div id="wizard-created-bauteile-list" class="wizard-created-list"></div>
+                </div>
+
+                <div id="wizard-leitungen-section" class="wizard-section">
                 <div class="wizard-divider"></div>
 
                 <h3>Leitungen direkt anlegen</h3>
@@ -189,7 +210,7 @@
                                 <option value="">-- Bitte wählen --</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="wizard-stecker-a-group">
                             <label for="wizard-stecker-a">Stecker Seite A</label>
                             <select id="wizard-stecker-a" onchange="onWizardSteckerAChange()">
                                 <option value="">-- Bitte wählen --</option>
@@ -197,18 +218,37 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="form-row" id="wizard-stecker-row">
                         <div class="form-group">
                             <label for="wizard-stecker-b">Stecker Seite B</label>
                             <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
                                 <option value="">-- Bitte wählen --</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="wizard-laenge-group">
                             <label for="wizard-laenge">Länge</label>
                             <select id="wizard-laenge" onchange="onWizardLaengeChange()">
                                 <option value="">-- Bitte wählen --</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="wizard-oelflex-row" style="display: none;">
+                        <div class="form-group">
+                            <label for="wizard-oelflex-adern">Aderzahl</label>
+                            <select id="wizard-oelflex-adern" onchange="onWizardOelflexChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="wizard-oelflex-querschnitt">Querschnitt</label>
+                            <select id="wizard-oelflex-querschnitt" onchange="onWizardOelflexChange()">
+                                <option value="">-- Bitte wählen --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="wizard-oelflex-laenge">Länge (Meter)</label>
+                            <input type="number" id="wizard-oelflex-laenge" min="0.1" step="0.1" placeholder="z. B. 5.0" onchange="onWizardOelflexChange()">
                         </div>
                     </div>
 
@@ -224,7 +264,7 @@
                         <datalist id="wizard-artikel-vorschlaege"></datalist>
                     </div>
                     <div class="form-group">
-                        <label for="wizard-anzahl">Anzahl</label>
+                        <label for="wizard-anzahl">Anzahl Leitungen</label>
                         <input type="number" id="wizard-anzahl" min="1" step="1" value="1">
                     </div>
                 </div>
@@ -241,6 +281,7 @@
                 </div>
 
                 <div id="wizard-created-list" class="wizard-created-list"></div>
+                </div>
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="wizard-prev" onclick="wizardPrev()">
@@ -304,7 +345,7 @@
                                 </select>
                             </div>
                             
-                            <div class="form-row">
+                            <div class="form-row" id="stecker-row">
                                 <div class="form-group">
                                     <label for="leitung-stecker-a">2. Stecker Seite A</label>
                                     <select id="leitung-stecker-a" onchange="onSteckerChange()">
@@ -328,6 +369,21 @@
                                             <span class="toggle-text">gerade</span>
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row" id="oelflex-row" style="display: none;">
+                                <div class="form-group">
+                                    <label for="oelflex-adern">2. Aderzahl</label>
+                                    <select id="oelflex-adern" onchange="onOelflexChange()">
+                                        <option value="">-- Bitte wählen --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="oelflex-querschnitt">3. Querschnitt</label>
+                                    <select id="oelflex-querschnitt" onchange="onOelflexChange()">
+                                        <option value="">-- Bitte wählen --</option>
+                                    </select>
                                 </div>
                             </div>
                             
@@ -429,6 +485,8 @@
             <div id="kategorien-container">
                 <!-- Kategorien werden hier dynamisch eingefügt -->
             </div>
+
+            <div id="bauteile-container"></div>
             
             <div id="keine-leitungen" class="empty-state" style="display: none;">
                 <div class="empty-icon">🔌</div>
@@ -517,7 +575,8 @@
             </div>
 
             <div class="form-card">
-                <div class="table-container">
+                <h3>Leitungen</h3>
+                <div class="table-container" id="stueckliste-leitungen-table">
                     <table class="leitung-table">
                         <thead>
                             <tr>
@@ -536,9 +595,26 @@
                     <div class="empty-icon">📦</div>
                     <h3>Keine Leitungen vorhanden</h3>
                     <p>Legen Sie zuerst Leitungen an, um eine Stückliste zu erhalten.</p>
-                    <button class="btn btn-primary" onclick="showView('konfigurator')">
-                        Leitung anlegen
-                    </button>
+                </div>
+
+                <h3 style="margin-top: 2rem;">Bauteile</h3>
+                <div class="table-container" id="stueckliste-bauteile-table">
+                    <table class="leitung-table">
+                        <thead>
+                            <tr>
+                                <th>Gruppe</th>
+                                <th>Bauteiltyp</th>
+                                <th>Hersteller</th>
+                                <th>Artikelnummer</th>
+                                <th>Anzahl</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stueckliste-bauteile-body"></tbody>
+                    </table>
+                </div>
+                <div id="keine-stueckliste-bauteile" class="empty-state" style="display: none;">
+                    <div class="empty-icon">⚙️</div>
+                    <h3>Keine Bauteile vorhanden</h3>
                 </div>
             </div>
         </section>

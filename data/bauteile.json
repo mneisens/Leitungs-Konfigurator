@@ -1,0 +1,113 @@
+{
+  "bauteiltypen": [
+    { "id": "motor", "name": "Servomotor" },
+    { "id": "regler", "name": "Servoregler" },
+    { "id": "kuehlgeraet", "name": "Kühlgerät" },
+    { "id": "steckdose", "name": "Steckdose" },
+    { "id": "harting", "name": "Harting-Stecker" }
+  ],
+  "artikel": [
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AM8023-0E0-0000",
+      "beschreibung": "Servomotor AM8023, 1.9 Nm, 6000 U/min",
+      "typ": "motor",
+      "leistung": "1.9 Nm"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AM8041-0E0-0000",
+      "beschreibung": "Servomotor AM8041, 3.1 Nm, 3000 U/min",
+      "typ": "motor",
+      "leistung": "3.1 Nm"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AM8052-0E0-0000",
+      "beschreibung": "Servomotor AM8052, 4.8 Nm, 3000 U/min",
+      "typ": "motor",
+      "leistung": "4.8 Nm"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AM8061-0E0-0000",
+      "beschreibung": "Servomotor AM8061, 7.5 Nm, 3000 U/min",
+      "typ": "motor",
+      "leistung": "7.5 Nm"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AX5103-0000-0200",
+      "beschreibung": "Servoregler AX5103, 1 Kanal, 3 A",
+      "typ": "regler",
+      "leistung": "3 A"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AX5206-0000-0210",
+      "beschreibung": "Servoregler AX5206, 1 Kanal, 6 A",
+      "typ": "regler",
+      "leistung": "6 A"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AX5112-0000-0210",
+      "beschreibung": "Servoregler AX5112, 1 Kanal, 12 A",
+      "typ": "regler",
+      "leistung": "12 A"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "AX5125-0000-0210",
+      "beschreibung": "Servoregler AX5125, 1 Kanal, 25 A",
+      "typ": "regler",
+      "leistung": "25 A"
+    },
+    {
+      "hersteller": "Rittal",
+      "artikelnummer": "SK3328.207",
+      "beschreibung": "Filterlüfter SK3328, 24 V DC, 207 m³/h",
+      "typ": "kuehlgeraet",
+      "spannung": "24 V DC"
+    },
+    {
+      "hersteller": "Rittal",
+      "artikelnummer": "SK3328.310",
+      "beschreibung": "Filterlüfter SK3328, 230 V AC, 310 m³/h",
+      "typ": "kuehlgeraet",
+      "spannung": "230 V AC"
+    },
+    {
+      "hersteller": "Phoenix Contact",
+      "artikelnummer": "1404690",
+      "beschreibung": "Steckdose CEE 16A 400V 5-polig",
+      "typ": "steckdose",
+      "spannung": "400 V"
+    },
+    {
+      "hersteller": "Phoenix Contact",
+      "artikelnummer": "1404687",
+      "beschreibung": "Steckdose CEE 16A 230V 3-polig",
+      "typ": "steckdose",
+      "spannung": "230 V"
+    },
+    {
+      "hersteller": "Harting",
+      "artikelnummer": "09300062701",
+      "beschreibung": "Han 3A Steckverbinder, 3-polig",
+      "typ": "harting"
+    },
+    {
+      "hersteller": "Harting",
+      "artikelnummer": "09200062701",
+      "beschreibung": "Han 3A Buchsengehäuse, 3-polig",
+      "typ": "harting"
+    },
+    {
+      "hersteller": "Harting",
+      "artikelnummer": "19300062701",
+      "beschreibung": "Han 16B Steckverbinder, 16-polig",
+      "typ": "harting"
+    }
+  ]
+}
