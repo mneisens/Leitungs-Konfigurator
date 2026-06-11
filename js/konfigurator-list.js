@@ -2,14 +2,8 @@
  * @file konfigurator-list.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
-import { showView } from './navigation.js';
-import { cloneTemplate, setText } from './templates.js';
-import { getArtikelByNummer } from './catalog.js';
-import { persistCurrentProjekt } from './projects.js';
+import { escapeHtml } from './utils.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
-import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
 
 export function renderKonfigGruppenliste() {
     const container = document.getElementById('konfig-gruppenliste');

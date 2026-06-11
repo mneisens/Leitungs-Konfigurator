@@ -4,12 +4,9 @@
 import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
 import { showModal } from './modal.js';
-import { WIZARD_CAT } from './config.js';
 import { showView } from './navigation.js';
-import { cloneTemplate } from './templates.js';
-import { getBauteilTypName } from './catalog.js';
 import { getWizardConfigDoc } from './firebase.js';
-import { normalizeWizardStep, validateWizardSteps } from './wizard-config.js';
+import { validateWizardSteps } from './wizard-config.js';
 /**
  * getAdminKategorieOptions.
  * @returns {void}

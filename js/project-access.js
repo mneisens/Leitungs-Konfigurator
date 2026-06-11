@@ -38,16 +38,6 @@ export function getProjectRole(projekt) {
  * @param {object|null} projekt
  * @returns {boolean}
  */
-export function canViewProject(projekt) {
-    const role = getProjectRole(projekt);
-    return role === ROLE_OWNER || role === ROLE_EDIT || role === ROLE_VIEW;
-}
-
-
-/**
- * @param {object|null} projekt
- * @returns {boolean}
- */
 export function canEditProject(projekt) {
     const role = getProjectRole(projekt);
     return role === ROLE_OWNER || role === ROLE_EDIT;

@@ -1,6 +1,5 @@
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { showModal } from './modal.js';
 import { DEFAULT_WIZARD_STEPS } from './config.js';
 import { normalizeWizardStep } from './wizard-config.js';
 import { showView } from './navigation.js';
@@ -69,26 +68,6 @@ export function getProjectsCollection() {
 export function getProjectDocRef(projectId) {
     const col = getProjectsCollection();
     return col && projectId ? col.doc(projectId) : null;
-}
-
-
-/**
- * @param {string} email
- * @returns {Promise<{uid: string, email: string}|null>}
- */
-export async function findUserByEmail(email) {
-    if (!appState.firebaseReady || !appState.firebaseDb || !email) return null;
-
-    const normalized = email.trim().toLowerCase();
-    const snap = await appState.firebaseDb.collection('users')
-        .where('email', '==', normalized)
-        .limit(1)
-        .get();
-
-    if (snap.empty) return null;
-
-    const doc = snap.docs[0];
-    return { uid: doc.id, email: doc.data().email || normalized };
 }
 
 

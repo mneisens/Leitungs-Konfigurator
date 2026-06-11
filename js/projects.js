@@ -2,8 +2,8 @@
  * @file projects.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { generateId, formatDate } from './utils.js';
+import { showModal } from './modal.js';
 import { showView } from './navigation.js';
 import { cloneTemplate, setText } from './templates.js';
 import {
@@ -23,7 +23,6 @@ import {
     getRoleLabel,
     assertCanEdit,
     renderProjectSharingView,
-    applyReadOnlyUI,
     ROLE_EDIT,
     ROLE_VIEW
 } from './project-access.js';

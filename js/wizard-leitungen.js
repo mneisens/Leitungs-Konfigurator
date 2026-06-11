@@ -2,14 +2,10 @@
  * @file wizard-leitungen.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
-import { showView } from './navigation.js';
-import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp, getArtikelByNummer } from './catalog.js';
-import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
-import { setWizardOelflexMode, getOelflexHersteller, populateWizardOelflexAdern, populateWizardOelflexQuerschnitt, findOelflexArtikel, parseOelflexVariante } from './oelflex.js';
+import { escapeHtml } from './utils.js';
+import { setWizardOelflexMode, getOelflexHersteller, populateWizardOelflexAdern } from './oelflex.js';
 import { getBaseSteckerTyp } from './konfigurator-stecker.js';
-import { stepIsOelflexWizard, getWizardDefaultBezeichnung } from './wizard-core.js';
+import { stepIsOelflexWizard } from './wizard-core.js';
 import { updateWizardAutoArtikel } from './wizard-ui.js';
 
 export function getWizardArtikelPool() {

@@ -2,18 +2,14 @@
  * @file konfigurator-stecker.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { generateId } from './utils.js';
 import { showView } from './navigation.js';
-import { cloneTemplate, setText } from './templates.js';
-import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt } from './projects.js';
 import { assertCanEdit, canEditProject } from './project-access.js';
-import { compareGruppenCode, getGruppeDisplay } from './overview.js';
-import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
+import { setOelflexMode } from './oelflex.js';
 import { getFullSteckerTyp } from './konfigurator-form.js';
 import { renderKonfigGruppenliste } from './konfigurator-list.js';
-import { updateArtikelVorschlag, onHerstellerChange, onSteckerChange, loadLaengen, renderLeitungForm } from './konfigurator-core.js';
+import { renderLeitungForm } from './konfigurator-core.js';
 
 
 /**

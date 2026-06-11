@@ -2,10 +2,10 @@
  * @file overview.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { escapeHtml, formatDate } from './utils.js';
+import { showModal } from './modal.js';
 import { showView } from './navigation.js';
-import { cloneTemplate, setText } from './templates.js';
+import { getBauteilTypName } from './catalog.js';
 import { getProjects, saveProjects } from './projects.js';
 import {
     canEditProject,

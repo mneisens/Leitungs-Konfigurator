@@ -1,16 +1,16 @@
 /**
- * @file konfigurator.js – Re-Exports.
+ * @file konfigurator.js – Re-Exports für den Einstiegspunkt.
  */
 import { showView } from './navigation.js';
 import { saveCurrentLeitung, handleLeaveKonfigurator } from './konfigurator-stecker.js';
 import { assertCanEdit } from './project-access.js';
 
-export { initKonfigurator, populateGruppenDropdown, renderKonfigGruppenliste, onKategorieFilterChange, onHerstellerChange, onSteckerChange, loadLaengen, onLaengeChange, updateArtikelVorschlag, renderLeitungForm } from './konfigurator-core.js';
-export { clearLeitungForm, saveCurrentLeitung, saveLeitung, prevLeitung, nextLeitung, addNewLeitung, getBaseSteckerTyp, hasAusrichtung, getAusrichtung, setAusrichtung } from './konfigurator-stecker.js';
-export { toggleAusrichtung, getFullSteckerTyp, isSteckerErlaubtFuerKategorie, getUniqueSteckerA, getUniqueSteckerB, getAvailableLaengen, findArtikel, populateHerstellerDropdown, getArtikelForHersteller, populateKategorieDropdown } from './konfigurator-form.js';
+export { saveLeitung, prevLeitung, nextLeitung, addNewLeitung } from './konfigurator-stecker.js';
+export { onKategorieFilterChange, onHerstellerChange, onSteckerChange, onLaengeChange } from './konfigurator-core.js';
+export { toggleAusrichtung } from './konfigurator-form.js';
 
 /**
- * Speichert Leitung und kehrt zur Übersicht zurück.
+ * Verlässt den Konfigurator Richtung Übersicht (leere Leitungen werden verworfen).
  * @returns {void}
  */
 export function backToOverview() {
@@ -19,7 +19,7 @@ export function backToOverview() {
 }
 
 /**
- * Speichert Leitung und zeigt Übersicht.
+ * Speichert die aktuelle Leitung und wechselt zur Übersicht.
  * @returns {void}
  */
 export function saveLeitungAndNotify() {

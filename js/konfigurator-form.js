@@ -2,14 +2,6 @@
  * @file konfigurator-form.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
-import { showView } from './navigation.js';
-import { cloneTemplate, setText } from './templates.js';
-import { getArtikelByNummer } from './catalog.js';
-import { persistCurrentProjekt } from './projects.js';
-import { compareGruppenCode, getGruppeDisplay } from './overview.js';
-import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
 import { getBaseSteckerTyp, hasAusrichtung, setAusrichtung } from './konfigurator-stecker.js';
 import { onSteckerChange } from './konfigurator-core.js';
 
@@ -66,9 +58,7 @@ export function getUniqueSteckerB(hersteller, steckerABase, ausrichtungA) {
     const artikel = getArtikelForHersteller(hersteller);
     const kategorie = document.getElementById('leitung-kategorie').value;
     const stecker = new Set();
-    
-    console.log('getUniqueSteckerB:', { hersteller, steckerABase, ausrichtungA, kategorie });
-    
+
     artikel.forEach(a => {
         if (!a.steckerB) return;
         
@@ -106,18 +96,7 @@ export function getAvailableLaengen(hersteller, steckerA, steckerB) {
     const artikel = getArtikelForHersteller(hersteller);
     const kategorie = document.getElementById('leitung-kategorie').value;
     const laengen = new Set();
-    
-    console.log('getAvailableLaengen params:', { hersteller, steckerA, steckerB, kategorie });
-    
-    // Debug: Zeige alle Power-Artikel mit M8 4-polig gerade + offen
-    if (kategorie === 'power') {
-        const debugArtikel = artikel.filter(a => 
-            a.kategorie === 'power' && 
-            a.steckerB === 'offen'
-        );
-        console.log('Debug - Power + offen Artikel:', debugArtikel.slice(0, 3));
-    }
-    
+
     artikel.forEach(a => {
         // Kategorie-Filter
         if (kategorie && a.kategorie !== kategorie) return;
@@ -129,9 +108,7 @@ export function getAvailableLaengen(hersteller, steckerA, steckerB) {
             laengen.add(a.laenge);
         }
     });
-    
-    console.log('getAvailableLaengen result:', Array.from(laengen));
-    
+
     return Array.from(laengen).sort((a, b) => a - b);
 }
 
@@ -141,9 +118,7 @@ export function findArtikel(hersteller, steckerA, steckerB, laenge) {
     
     const kategorie = document.getElementById('leitung-kategorie').value;
     const laengeNum = parseFloat(laenge);
-    
-    console.log('findArtikel params:', { hersteller, steckerA, steckerB, laenge, kategorie });
-    
+
     // Exakte Übereinstimmung suchen (mit Kategorie-Filter)
     const exactMatch = appState.katalog.artikel.find(a => 
         a.hersteller === hersteller &&

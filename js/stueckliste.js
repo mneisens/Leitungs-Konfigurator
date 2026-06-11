@@ -2,9 +2,10 @@
  * @file stueckliste.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
+import { getBauteilTypName } from './catalog.js';
+import { getGruppeDisplay } from './overview.js';
 
 /**
  * renderStueckliste.

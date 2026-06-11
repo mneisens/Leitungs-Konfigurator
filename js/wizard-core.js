@@ -2,13 +2,10 @@
  * @file wizard-core.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
-import { showView } from './navigation.js';
-import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp, getArtikelByNummer } from './catalog.js';
+import { generateId, escapeHtml } from './utils.js';
+import { showModal } from './modal.js';
+import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
-import { setWizardOelflexMode, populateWizardOelflexAdern, populateWizardOelflexQuerschnitt, findOelflexArtikel, parseOelflexVariante } from './oelflex.js';
-import { getBaseSteckerTyp } from './konfigurator-stecker.js';
 import { getCurrentWizardStep, getWizardKategorie, renderWizardCreatedLeitungen } from './wizard-leitungen.js';
 
 export function stepHasLeitungen(step) {

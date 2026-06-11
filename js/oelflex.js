@@ -2,7 +2,7 @@
  * @file oelflex.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
+import { updateArtikelVorschlag } from './konfigurator-core.js';
 
 /**
  * setOelflexMode.

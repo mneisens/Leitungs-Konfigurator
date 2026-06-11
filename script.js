@@ -18,9 +18,6 @@ import {
     loadProjects,
     openNewProjektForm,
     saveProjekt,
-    openProjekt,
-    editProjekt,
-    deleteProjekt,
     startProjektWizard,
     shareProjectWithUser,
     removeProjectShare,
@@ -79,6 +76,15 @@ document.addEventListener('keydown', e => {
     if (overlay?.classList.contains('active')) {
         if (e.key === 'Escape') closeModal(false);
         else if (e.key === 'Enter') closeModal(true);
+        return;
+    }
+
+    // Enter im Login-Formular meldet direkt an
+    if (e.key === 'Enter' && document.getElementById('view-auth')?.classList.contains('active')) {
+        const target = e.target;
+        if (target?.id === 'auth-email' || target?.id === 'auth-password') {
+            loginUser();
+        }
     }
 });
 
@@ -131,9 +137,6 @@ Object.assign(window, {
     exportAllProjects,
     importProjects,
     openNewProjektForm,
-    openProjekt,
-    editProjekt,
-    deleteProjekt,
     saveProjekt,
     shareProjectWithUser,
     removeProjectShare,

@@ -2,8 +2,6 @@
  * @file catalog.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
 
 /**
  * loadKatalog.
@@ -21,9 +19,6 @@ export async function loadKatalog() {
         const gruppenData = await gruppenResponse.json();
         appState.leitungGruppen = Array.isArray(gruppenData.gruppen) ? gruppenData.gruppen : [];
         appState.bauteileKatalog = await bauteileResponse.json();
-        console.log('Katalog geladen:', appState.katalog);
-        console.log('Leitungsgruppen geladen:', appState.leitungGruppen.length);
-        console.log('Bauteile geladen:', appState.bauteileKatalog?.artikel?.length || 0);
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         appState.katalog = {

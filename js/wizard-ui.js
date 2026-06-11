@@ -2,14 +2,22 @@
  * @file wizard-ui.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { generateId, escapeHtml } from './utils.js';
+import { showModal } from './modal.js';
 import { showView } from './navigation.js';
-import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp, getArtikelByNummer } from './catalog.js';
+import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
-import { setWizardOelflexMode, populateWizardOelflexAdern, populateWizardOelflexQuerschnitt, findOelflexArtikel, parseOelflexVariante } from './oelflex.js';
-import { getBaseSteckerTyp } from './konfigurator-stecker.js';
-import { stepHasLeitungen, applyWizardStepVisibility, renderWizardBauteilForms, renderWizardCreatedBauteile, getWizardDefaultBezeichnung, isWizardStepSatisfied, updateWizardSkipCheckbox } from './wizard-core.js';
+import { setWizardOelflexMode, findOelflexArtikel } from './oelflex.js';
+import {
+    stepHasLeitungen,
+    stepIsOelflexWizard,
+    applyWizardStepVisibility,
+    renderWizardBauteilForms,
+    renderWizardCreatedBauteile,
+    getWizardDefaultBezeichnung,
+    isWizardStepSatisfied,
+    updateWizardSkipCheckbox
+} from './wizard-core.js';
 import {
     getCurrentWizardStep,
     getWizardDefaultKategorie,
@@ -20,7 +28,6 @@ import {
     onWizardKategorieChange,
     renderWizardCreatedLeitungen
 } from './wizard-leitungen.js';
-import { stepIsOelflexWizard } from './wizard-core.js';
 
 export function onWizardLaengeChange() {
     updateWizardAutoArtikel();

@@ -2,12 +2,8 @@
  * @file konfigurator-core.js
  */
 import { appState } from './state.js';
-import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.js';
-import { showModal, closeModal } from './modal.js';
+import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
-import { cloneTemplate, setText } from './templates.js';
-import { getArtikelByNummer } from './catalog.js';
-import { persistCurrentProjekt } from './projects.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
 import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
 import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung, addNewLeitung } from './konfigurator-stecker.js';
@@ -231,9 +227,7 @@ export function onSteckerChange() {
     const hersteller = document.getElementById('leitung-hersteller').value;
     const steckerABase = document.getElementById('leitung-stecker-a').value;
     const ausrichtungA = getAusrichtung('a');
-    
-    console.log('onSteckerChange:', { hersteller, steckerABase, ausrichtungA });
-    
+
     if (hersteller && steckerABase) {
         const selectB = document.getElementById('leitung-stecker-b');
         const currentB = selectB.value;
@@ -242,9 +236,7 @@ export function onSteckerChange() {
         const steckerBOptions = getUniqueSteckerB(hersteller, steckerABase, ausrichtungA);
         let defaultSteckerB = '';
         let foundCurrentB = false;
-        
-        console.log('SteckerB options:', steckerBOptions, 'currentB:', currentB);
-        
+
         steckerBOptions.forEach(s => {
             const option = document.createElement('option');
             option.value = s;
@@ -262,7 +254,6 @@ export function onSteckerChange() {
         // Wenn vorheriger Wert nicht mehr verfügbar, ersten Wert wählen
         if (!foundCurrentB && defaultSteckerB) {
             selectB.value = defaultSteckerB;
-            console.log('Stecker B reset to:', defaultSteckerB);
         }
     }
     
@@ -288,9 +279,7 @@ export function loadLaengen() {
         const fullSteckerB = hasAusrichtung(steckerBBase) 
             ? getFullSteckerTyp(steckerBBase, ausrichtungB)
             : steckerBBase;
-        
-        console.log('loadLaengen:', { hersteller, fullSteckerA, fullSteckerB });
-        
+
         const laengen = getAvailableLaengen(hersteller, fullSteckerA, fullSteckerB);
         laengen.forEach(l => {
             const option = document.createElement('option');
@@ -383,9 +372,7 @@ export function updateArtikelVorschlag() {
     const steckerB = hasAusrichtung(steckerBBase) 
         ? getFullSteckerTyp(steckerBBase, ausrichtungB)
         : steckerBBase;
-    
-    console.log('updateArtikelVorschlag:', { hersteller, steckerA, steckerB, laenge });
-    
+
     const result = findArtikel(hersteller, steckerA, steckerB, laenge);
     
     if (!result) {
