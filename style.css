@@ -288,6 +288,84 @@ body {
     min-width: 0;
 }
 
+.projekt-role-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 999px;
+    vertical-align: middle;
+}
+
+.projekt-role-badge.role-owner {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.projekt-role-badge.role-edit {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.projekt-role-badge.role-view {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.readonly-banner {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #9a3412;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+}
+
+.sharing-card {
+    margin-bottom: 1.5rem;
+}
+
+.sharing-form-row {
+    align-items: flex-end;
+}
+
+.sharing-action .btn {
+    width: 100%;
+}
+
+#share-user {
+    width: 100%;
+}
+
+.share-members-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+}
+
+.share-members-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.share-members-list li:last-child {
+    border-bottom: none;
+}
+
+.share-email {
+    flex: 1;
+    font-weight: 500;
+}
+
+.share-role-badge {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
 .projekt-info h3 {
     font-size: 1.1rem;
     font-weight: 600;
@@ -788,45 +866,6 @@ body {
     gap: 0.75rem;
 }
 
-/* ===== Abarbeitung ===== */
-.abarbeitung-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-    gap: 1rem;
-    align-items: start;
-}
-
-.abarbeitung-progress {
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-}
-
-.abarbeitung-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0.9rem;
-}
-
-.abarbeitung-next-list ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.abarbeitung-next-list li {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.45rem 0;
-    border-bottom: 1px dashed var(--border-color);
-    font-size: 0.9rem;
-}
-
-.abarbeitung-next-list li:last-child {
-    border-bottom: none;
-}
-
 /* ===== Table ===== */
 .table-container {
     background: var(--card-bg);
@@ -924,10 +963,6 @@ body {
         justify-content: center;
     }
 
-    .abarbeitung-layout {
-        grid-template-columns: 1fr;
-    }
-    
     .konfig-nav,
     .konfig-main-actions {
         flex-direction: column;

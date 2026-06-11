@@ -10,7 +10,8 @@ import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt } from './projects.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
 import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
-import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung } from './konfigurator-stecker.js';
+import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung, addNewLeitung } from './konfigurator-stecker.js';
+import { canEditProject, applyReadOnlyUI } from './project-access.js';
 import { getFullSteckerTyp, findArtikel, getUniqueSteckerA, getUniqueSteckerB, getAvailableLaengen, populateHerstellerDropdown, populateKategorieDropdown } from './konfigurator-form.js';
 
 export function initKonfigurator() {
@@ -26,11 +27,12 @@ export function initKonfigurator() {
     populateKategorieDropdown();
     populateGruppenDropdown();
     
-    if (!appState.currentProjekt.leitungen || appState.currentProjekt.leitungen.length === 0) {
+    if ((!appState.currentProjekt.leitungen || appState.currentProjekt.leitungen.length === 0) && canEditProject(appState.currentProjekt)) {
         addNewLeitung();
     }
-    
+
     renderLeitungForm();
+    applyReadOnlyUI();
 }
 
 

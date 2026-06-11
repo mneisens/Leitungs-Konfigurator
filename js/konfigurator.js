@@ -2,7 +2,8 @@
  * @file konfigurator.js – Re-Exports.
  */
 import { showView } from './navigation.js';
-import { saveCurrentLeitung } from './konfigurator-stecker.js';
+import { saveCurrentLeitung, handleLeaveKonfigurator } from './konfigurator-stecker.js';
+import { assertCanEdit } from './project-access.js';
 
 export { initKonfigurator, populateGruppenDropdown, renderKonfigGruppenliste, onKategorieFilterChange, onHerstellerChange, onSteckerChange, loadLaengen, onLaengeChange, updateArtikelVorschlag, renderLeitungForm } from './konfigurator-core.js';
 export { clearLeitungForm, saveCurrentLeitung, saveLeitung, prevLeitung, nextLeitung, addNewLeitung, getBaseSteckerTyp, hasAusrichtung, getAusrichtung, setAusrichtung } from './konfigurator-stecker.js';
@@ -13,7 +14,7 @@ export { toggleAusrichtung, getFullSteckerTyp, isSteckerErlaubtFuerKategorie, ge
  * @returns {void}
  */
 export function backToOverview() {
-    saveCurrentLeitung();
+    handleLeaveKonfigurator();
     showView('uebersicht');
 }
 
@@ -22,6 +23,7 @@ export function backToOverview() {
  * @returns {void}
  */
 export function saveLeitungAndNotify() {
+    if (!assertCanEdit('Leitungen')) return;
     saveCurrentLeitung();
     showView('uebersicht');
 }

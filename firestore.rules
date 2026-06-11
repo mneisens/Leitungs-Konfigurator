@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isMember(projectData) {
+      return request.auth != null
+        && projectData.memberIds.hasAny([request.auth.uid]);
+    }
+
+    function canEditProject(projectData) {
+      return request.auth != null && (
+        projectData.ownerId == request.auth.uid
+        || (projectData.members[request.auth.uid].role == 'edit')
+      );
+    }
+
+    match /projects/{projectId} {
+      allow read: if isMember(resource.data);
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds.hasAny([request.auth.uid]);
+      allow update: if canEditProject(resource.data);
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /config/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}

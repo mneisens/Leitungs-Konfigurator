@@ -16,8 +16,6 @@ export const appState = {
     currentLeitungIndex: 0,
     currentArtikelVorschlag: null,
     wizardStepIndex: 0,
-    abarbeitungOrder: [],
-    abarbeitungCursor: 0,
     modalResolve: null,
     projectsCache: [],
     wizardSteps: [],

@@ -21,7 +21,10 @@ import {
     openProjekt,
     editProjekt,
     deleteProjekt,
-    startProjektWizard
+    startProjektWizard,
+    shareProjectWithUser,
+    removeProjectShare,
+    openProjectSharing
 } from './js/projects.js';
 import { showView } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
@@ -71,15 +74,6 @@ import {
     toggleAusrichtung
 } from './js/konfigurator.js';
 import { editLeitung, deleteLeitung } from './js/overview.js';
-import {
-    startAbarbeitung,
-    abarbeitungPrev,
-    abarbeitungNext,
-    abarbeitungOpenAktuell,
-    abarbeitungToggleErledigt
-} from './js/abarbeitung.js';
-
-
 document.addEventListener('keydown', e => {
     const overlay = document.getElementById('modal-overlay');
     if (overlay?.classList.contains('active')) {
@@ -141,6 +135,9 @@ Object.assign(window, {
     editProjekt,
     deleteProjekt,
     saveProjekt,
+    shareProjectWithUser,
+    removeProjectShare,
+    openProjectSharing,
     adminAddWizardStep,
     saveAdminWizardConfig,
     adminLoadFromJson,
@@ -177,13 +174,8 @@ Object.assign(window, {
     addNewLeitung,
     saveLeitung,
     startProjektWizard,
-    startAbarbeitung,
     exportCSV,
     exportPDF,
-    abarbeitungPrev,
-    abarbeitungToggleErledigt,
-    abarbeitungOpenAktuell,
-    abarbeitungNext,
     closeModal,
     editLeitung,
     deleteLeitung

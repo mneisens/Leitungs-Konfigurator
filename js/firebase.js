@@ -54,6 +54,63 @@ export function getUserProjectsDoc() {
 
 
 /**
+ * @returns {firebase.firestore.CollectionReference|null}
+ */
+export function getProjectsCollection() {
+    if (!appState.firebaseReady || !appState.firebaseDb) return null;
+    return appState.firebaseDb.collection('projects');
+}
+
+
+/**
+ * @param {string} projectId
+ * @returns {firebase.firestore.DocumentReference|null}
+ */
+export function getProjectDocRef(projectId) {
+    const col = getProjectsCollection();
+    return col && projectId ? col.doc(projectId) : null;
+}
+
+
+/**
+ * @param {string} email
+ * @returns {Promise<{uid: string, email: string}|null>}
+ */
+export async function findUserByEmail(email) {
+    if (!appState.firebaseReady || !appState.firebaseDb || !email) return null;
+
+    const normalized = email.trim().toLowerCase();
+    const snap = await appState.firebaseDb.collection('users')
+        .where('email', '==', normalized)
+        .limit(1)
+        .get();
+
+    if (snap.empty) return null;
+
+    const doc = snap.docs[0];
+    return { uid: doc.id, email: doc.data().email || normalized };
+}
+
+
+/**
+ * @returns {Promise<{uid: string, email: string, role: string}[]>}
+ */
+export async function loadRegisteredUsers() {
+    if (!appState.firebaseReady || !appState.firebaseDb) return [];
+
+    const snap = await appState.firebaseDb.collection('users').get();
+    return snap.docs
+        .map(doc => ({
+            uid: doc.id,
+            email: doc.data().email || '',
+            role: doc.data().role || 'user'
+        }))
+        .filter(u => u.email)
+        .sort((a, b) => a.email.localeCompare(b.email, 'de'));
+}
+
+
+/**
  * getWizardConfigDoc.
  * @returns {void}
  */
@@ -74,7 +131,7 @@ export async function ensureUserProfile(user) {
     const snap = await ref.get();
     if (!snap.exists) {
         await ref.set({
-            email: user.email || '',
+            email: (user.email || '').toLowerCase(),
             role: 'user',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });

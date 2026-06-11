@@ -14,6 +14,11 @@ export function showView(viewName) {
         viewName = 'auth';
     }
 
+    const konfiguratorActive = document.getElementById('view-konfigurator')?.classList.contains('active');
+    if (konfiguratorActive && viewName !== 'konfigurator') {
+        import('./konfigurator-stecker.js').then(m => m.handleLeaveKonfigurator());
+    }
+
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const view = document.getElementById('view-' + viewName);
     if (view) view.classList.add('active');
@@ -35,8 +40,8 @@ function runViewHandler(viewName) {
         'projekt-wizard': () => import('./wizard-ui.js').then(m => m.renderProjektWizard()),
         konfigurator: () => import('./konfigurator-core.js').then(m => m.initKonfigurator()),
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),
-        stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),
-        abarbeitung: () => import('./abarbeitung.js').then(m => m.renderAbarbeitung())
+        'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
+        stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste())
     };
     handlers[viewName]?.();
 }

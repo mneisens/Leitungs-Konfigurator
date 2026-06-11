@@ -463,10 +463,14 @@
                 <h2 id="uebersicht-titel">Projektübersicht</h2>
             </div>
             
+            <div id="projekt-readonly-banner" class="readonly-banner" hidden>
+                Sie haben nur Lesezugriff auf dieses Projekt.
+            </div>
+
             <div class="uebersicht-info" id="uebersicht-projekt-info">
                 <!-- Projektinfos werden hier eingefügt -->
             </div>
-            
+
             <div class="uebersicht-actions">
                 <button class="btn btn-primary" onclick="addNewLeitung()">
                     + Neue Leitung anlegen
@@ -475,16 +479,16 @@
                     <button class="btn btn-secondary" onclick="startProjektWizard()">
                         📝 Schaltplan-Assistent
                     </button>
-                    <button class="btn btn-secondary" onclick="startAbarbeitung()">
-                        🧭 Abarbeitung starten
-                    </button>
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
                         📦 Stückliste
                     </button>
-                    <button class="btn btn-success" onclick="exportCSV()">
+                    <button class="btn btn-secondary" id="btn-projekt-freigabe" onclick="openProjectSharing()" hidden>
+                        👥 Freigaben
+                    </button>
+                    <button class="btn btn-success" data-allow-readonly onclick="exportCSV()">
                         📊 Export CSV
                     </button>
-                    <button class="btn btn-success" onclick="exportPDF()">
+                    <button class="btn btn-success" data-allow-readonly onclick="exportPDF()">
                         📄 Export PDF
                     </button>
                 </div>
@@ -506,72 +510,35 @@
             </div>
         </section>
 
-        <!-- View: Abarbeitung -->
-        <section id="view-abarbeitung" class="view">
+        <!-- View: Projekt-Freigaben -->
+        <section id="view-projekt-freigabe" class="view">
             <div class="view-header">
                 <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
-                <h2 id="abarbeitung-titel">Abarbeitung Leitungen</h2>
+                <h2 id="freigabe-titel">Projekt freigeben</h2>
             </div>
 
-            <div class="abarbeitung-layout">
-                <div class="form-card">
-                    <div class="abarbeitung-progress" id="abarbeitung-progress">Schritt 0 von 0</div>
-                    <div id="abarbeitung-empty" class="empty-state" style="display: none;">
-                        <div class="empty-icon">🧭</div>
-                        <h3>Keine Leitungen vorhanden</h3>
-                        <p>Legen Sie zuerst Leitungen an, um die Abarbeitung zu starten.</p>
-                        <button class="btn btn-primary" onclick="showView('konfigurator')">
-                            Leitung anlegen
-                        </button>
+            <div class="form-card sharing-card">
+                <p class="text-muted">Registrierten Nutzer aus der Liste auswählen und Berechtigung vergeben. Nur der Eigentümer verwaltet Freigaben.</p>
+                <div class="form-row sharing-form-row">
+                    <div class="form-group">
+                        <label for="share-user">Nutzer</label>
+                        <select id="share-user">
+                            <option value="">-- Nutzer wählen --</option>
+                        </select>
                     </div>
-
-                    <div id="abarbeitung-card" style="display: none;">
-                        <div class="abarbeitung-info-grid">
-                            <div class="info-item">
-                                <span class="info-label">Gruppe</span>
-                                <span class="info-value" id="abarbeitung-gruppe">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Position</span>
-                                <span class="info-value" id="abarbeitung-position">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Artikelnummer</span>
-                                <span class="info-value" id="abarbeitung-artikel">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Bezeichnung</span>
-                                <span class="info-value" id="abarbeitung-bezeichnung">-</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Status</span>
-                                <span class="info-value" id="abarbeitung-status">-</span>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" id="abarbeitung-prev" onclick="abarbeitungPrev()">
-                                ← Vorherige Leitung
-                            </button>
-                            <button type="button" class="btn btn-success" id="abarbeitung-toggle" onclick="abarbeitungToggleErledigt()">
-                                Als erledigt markieren
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="abarbeitungOpenAktuell()">
-                                Im Konfigurator öffnen
-                            </button>
-                            <button type="button" class="btn btn-primary" id="abarbeitung-next" onclick="abarbeitungNext()">
-                                Nächste Leitung →
-                            </button>
-                        </div>
+                    <div class="form-group">
+                        <label for="share-role">Berechtigung</label>
+                        <select id="share-role">
+                            <option value="view">Nur ansehen</option>
+                            <option value="edit">Bearbeiten</option>
+                        </select>
+                    </div>
+                    <div class="form-group sharing-action">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-primary" onclick="shareProjectWithUser()">Freigeben</button>
                     </div>
                 </div>
-
-                <aside class="form-card">
-                    <h3>Nächste Leitungen</h3>
-                    <div id="abarbeitung-next-list" class="abarbeitung-next-list">
-                        <!-- Nächste Leitungen werden hier angezeigt -->
-                    </div>
-                </aside>
+                <div id="share-members-list"></div>
             </div>
         </section>
 

@@ -7,6 +7,14 @@ import { showModal, closeModal } from './modal.js';
 import { showView } from './navigation.js';
 import { cloneTemplate, setText } from './templates.js';
 import { getProjects, saveProjects } from './projects.js';
+import {
+    canEditProject,
+    getProjectRole,
+    getRoleLabel,
+    updateReadOnlyBanner,
+    updateSharingButton,
+    applyReadOnlyUI
+} from './project-access.js';
 
 /**
  * renderUebersicht.
@@ -49,8 +57,16 @@ export function renderUebersicht() {
             <span class="info-label">Anzahl Bauteile</span>
             <span class="info-value">${(appState.currentProjekt.bauteile || []).reduce((sum, b) => sum + (b.anzahl || 1), 0)}</span>
         </div>
+        ${getProjectRole(appState.currentProjekt) ? `
+        <div class="info-item">
+            <span class="info-label">Ihre Berechtigung</span>
+            <span class="info-value">${escapeHtml(getRoleLabel(getProjectRole(appState.currentProjekt)))}</span>
+        </div>` : ''}
     `;
-    
+
+    updateReadOnlyBanner();
+    updateSharingButton();
+    applyReadOnlyUI();
     renderLeitungTable();
     renderBauteileTable();
 
@@ -223,7 +239,7 @@ export function renderLeitungTable() {
                         </thead>
                         <tbody>
                             ${leitungen.map(l => `
-                                <tr onclick="editLeitung(${l.originalIndex})" title="Leitung bearbeiten">
+                                <tr onclick="editLeitung(${l.originalIndex})" title="${canEditProject(appState.currentProjekt) ? 'Leitung bearbeiten' : 'Leitung ansehen'}">
                                     <td>${l.position || l.originalIndex + 1}</td>
                                     <td>${escapeHtml(l.bezeichnung || '-')}</td>
                                     <td>${escapeHtml(getGruppeDisplay(l.gruppe))}</td>
@@ -233,12 +249,13 @@ export function renderLeitungTable() {
                                     <td>${escapeHtml(l.steckerA || '-')}</td>
                                     <td>${escapeHtml(l.steckerB || '-')}</td>
                                     <td class="table-actions">
-                                        <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="Bearbeiten">
-                                            ✏️
+                                        <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="${canEditProject(appState.currentProjekt) ? 'Bearbeiten' : 'Ansehen'}">
+                                            ${canEditProject(appState.currentProjekt) ? '✏️' : '👁️'}
                                         </button>
+                                        ${canEditProject(appState.currentProjekt) ? `
                                         <button class="btn btn-danger btn-small btn-icon" onclick="event.stopPropagation(); deleteLeitung(${l.originalIndex})" title="Löschen">
                                             🗑️
-                                        </button>
+                                        </button>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -268,6 +285,11 @@ export function editLeitung(index) {
  * @returns {void}
  */
 export async function deleteLeitung(index) {
+    if (!canEditProject(appState.currentProjekt)) {
+        showModal('Sie haben nur Lesezugriff auf dieses Projekt.', { type: 'warning', title: 'Keine Berechtigung' });
+        return;
+    }
+
     const confirmed = await showModal(
         'Möchten Sie diese Leitung wirklich löschen?',
         { 
