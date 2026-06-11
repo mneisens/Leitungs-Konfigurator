@@ -4,7 +4,23 @@
     { "id": "regler", "name": "Servoregler" },
     { "id": "kuehlgeraet", "name": "Kühlgerät" },
     { "id": "steckdose", "name": "Steckdose" },
-    { "id": "harting", "name": "Harting-Stecker" }
+    { "id": "harting", "name": "Harting-Stecker" },
+    { "id": "ipc", "name": "IPC" },
+    { "id": "panel", "name": "Panel" },
+    { "id": "tuerschalter", "name": "Türschalter" },
+    { "id": "lichtschranke", "name": "Lichtschranke" },
+    { "id": "fusstaster", "name": "Fußtaster" },
+    { "id": "netzwechselrichter", "name": "Netzwechselrichter" },
+    { "id": "drossel", "name": "Drossel" },
+    { "id": "filter", "name": "Filter" },
+    { "id": "ringkern", "name": "Ringkern" },
+    { "id": "saf-modul", "name": "SAF-Modul" },
+    { "id": "kapazitaetsmodul", "name": "Kapazitätsmodul" },
+    { "id": "bremse", "name": "Bremse" },
+    { "id": "ventil", "name": "Ventil" },
+    { "id": "dms", "name": "DMS-Sensor" },
+    { "id": "nothalt-taster", "name": "Not-Halt Taster" },
+    { "id": "schild", "name": "Schild" }
   ],
   "artikel": [
     {
@@ -108,6 +124,138 @@
       "artikelnummer": "19300062701",
       "beschreibung": "Han 16B Steckverbinder, 16-polig",
       "typ": "harting"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "C6930-0070",
+      "beschreibung": "IPC C6930-0070, Schaltschrank-Industrie-PC",
+      "typ": "ipc"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "C3921-1035-0010",
+      "beschreibung": "Panel C3921-1035-0010 (000095718)",
+      "typ": "panel"
+    },
+    {
+      "hersteller": "SSP",
+      "artikelnummer": "SSP-TUERSCHALTER",
+      "beschreibung": "Türschalter SSP (Typ noch nicht festgelegt)",
+      "typ": "tuerschalter"
+    },
+    {
+      "hersteller": "Pilz",
+      "artikelnummer": "PILZ-TUERSCHALTER",
+      "beschreibung": "Türschalter Pilz (Typ noch nicht festgelegt)",
+      "typ": "tuerschalter"
+    },
+    {
+      "hersteller": "Euchner",
+      "artikelnummer": "EUCHNER-TUERSCHALTER",
+      "beschreibung": "Türschalter Euchner (Typ noch nicht festgelegt)",
+      "typ": "tuerschalter"
+    },
+    {
+      "hersteller": "SSP",
+      "artikelnummer": "SSP-LICHTSCHRANKE",
+      "beschreibung": "Lichtschranke SSP (Typ noch nicht festgelegt)",
+      "typ": "lichtschranke"
+    },
+    {
+      "hersteller": "Pilz",
+      "artikelnummer": "PILZ-LICHTSCHRANKE",
+      "beschreibung": "Lichtschranke Pilz (Typ noch nicht festgelegt)",
+      "typ": "lichtschranke"
+    },
+    {
+      "hersteller": "Sick",
+      "artikelnummer": "SICK-LICHTSCHRANKE",
+      "beschreibung": "Lichtschranke SICK (Typ noch nicht festgelegt)",
+      "typ": "lichtschranke"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "FUSSTASTER",
+      "beschreibung": "Fußtaster (Typ noch nicht festgelegt)",
+      "typ": "fusstaster"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-NETZWECHSELRICHTER",
+      "beschreibung": "Baumüller Netzwechselrichter (Typ angeben)",
+      "typ": "netzwechselrichter"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-REGLER",
+      "beschreibung": "Baumüller Regler (Typ angeben)",
+      "typ": "regler"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-DROSSEL",
+      "beschreibung": "Baumüller Drossel (Typ angeben)",
+      "typ": "drossel"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-FILTER",
+      "beschreibung": "Baumüller Filter (Typ angeben)",
+      "typ": "filter"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-RINGKERN",
+      "beschreibung": "Baumüller Ringkern (Typ angeben)",
+      "typ": "ringkern"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-SAF-MODUL",
+      "beschreibung": "Baumüller SAF-Modul (Typ angeben)",
+      "typ": "saf-modul"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-KAPAZITAETSMODUL",
+      "beschreibung": "Baumüller Kapazitätsmodul (Typ angeben)",
+      "typ": "kapazitaetsmodul"
+    },
+    {
+      "hersteller": "Baumüller",
+      "artikelnummer": "BM-MOTOR",
+      "beschreibung": "Baumüller Motor (Typ angeben)",
+      "typ": "motor"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "DV 030 FPM 101 R 12",
+      "beschreibung": "Bremse DV 030 FPM 101 R 12",
+      "typ": "bremse"
+    },
+    {
+      "hersteller": "Festo",
+      "artikelnummer": "VOFA-L26-T32C-M-G14-1C1-APP",
+      "beschreibung": "Festo Ventil VOFA-L26-T32C-M-G14-1C1-APP",
+      "typ": "ventil"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "DZ1",
+      "beschreibung": "DMS-Sensor Typ DZ1",
+      "typ": "dms"
+    },
+    {
+      "hersteller": "Eaton",
+      "artikelnummer": "C22-PV-K02-P1",
+      "beschreibung": "Not-Halt Taster C22-PV-K02-P1 (mit M12-Stecker)",
+      "typ": "nothalt-taster"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "NOT-HALT-SCHILD",
+      "beschreibung": "Not-Halt Schild",
+      "typ": "schild"
     }
   ]
 }

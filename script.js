@@ -46,7 +46,9 @@ import {
     filterWizardBauteilSelect,
     wizardAddBauteilFromStep,
     wizardDeleteBauteil,
-    wizardDeleteLeitungenGroup
+    wizardDeleteLeitungenGroup,
+    wizardDeleteLeitungFromStep,
+    onWizardNichtVorhandenChange
 } from './js/wizard-core.js';
 import {
     onWizardKategorieChange,
@@ -160,6 +162,8 @@ Object.assign(window, {
     wizardAddBauteilFromStep,
     wizardDeleteBauteil,
     wizardDeleteLeitungenGroup,
+    wizardDeleteLeitungFromStep,
+    onWizardNichtVorhandenChange,
     backToOverview,
     onKategorieFilterChange,
     onHerstellerChange,

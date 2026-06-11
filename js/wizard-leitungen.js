@@ -266,7 +266,7 @@ export function renderWizardCreatedLeitungen(step) {
                 <span class="artikel">${escapeHtml(item.artikel)}</span>
                 <span>${escapeHtml(item.bezeichnung)}</span>
                 <span class="count">${item.count}</span>
-                <button type="button" class="btn btn-danger btn-small btn-icon" onclick="wizardDeleteLeitungenGroup('${escapeHtml(item.ids.join(','))}')" title="Entfernen">🗑️</button>
+                <button type="button" class="btn btn-danger btn-small btn-icon" onclick="wizardDeleteLeitungFromStep('${escapeHtml(item.ids[0])}')" title="Eine entfernen">🗑️</button>
             </li>
         `).join('');
 

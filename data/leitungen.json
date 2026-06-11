@@ -4570,6 +4570,34 @@
             "laenge": 0,
             "kategorie": "oelflex",
             "meterware": true
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K706",
+            "beschreibung": "CP-Link 4 Leitung 20m (Standard für Panel)",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45",
+            "laenge": 20,
+            "kategorie": "sonstiges"
+        },
+        {
+            "hersteller": "Phoenix Contact",
+            "artikelnummer": "632582",
+            "beschreibung": "Panel Taster-Leitung (Sonepar Bestellnummer 632582)",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "sonstiges"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX-SERVO-719CY-4G35",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G35+2x(2x1,5) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "power",
+            "meterware": true
         }
     ],
     "steckertypen": [

@@ -55,8 +55,8 @@ export function applyWizardStepVisibility(step) {
     }
     if (optionalHint) {
         optionalHint.textContent = step?.optional
-            ? 'Diese Frage ist optional – leer lassen und weiter ist möglich.'
-            : 'Bitte passende Leitungen und/oder Bauteile anlegen.';
+            ? 'Optional: Leitung/Bauteil anlegen oder Haken „Nicht vorhanden" setzen.'
+            : 'Bitte Leitung/Bauteil anlegen oder Haken „Nicht vorhanden" setzen.';
     }
 }
 
@@ -208,6 +208,7 @@ export function wizardAddBauteilFromStep(typ) {
     if (select) select.value = '';
     if (anzahlInput) anzahlInput.value = '1';
     renderWizardCreatedBauteile(step);
+    updateWizardSkipCheckbox(step);
 }
 
 
@@ -217,6 +218,7 @@ export function wizardDeleteBauteil(bauteilId) {
     appState.currentProjekt.bauteile = (appState.currentProjekt.bauteile || []).filter(b => b.id !== bauteilId);
     persistCurrentProjekt();
     renderWizardCreatedBauteile(step);
+    updateWizardSkipCheckbox(step);
 }
 
 
@@ -227,6 +229,7 @@ export function wizardDeleteLeitungFromStep(leitungId) {
     appState.currentProjekt.leitungen.forEach((l, idx) => { l.position = idx + 1; });
     persistCurrentProjekt();
     renderWizardCreatedLeitungen(step);
+    updateWizardSkipCheckbox(step);
 }
 
 
@@ -238,10 +241,77 @@ export function wizardDeleteLeitungenGroup(idsCsv) {
     appState.currentProjekt.leitungen.forEach((l, idx) => { l.position = idx + 1; });
     persistCurrentProjekt();
     renderWizardCreatedLeitungen(step);
+    updateWizardSkipCheckbox(step);
 }
 
 
 export function getWizardDefaultBezeichnung(step) {
     if (!step || !step.frage) return '';
     return step.frage.replace(/\?+$/, '').trim();
+}
+
+
+export function wizardStepHasEntries(step) {
+    if (!appState.currentProjekt || !step) return false;
+    const hasLeitung = (appState.currentProjekt.leitungen || []).some(l => l.wizardStepId === step.id);
+    const hasBauteil = (appState.currentProjekt.bauteile || []).some(b => b.wizardStepId === step.id);
+    return hasLeitung || hasBauteil;
+}
+
+
+export function isWizardStepSkipped(step) {
+    if (!appState.currentProjekt || !step) return false;
+    return appState.currentProjekt.wizardSkipped?.[step.id] === true;
+}
+
+
+export function isWizardStepSatisfied(step) {
+    if (!step) return true;
+    const requiresEntry = stepHasLeitungen(step) || stepHasBauteile(step);
+    if (!requiresEntry) return true;
+    return wizardStepHasEntries(step) || isWizardStepSkipped(step);
+}
+
+
+export function updateWizardSkipCheckbox(step) {
+    const checkbox = document.getElementById('wizard-nicht-vorhanden');
+    if (!checkbox) return;
+
+    const box = checkbox.closest('.wizard-skip');
+    const requiresEntry = step && (stepHasLeitungen(step) || stepHasBauteile(step));
+    if (box) box.style.display = requiresEntry ? '' : 'none';
+
+    if (!requiresEntry) {
+        checkbox.checked = false;
+        checkbox.disabled = false;
+        return;
+    }
+
+    if (wizardStepHasEntries(step)) {
+        checkbox.checked = false;
+        checkbox.disabled = true;
+        if (appState.currentProjekt?.wizardSkipped) {
+            delete appState.currentProjekt.wizardSkipped[step.id];
+        }
+    } else {
+        checkbox.disabled = false;
+        checkbox.checked = isWizardStepSkipped(step);
+    }
+}
+
+
+export function onWizardNichtVorhandenChange() {
+    if (!appState.currentProjekt) return;
+    const step = getCurrentWizardStep();
+    if (!step) return;
+    ensureWizardAnswers(appState.currentProjekt);
+    if (!appState.currentProjekt.wizardSkipped) appState.currentProjekt.wizardSkipped = {};
+
+    const checkbox = document.getElementById('wizard-nicht-vorhanden');
+    if (checkbox?.checked) {
+        appState.currentProjekt.wizardSkipped[step.id] = true;
+    } else {
+        delete appState.currentProjekt.wizardSkipped[step.id];
+    }
+    persistCurrentProjekt();
 }

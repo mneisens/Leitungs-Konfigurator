@@ -9,7 +9,7 @@
 <body>
     <header class="app-header">
         <div class="header-content">
-            <h1 class="logo" onclick="showView('home')">Leitungs-<span>Konfigurator</span></h1>
+            <h1 class="logo" onclick="showView('home')">synchropress <span>Leitungskonfigurator</span></h1>
             <nav class="main-nav">
                 <button class="nav-btn" onclick="showView('home')">Projekte</button>
                 <button class="nav-btn hidden" id="nav-admin" onclick="showView('admin')">Admin</button>
@@ -172,6 +172,14 @@
                 </div>
 
                 <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
+                <div class="wizard-hinweis" id="wizard-hinweis" style="display: none;"></div>
+
+                <div class="wizard-skip" id="wizard-skip-box">
+                    <label class="wizard-skip-label">
+                        <input type="checkbox" id="wizard-nicht-vorhanden" onchange="onWizardNichtVorhandenChange()">
+                        Nicht vorhanden / nicht benötigt – diese Frage überspringen
+                    </label>
+                </div>
 
                 <div class="form-group">
                     <label for="wizard-antwort">Notiz / Freitext</label>

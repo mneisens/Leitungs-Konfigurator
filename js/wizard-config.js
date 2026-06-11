@@ -21,6 +21,7 @@ export function normalizeWizardStep(step, index) {
         normalized.bauteilTypen = step.bauteilTypen.filter(Boolean);
     }
     if (step?.defaultCategory) normalized.defaultCategory = step.defaultCategory;
+    if (step?.hinweis) normalized.hinweis = String(step.hinweis).trim();
     if (step?.optional === true) normalized.optional = true;
     if (step?.mengenfeld?.aktiv) {
         normalized.mengenfeld = {

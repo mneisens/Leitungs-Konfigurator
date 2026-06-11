@@ -71,6 +71,9 @@ export function ensureWizardAnswers(projekt) {
     if (!projekt.wizardAnswers || typeof projekt.wizardAnswers !== 'object') {
         projekt.wizardAnswers = {};
     }
+    if (!projekt.wizardSkipped || typeof projekt.wizardSkipped !== 'object') {
+        projekt.wizardSkipped = {};
+    }
     if (!Array.isArray(projekt.bauteile)) {
         projekt.bauteile = [];
     }
@@ -316,8 +319,11 @@ export function startProjektWizard() {
     }
 
     const firstOpen = appState.wizardSteps.findIndex(step => {
-        const val = appState.currentProjekt.wizardAnswers[step.id];
-        return !val || !String(val).trim();
+        const hasLeitung = (appState.currentProjekt.leitungen || []).some(l => l.wizardStepId === step.id);
+        const hasBauteil = (appState.currentProjekt.bauteile || []).some(b => b.wizardStepId === step.id);
+        const skipped = appState.currentProjekt.wizardSkipped?.[step.id] === true;
+        const note = appState.currentProjekt.wizardAnswers[step.id];
+        return !(hasLeitung || hasBauteil || skipped || (note && String(note).trim()));
     });
     appState.wizardStepIndex = firstOpen >= 0 ? firstOpen : 0;
     showView('projekt-wizard');

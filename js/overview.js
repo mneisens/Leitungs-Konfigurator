@@ -6,6 +6,7 @@ import { generateId, escapeHtml, formatDate, formatDateForFile } from './utils.j
 import { showModal, closeModal } from './modal.js';
 import { showView } from './navigation.js';
 import { cloneTemplate, setText } from './templates.js';
+import { getProjects, saveProjects } from './projects.js';
 
 /**
  * renderUebersicht.

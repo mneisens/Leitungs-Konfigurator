@@ -9,7 +9,7 @@ import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp, getArtikelByNu
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
 import { setWizardOelflexMode, populateWizardOelflexAdern, populateWizardOelflexQuerschnitt, findOelflexArtikel, parseOelflexVariante } from './oelflex.js';
 import { getBaseSteckerTyp } from './konfigurator-stecker.js';
-import { stepHasLeitungen, applyWizardStepVisibility, renderWizardBauteilForms, renderWizardCreatedBauteile, getWizardDefaultBezeichnung } from './wizard-core.js';
+import { stepHasLeitungen, applyWizardStepVisibility, renderWizardBauteilForms, renderWizardCreatedBauteile, getWizardDefaultBezeichnung, isWizardStepSatisfied, updateWizardSkipCheckbox } from './wizard-core.js';
 import {
     getCurrentWizardStep,
     getWizardDefaultKategorie,
@@ -195,9 +195,9 @@ export function wizardAddLeitungFromStep() {
     });
 
     persistCurrentProjekt();
-    artikelInput.value = '';
     anzahlInput.value = '1';
     renderWizardCreatedLeitungen(step);
+    updateWizardSkipCheckbox(step);
 }
 
 
@@ -241,6 +241,11 @@ export function renderProjektWizard() {
     document.getElementById('wizard-progress').textContent = `Frage ${appState.wizardStepIndex + 1} von ${total}`;
     document.getElementById('wizard-gruppe').textContent = step.gruppe;
     document.getElementById('wizard-frage').textContent = step.frage;
+    const hinweisDiv = document.getElementById('wizard-hinweis');
+    if (hinweisDiv) {
+        hinweisDiv.textContent = step.hinweis || '';
+        hinweisDiv.style.display = step.hinweis ? '' : 'none';
+    }
     document.getElementById('wizard-antwort').value = answer;
     document.getElementById('wizard-hersteller').value = 'Beckhoff';
     document.getElementById('wizard-stecker-a').innerHTML = '<option value="">-- Bitte wählen --</option>';
@@ -261,6 +266,7 @@ export function renderProjektWizard() {
     applyWizardStepVisibility(step);
     renderWizardBauteilForms(step);
     renderWizardCreatedBauteile(step);
+    updateWizardSkipCheckbox(step);
 
     if (stepHasLeitungen(step)) {
         populateWizardArtikelVorschlaege();
@@ -287,6 +293,15 @@ export function wizardPrev() {
 export function wizardNext() {
     const total = appState.wizardSteps.length;
     saveCurrentWizardAnswer();
+
+    const step = getCurrentWizardStep();
+    if (!isWizardStepSatisfied(step)) {
+        showModal(
+            'Bitte lege mindestens eine Leitung oder ein Bauteil an – oder setze den Haken „Nicht vorhanden / nicht benötigt", um fortzufahren.',
+            { type: 'warning', title: 'Eingabe erforderlich' }
+        );
+        return;
+    }
 
     if (appState.wizardStepIndex >= total - 1) {
         showView('uebersicht');

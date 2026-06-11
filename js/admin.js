@@ -102,6 +102,10 @@ export function renderAdminStepsEditor() {
                     <input type="text" data-field="frage" value="${escapeHtml(step.frage || '')}">
                 </div>
                 <div class="form-group">
+                    <label>Hinweis (optional, wird unter der Frage angezeigt)</label>
+                    <textarea data-field="hinweis" rows="2">${escapeHtml(step.hinweis || '')}</textarea>
+                </div>
+                <div class="form-group">
                     <label>Erlaubte Leitungs-Kategorien</label>
                     <div class="admin-check-group">${kategorieChecks}</div>
                 </div>
@@ -159,6 +163,8 @@ export function collectAdminStepsFromEditor() {
         if (bauteilTypen.length) step.bauteilTypen = bauteilTypen;
         const defaultCategory = getVal('defaultCategory');
         if (defaultCategory) step.defaultCategory = defaultCategory;
+        const hinweis = getVal('hinweis');
+        if (hinweis) step.hinweis = hinweis;
         if (card.querySelector('[data-field="optional"]')?.checked) step.optional = true;
         if (card.querySelector('[data-field="mengenfeldAktiv"]')?.checked) {
             step.mengenfeld = {
