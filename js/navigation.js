@@ -33,7 +33,7 @@ export function showView(viewName) {
  */
 function runViewHandler(viewName) {
     const handlers = {
-        auth: () => {},
+        auth: () => import('./firebase.js').then(m => m.showAuthMode('login')),
         home: () => import('./projects.js').then(m => m.loadProjects()),
         admin: () => import('./admin.js').then(m => m.renderAdminView()),
         'projekt-form': () => {},

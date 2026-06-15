@@ -22,34 +22,44 @@
     <main class="app-main">
         <!-- View: Login / Registrierung -->
         <section id="view-auth" class="view">
-            <div class="view-header">
-                <h2>Anmeldung</h2>
-            </div>
-            <div class="form-card auth-card">
-                <div class="form-row">
+            <div class="auth-wrapper">
+                <div class="form-card auth-card" id="auth-login-box">
+                    <h2>Anmeldung</h2>
                     <div class="form-group">
                         <label for="auth-email">E-Mail *</label>
-                        <input type="email" id="auth-email" placeholder="name@firma.de" required>
+                        <input type="email" id="auth-email" placeholder="name@firma.de" autocomplete="email" required>
                     </div>
                     <div class="form-group">
                         <label for="auth-password">Passwort *</label>
-                        <input type="password" id="auth-password" placeholder="Passwort" required>
+                        <input type="password" id="auth-password" placeholder="Passwort" autocomplete="current-password" required>
                     </div>
+                    <button type="button" class="btn btn-primary btn-block" onclick="loginUser()">Anmelden</button>
+                    <p class="auth-switch">
+                        Noch kein Konto?
+                        <a href="#" onclick="showAuthMode('register'); return false;">Jetzt registrieren</a>
+                    </p>
                 </div>
-                <div class="form-row">
+
+                <div class="form-card auth-card" id="auth-register-box" hidden>
+                    <h2>Registrierung</h2>
                     <div class="form-group">
-                        <label for="auth-password-repeat">Passwort wiederholen (nur Registrierung)</label>
-                        <input type="password" id="auth-password-repeat" placeholder="Passwort wiederholen">
+                        <label for="reg-email">E-Mail *</label>
+                        <input type="email" id="reg-email" placeholder="name@firma.de" autocomplete="email" required>
                     </div>
                     <div class="form-group">
-                        <label>&nbsp;</label>
-                        <div class="auth-actions">
-                            <button type="button" class="btn btn-primary" onclick="registerUser()">Registrieren</button>
-                            <button type="button" class="btn btn-secondary" onclick="loginUser()">Anmelden</button>
-                        </div>
+                        <label for="reg-password">Passwort *</label>
+                        <input type="password" id="reg-password" placeholder="Passwort" autocomplete="new-password" required>
                     </div>
+                    <div class="form-group">
+                        <label for="reg-password-repeat">Passwort wiederholen *</label>
+                        <input type="password" id="reg-password-repeat" placeholder="Passwort wiederholen" autocomplete="new-password" required>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-block" onclick="registerUser()">Registrieren</button>
+                    <p class="auth-switch">
+                        Bereits registriert?
+                        <a href="#" onclick="showAuthMode('login'); return false;">Zur Anmeldung</a>
+                    </p>
                 </div>
-                <p class="text-muted">Erst registrieren, danach anmelden.</p>
             </div>
         </section>
 
@@ -90,7 +100,18 @@
                 <h2>Admin - Schaltplan-Assistent Fragen</h2>
             </div>
             <div class="form-card">
-                <p class="text-muted">Pro Frage: Gruppe, Frage, erlaubte Leitungs-Kategorien, Bauteiltypen und optionales Mengenfeld konfigurieren.</p>
+                <p class="text-muted">Frage anklicken, um sie zu bearbeiten. Änderungen werden erst mit „Fragen speichern" übernommen.</p>
+                <div class="admin-toolbar">
+                    <input type="search" id="admin-search" placeholder="🔍 Frage durchsuchen…" oninput="adminFilterSteps()">
+                    <select id="admin-gruppe-filter" onchange="adminFilterSteps()">
+                        <option value="">Alle Gruppen</option>
+                    </select>
+                    <span class="admin-step-count" id="admin-step-count"></span>
+                    <div class="admin-toolbar-actions">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="adminAddWizardStep()">+ Frage</button>
+                        <button type="button" class="btn btn-primary btn-small" onclick="saveAdminWizardConfig()">Fragen speichern</button>
+                    </div>
+                </div>
                 <div id="admin-steps-editor" class="admin-steps-editor"></div>
                 <div class="form-actions admin-editor-actions">
                     <button type="button" class="btn btn-secondary" onclick="adminAddWizardStep()">+ Frage hinzufügen</button>
@@ -205,7 +226,7 @@
 
                 <h3>Leitungen direkt anlegen</h3>
                 <div class="wizard-connector-box">
-                    <div class="form-row">
+                    <div class="wizard-select-grid">
                         <div class="form-group">
                             <label for="wizard-kategorie">Leitungstyp</label>
                             <select id="wizard-kategorie" onchange="onWizardKategorieChange()">
@@ -224,39 +245,37 @@
                                 <option value="">-- Bitte wählen --</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="form-row" id="wizard-stecker-row">
-                        <div class="form-group">
-                            <label for="wizard-stecker-b">Stecker Seite B</label>
-                            <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
+                        <div id="wizard-stecker-row" class="wizard-grid-pass">
+                            <div class="form-group">
+                                <label for="wizard-stecker-b">Stecker Seite B</label>
+                                <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="wizard-laenge-group">
+                                <label for="wizard-laenge">Länge</label>
+                                <select id="wizard-laenge" onchange="onWizardLaengeChange()">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group" id="wizard-laenge-group">
-                            <label for="wizard-laenge">Länge</label>
-                            <select id="wizard-laenge" onchange="onWizardLaengeChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row" id="wizard-oelflex-row" style="display: none;">
-                        <div class="form-group">
-                            <label for="wizard-oelflex-adern">Aderzahl</label>
-                            <select id="wizard-oelflex-adern" onchange="onWizardOelflexChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="wizard-oelflex-querschnitt">Querschnitt</label>
-                            <select id="wizard-oelflex-querschnitt" onchange="onWizardOelflexChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="wizard-oelflex-laenge">Länge (Meter)</label>
-                            <input type="number" id="wizard-oelflex-laenge" min="0.1" step="0.1" placeholder="z. B. 5.0" onchange="onWizardOelflexChange()">
+                        <div id="wizard-oelflex-row" class="wizard-grid-pass" style="display: none;">
+                            <div class="form-group">
+                                <label for="wizard-oelflex-adern">Aderzahl</label>
+                                <select id="wizard-oelflex-adern" onchange="onWizardOelflexChange()">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="wizard-oelflex-querschnitt">Querschnitt</label>
+                                <select id="wizard-oelflex-querschnitt" onchange="onWizardOelflexChange()">
+                                    <option value="">-- Bitte wählen --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="wizard-oelflex-laenge">Länge (Meter)</label>
+                                <input type="number" id="wizard-oelflex-laenge" min="0.1" step="0.1" placeholder="z. B. 5.0" onchange="onWizardOelflexChange()">
+                            </div>
                         </div>
                     </div>
 
@@ -265,27 +284,25 @@
                     </div>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
+                <div class="wizard-add-row">
+                    <div class="form-group wizard-artikel-group">
                         <label for="wizard-artikelnummer">Artikelnummer</label>
                         <input type="text" id="wizard-artikelnummer" list="wizard-artikel-vorschlaege" placeholder="z. B. ZK2000-2122-0010">
                         <datalist id="wizard-artikel-vorschlaege"></datalist>
                     </div>
-                    <div class="form-group">
-                        <label for="wizard-anzahl">Anzahl Leitungen</label>
+                    <div class="form-group wizard-anzahl-group">
+                        <label for="wizard-anzahl">Anzahl</label>
                         <input type="number" id="wizard-anzahl" min="1" step="1" value="1">
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="wizard-leitungsbezeichnung">Bezeichnung (optional)</label>
-                    <input type="text" id="wizard-leitungsbezeichnung" placeholder="Wenn leer, wird die Frage als Bezeichnung verwendet">
-                </div>
-
-                <div class="wizard-inline-actions">
-                    <button type="button" class="btn btn-success" onclick="wizardAddLeitungFromStep()">
-                        + Leitung anlegen
-                    </button>
+                    <div class="form-group wizard-bezeichnung-group">
+                        <label for="wizard-leitungsbezeichnung">Bezeichnung (optional)</label>
+                        <input type="text" id="wizard-leitungsbezeichnung" placeholder="Wenn leer, wird die Frage als Bezeichnung verwendet">
+                    </div>
+                    <div class="form-group wizard-add-action">
+                        <button type="button" class="btn btn-success" onclick="wizardAddLeitungFromStep()">
+                            + Leitung anlegen
+                        </button>
+                    </div>
                 </div>
 
                 <div id="wizard-created-list" class="wizard-created-list"></div>

@@ -270,7 +270,27 @@ export function isWizardStepSatisfied(step) {
 }
 
 
+/**
+ * Sperrt den Weiter-Button, solange weder ein Eintrag vorhanden
+ * noch „Nicht vorhanden" angehakt ist.
+ * @param {object} step
+ * @returns {void}
+ */
+export function updateWizardNextButton(step) {
+    const nextBtn = document.getElementById('wizard-next');
+    if (!nextBtn) return;
+
+    const satisfied = isWizardStepSatisfied(step);
+    nextBtn.disabled = !satisfied;
+    nextBtn.title = satisfied
+        ? ''
+        : 'Bitte mindestens eine Leitung/ein Bauteil anlegen oder „Nicht vorhanden" anhaken.';
+}
+
+
 export function updateWizardSkipCheckbox(step) {
+    updateWizardNextButton(step);
+
     const checkbox = document.getElementById('wizard-nicht-vorhanden');
     if (!checkbox) return;
 
@@ -311,4 +331,5 @@ export function onWizardNichtVorhandenChange() {
         delete appState.currentProjekt.wizardSkipped[step.id];
     }
     persistCurrentProjekt();
+    updateWizardNextButton(step);
 }

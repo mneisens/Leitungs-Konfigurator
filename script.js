@@ -12,7 +12,8 @@ import {
     updateAuthUI,
     loginUser,
     registerUser,
-    logoutUser
+    logoutUser,
+    showAuthMode
 } from './js/firebase.js';
 import {
     loadProjects,
@@ -31,7 +32,9 @@ import {
     saveAdminWizardConfig,
     adminLoadFromJson,
     adminMoveWizardStep,
-    adminRemoveWizardStep
+    adminRemoveWizardStep,
+    adminFilterSteps,
+    adminToggleStep
 } from './js/admin.js';
 import {
     wizardJumpToQuestion,
@@ -79,11 +82,13 @@ document.addEventListener('keydown', e => {
         return;
     }
 
-    // Enter im Login-Formular meldet direkt an
+    // Enter im Login-/Registrierungs-Formular löst die jeweilige Aktion aus
     if (e.key === 'Enter' && document.getElementById('view-auth')?.classList.contains('active')) {
-        const target = e.target;
-        if (target?.id === 'auth-email' || target?.id === 'auth-password') {
+        const id = e.target?.id;
+        if (id === 'auth-email' || id === 'auth-password') {
             loginUser();
+        } else if (id === 'reg-email' || id === 'reg-password' || id === 'reg-password-repeat') {
+            registerUser();
         }
     }
 });
@@ -134,6 +139,7 @@ Object.assign(window, {
     logoutUser,
     registerUser,
     loginUser,
+    showAuthMode,
     exportAllProjects,
     importProjects,
     openNewProjektForm,
@@ -146,6 +152,8 @@ Object.assign(window, {
     adminLoadFromJson,
     adminMoveWizardStep,
     adminRemoveWizardStep,
+    adminFilterSteps,
+    adminToggleStep,
     wizardJumpToQuestion,
     wizardApplyJump,
     wizardCancelJump,

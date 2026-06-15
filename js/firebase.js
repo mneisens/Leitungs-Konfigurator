@@ -219,9 +219,9 @@ export async function registerUser() {
         });
         return;
     }
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const repeat = document.getElementById('auth-password-repeat').value;
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const repeat = document.getElementById('reg-password-repeat').value;
     if (!email || !password) {
         showModal('Bitte E-Mail und Passwort eingeben.', { type: 'warning', title: 'Fehlende Eingabe' });
         return;
@@ -236,6 +236,25 @@ export async function registerUser() {
     } catch (error) {
         showModal(`Registrierung fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
     }
+}
+
+
+/**
+ * Wechselt zwischen Login- und Registrierungs-Ansicht.
+ * @param {'login'|'register'} mode
+ * @returns {void}
+ */
+export function showAuthMode(mode) {
+    const loginBox = document.getElementById('auth-login-box');
+    const registerBox = document.getElementById('auth-register-box');
+    if (!loginBox || !registerBox) return;
+
+    const showRegister = mode === 'register';
+    loginBox.hidden = showRegister;
+    registerBox.hidden = !showRegister;
+
+    const focusField = document.getElementById(showRegister ? 'reg-email' : 'auth-email');
+    focusField?.focus();
 }
 
 
