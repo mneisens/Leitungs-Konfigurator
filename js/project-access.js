@@ -11,6 +11,20 @@ export const ROLE_OWNER = 'owner';
 export const ROLE_EDIT = 'edit';
 export const ROLE_VIEW = 'view';
 
+export const VISIBILITY_PUBLIC = 'public';
+export const VISIBILITY_PRIVATE = 'private';
+
+
+/**
+ * Ein Projekt ist standardmäßig für alle sichtbar (public),
+ * außer der Eigentümer hat es ausdrücklich auf privat gestellt.
+ * @param {object|null} projekt
+ * @returns {boolean}
+ */
+export function isProjectPublic(projekt) {
+    return (projekt?.visibility || VISIBILITY_PUBLIC) === VISIBILITY_PUBLIC;
+}
+
 const ROLE_LABELS = {
     [ROLE_OWNER]: 'Eigentümer',
     [ROLE_EDIT]: 'Bearbeiten',
@@ -30,7 +44,10 @@ export function getProjectRole(projekt) {
     if (projekt.ownerId === uid) return ROLE_OWNER;
 
     const member = projekt.members?.[uid];
-    return member?.role || null;
+    if (member?.role) return member.role;
+
+    if (isProjectPublic(projekt)) return ROLE_VIEW;
+    return null;
 }
 
 
@@ -89,6 +106,10 @@ export function ensureProjectAccessFields(projekt, isNew = false) {
     const uid = appState.currentUser.uid;
     const email = (appState.currentUser.email || '').toLowerCase();
 
+    if (!projekt.visibility) {
+        projekt.visibility = VISIBILITY_PUBLIC;
+    }
+
     if (isNew || !projekt.ownerId) {
         projekt.ownerId = uid;
         projekt.ownerEmail = email;
@@ -130,6 +151,7 @@ export function projectToFirestore(projekt) {
         bauteile: projekt.bauteile || [],
         wizardAnswers: projekt.wizardAnswers || {},
         wizardSkipped: projekt.wizardSkipped || {},
+        visibility: projekt.visibility || VISIBILITY_PUBLIC,
         ownerId: projekt.ownerId || null,
         ownerEmail: projekt.ownerEmail || '',
         members: projekt.members || {},
@@ -157,11 +179,28 @@ export function projectFromFirestore(data) {
         bauteile: data.bauteile || [],
         wizardAnswers: data.wizardAnswers || {},
         wizardSkipped: data.wizardSkipped || {},
+        visibility: data.visibility || VISIBILITY_PUBLIC,
         ownerId: data.ownerId || null,
         ownerEmail: data.ownerEmail || '',
         members: data.members || {},
         memberIds: data.memberIds || []
     };
+}
+
+
+/**
+ * @param {object|null} projekt
+ * @returns {string}
+ */
+export function getProjectOwnerLabel(projekt) {
+    if (!projekt) return '';
+    const email = (projekt.ownerEmail || '').trim();
+    if (!email && !projekt.ownerId) return 'Unbekannt';
+    const display = email || 'Unbekannt';
+    if (appState.currentUser && projekt.ownerId === appState.currentUser.uid) {
+        return `${display} (Sie)`;
+    }
+    return display;
 }
 
 
@@ -233,6 +272,11 @@ export function updateReadOnlyBanner() {
 
     const canEdit = canEditProject(projekt);
     banner.hidden = canEdit || !appState.firebaseReady;
+
+    const ownerLabel = document.getElementById('readonly-owner-label');
+    if (ownerLabel) {
+        ownerLabel.textContent = getProjectOwnerLabel(projekt);
+    }
 }
 
 
@@ -279,6 +323,7 @@ export function renderProjectSharingView() {
         titel.textContent = `Freigaben – ${projekt.projektnummer} – ${projekt.name}`;
     }
 
+    updateVisibilityToggle();
     populateShareUserDropdown();
 
     const members = Object.entries(projekt.members || {})
@@ -303,6 +348,28 @@ export function renderProjectSharingView() {
             `).join('')}
         </ul>
     `;
+}
+
+
+/**
+ * Aktualisiert den Sichtbarkeits-Schalter (für alle sichtbar / privat).
+ * @returns {void}
+ */
+export function updateVisibilityToggle() {
+    const checkbox = document.getElementById('project-public-toggle');
+    const hint = document.getElementById('visibility-hint');
+    const projekt = appState.currentProjekt;
+    if (!checkbox || !projekt) return;
+
+    const isPublic = isProjectPublic(projekt);
+    checkbox.checked = isPublic;
+    checkbox.disabled = !canManageSharing(projekt);
+
+    if (hint) {
+        hint.textContent = isPublic
+            ? 'Dieses Projekt ist für alle angemeldeten Nutzer sichtbar (nur lesend). Bearbeiten dürfen weiterhin nur der Eigentümer und freigegebene Nutzer.'
+            : 'Dieses Projekt ist privat. Nur der Eigentümer und ausdrücklich freigegebene Nutzer sehen es.';
+    }
 }
 
 

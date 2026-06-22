@@ -22,7 +22,8 @@ import {
     startProjektWizard,
     shareProjectWithUser,
     removeProjectShare,
-    openProjectSharing
+    openProjectSharing,
+    toggleProjectVisibility
 } from './js/projects.js';
 import { showView } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
@@ -73,8 +74,15 @@ import {
     onLaengeChange,
     toggleAusrichtung
 } from './js/konfigurator.js';
-import { editLeitung, deleteLeitung } from './js/overview.js';
+import { editLeitung, deleteLeitung, deleteBauteil } from './js/overview.js';
+import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 document.addEventListener('keydown', e => {
+    const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
+    if (bauteilOverlay?.classList.contains('active')) {
+        if (e.key === 'Escape') closeBauteilEdit();
+        return;
+    }
+
     const overlay = document.getElementById('modal-overlay');
     if (overlay?.classList.contains('active')) {
         if (e.key === 'Escape') closeModal(false);
@@ -147,6 +155,7 @@ Object.assign(window, {
     shareProjectWithUser,
     removeProjectShare,
     openProjectSharing,
+    toggleProjectVisibility,
     adminAddWizardStep,
     saveAdminWizardConfig,
     adminLoadFromJson,
@@ -189,5 +198,10 @@ Object.assign(window, {
     exportPDF,
     closeModal,
     editLeitung,
-    deleteLeitung
+    deleteLeitung,
+    deleteBauteil,
+    openBauteilEdit,
+    closeBauteilEdit,
+    saveBauteilEdit,
+    filterBauteilEditHersteller
 });

@@ -13,8 +13,13 @@ service cloud.firestore {
       );
     }
 
+    function isPublic(projectData) {
+      return request.auth != null
+        && projectData.visibility == 'public';
+    }
+
     match /projects/{projectId} {
-      allow read: if isMember(resource.data);
+      allow read: if isMember(resource.data) || isPublic(resource.data);
       allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds.hasAny([request.auth.uid]);

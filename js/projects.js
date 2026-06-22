@@ -21,10 +21,14 @@ import {
     canManageSharing,
     getProjectRole,
     getRoleLabel,
+    getProjectOwnerLabel,
     assertCanEdit,
     renderProjectSharingView,
+    updateVisibilityToggle,
     ROLE_EDIT,
-    ROLE_VIEW
+    ROLE_VIEW,
+    VISIBILITY_PUBLIC,
+    VISIBILITY_PRIVATE
 } from './project-access.js';
 
 /**
@@ -114,8 +118,18 @@ async function loadProjectsFromFirestore() {
     const col = getProjectsCollection();
     if (!col) return [];
 
-    const snap = await col.where('memberIds', 'array-contains', uid).get();
-    const projects = snap.docs.map(doc => projectFromFirestore(doc.data()));
+    const [memberSnap, publicSnap] = await Promise.all([
+        col.where('memberIds', 'array-contains', uid).get(),
+        col.where('visibility', '==', VISIBILITY_PUBLIC).get()
+    ]);
+
+    const byId = new Map();
+    memberSnap.docs.forEach(doc => byId.set(doc.id, projectFromFirestore(doc.data())));
+    publicSnap.docs.forEach(doc => {
+        if (!byId.has(doc.id)) byId.set(doc.id, projectFromFirestore(doc.data()));
+    });
+
+    const projects = Array.from(byId.values());
 
     await migrateLegacyProjects(projects, uid);
     return projects;
@@ -171,8 +185,10 @@ export function persistCurrentProjekt() {
     const idx = projects.findIndex(p => p.id === appState.currentProjekt.id);
     if (idx >= 0) {
         projects[idx] = appState.currentProjekt;
-        saveProjects(projects);
+    } else {
+        projects.unshift(appState.currentProjekt);
     }
+    saveProjects(projects);
 }
 
 
@@ -248,6 +264,7 @@ export function saveProjekt(event) {
         projekt.ownerEmail = projects[existingIndex].ownerEmail;
         projekt.members = projects[existingIndex].members;
         projekt.memberIds = projects[existingIndex].memberIds;
+        projekt.visibility = projects[existingIndex].visibility || VISIBILITY_PUBLIC;
         projects[existingIndex] = projekt;
     } else {
         ensureProjectAccessFields(projekt, true);
@@ -464,6 +481,36 @@ export async function removeProjectShare(memberUid) {
 
 
 /**
+ * Schaltet die Sichtbarkeit zwischen „für alle sichtbar" und „privat" um.
+ * @returns {void}
+ */
+export function toggleProjectVisibility() {
+    const projekt = appState.currentProjekt;
+    if (!projekt) return;
+
+    if (!canManageSharing(projekt)) {
+        showModal('Nur der Projekteigentümer kann die Sichtbarkeit ändern.', {
+            type: 'warning',
+            title: 'Keine Berechtigung'
+        });
+        updateVisibilityToggle();
+        return;
+    }
+
+    const checkbox = document.getElementById('project-public-toggle');
+    projekt.visibility = checkbox?.checked ? VISIBILITY_PUBLIC : VISIBILITY_PRIVATE;
+
+    const projects = getProjects();
+    const idx = projects.findIndex(p => p.id === projekt.id);
+    if (idx >= 0) projects[idx] = projekt;
+
+    saveProjects(projects);
+    saveProjectToFirestore(projekt);
+    updateVisibilityToggle();
+}
+
+
+/**
  * Öffnet die Freigaben-Seite (nur Eigentümer).
  * @returns {void}
  */
@@ -549,6 +596,11 @@ export async function loadProjects() {
         }
 
         const kundeEl = fragment.querySelector('[data-field="kunde"]');
+        const ownerEl = fragment.querySelector('[data-field="owner"]');
+        if (ownerEl && (p.ownerEmail || p.ownerId)) {
+            ownerEl.hidden = false;
+            ownerEl.textContent = `Ersteller: ${getProjectOwnerLabel(p)}`;
+        }
         if (p.kunde && kundeEl) {
             kundeEl.hidden = false;
             kundeEl.textContent = `Kunde: ${p.kunde}`;

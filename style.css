@@ -326,6 +326,26 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.visibility-box {
+    padding: 0.9rem 1rem;
+    background: var(--bg-secondary, #f5f7fa);
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 6px;
+}
+
+.visibility-box .wizard-skip-label {
+    font-weight: 600;
+}
+
+.visibility-box .text-muted {
+    margin: 0.5rem 0 0;
+}
+
+.sharing-divider {
+    border-top: 1px solid var(--border-color, #cbd5e1);
+    margin: 1.25rem 0;
+}
+
 .sharing-form-row {
     align-items: flex-end;
 }
@@ -769,6 +789,14 @@ body {
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     border-bottom-left-radius: inherit;
     border-bottom-right-radius: inherit;
+}
+
+#view-projekt-wizard .wizard-add-row {
+    scroll-margin-bottom: 6rem;
+}
+
+#view-projekt-wizard .wizard-created-list {
+    padding-bottom: 0.5rem;
 }
 
 /* ===== Konfigurator ===== */
@@ -1380,6 +1408,13 @@ body {
 
 .modal-overlay.modal-info .modal-header {
     background: linear-gradient(135deg, #fff8f3, #fff);
+}
+
+.bauteil-edit-typ {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary, #f5f7fa);
+    border-radius: var(--radius-md);
+    font-weight: 600;
 }
 
 /* Wizard & Admin Erweiterungen */

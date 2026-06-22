@@ -481,7 +481,7 @@
             </div>
             
             <div id="projekt-readonly-banner" class="readonly-banner" hidden>
-                Sie haben nur Lesezugriff auf dieses Projekt.
+                Sie haben nur Lesezugriff auf dieses Projekt. Ersteller: <span id="readonly-owner-label"></span>
             </div>
 
             <div class="uebersicht-info" id="uebersicht-projekt-info">
@@ -535,6 +535,16 @@
             </div>
 
             <div class="form-card sharing-card">
+                <div class="visibility-box">
+                    <label class="wizard-skip-label">
+                        <input type="checkbox" id="project-public-toggle" onchange="toggleProjectVisibility()">
+                        Für alle Nutzer sichtbar (Standard)
+                    </label>
+                    <p class="text-muted" id="visibility-hint"></p>
+                </div>
+
+                <div class="sharing-divider"></div>
+
                 <p class="text-muted">Registrierten Nutzer aus der Liste auswählen und Berechtigung vergeben. Nur der Eigentümer verwaltet Freigaben.</p>
                 <div class="form-row sharing-form-row">
                     <div class="form-group">
@@ -625,6 +635,45 @@
             <div class="modal-footer" id="modal-footer">
                 <button class="btn btn-secondary" id="modal-cancel" onclick="closeModal(false)">Abbrechen</button>
                 <button class="btn btn-primary" id="modal-confirm" onclick="closeModal(true)">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bauteil bearbeiten -->
+    <div id="bauteil-edit-overlay" class="modal-overlay" onclick="closeBauteilEdit()">
+        <div class="modal-container" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-icon">⚙️</span>
+                <h3>Bauteil bearbeiten</h3>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="bauteil-edit-id">
+                <div class="form-group">
+                    <label>Typ</label>
+                    <div id="bauteil-edit-typ" class="bauteil-edit-typ"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="bauteil-edit-hersteller">Hersteller</label>
+                        <select id="bauteil-edit-hersteller" onchange="filterBauteilEditHersteller()">
+                            <option value="">-- Alle --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bauteil-edit-artikel">Bauteil</label>
+                        <select id="bauteil-edit-artikel">
+                            <option value="">-- Bitte wählen --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bauteil-edit-anzahl">Anzahl</label>
+                    <input type="number" id="bauteil-edit-anzahl" min="1" step="1" value="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeBauteilEdit()">Abbrechen</button>
+                <button type="button" class="btn btn-primary" onclick="saveBauteilEdit()">Speichern</button>
             </div>
         </div>
     </div>

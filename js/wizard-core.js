@@ -6,6 +6,8 @@ import { generateId, escapeHtml } from './utils.js';
 import { showModal } from './modal.js';
 import { getBauteilByNummer, getBauteilTypName, getBauteileByTyp } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
+import { assertCanEdit, canEditProject } from './project-access.js';
+import { openBauteilEdit } from './bauteil-edit.js';
 import { getCurrentWizardStep, getWizardKategorie, renderWizardCreatedLeitungen } from './wizard-leitungen.js';
 
 export function stepHasLeitungen(step) {
@@ -147,9 +149,10 @@ export function renderWizardCreatedBauteile(step) {
         }
         const g = grouped.get(key);
         g.count += b.anzahl || 1;
-        g.ids.push(b.id);
+        if (b.id) g.ids.push(b.id);
     });
 
+    const canEdit = canEditProject(appState.currentProjekt);
     const rows = Array.from(grouped.values())
         .sort((a, b) => a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
         .map(item => `
@@ -157,7 +160,9 @@ export function renderWizardCreatedBauteile(step) {
                 <span class="artikel">${escapeHtml(item.artikelnummer)}</span>
                 <span>${escapeHtml(getBauteilTypName(item.typ))}: ${escapeHtml(item.bezeichnung)}</span>
                 <span class="count">${item.count}</span>
-                <button type="button" class="btn btn-danger btn-small btn-icon" onclick="wizardDeleteBauteil('${escapeHtml(item.ids[0])}')" title="Entfernen">🗑️</button>
+                ${canEdit ? `
+                <button type="button" class="btn btn-secondary btn-small btn-icon" data-action="edit-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Bearbeiten">✏️</button>
+                <button type="button" class="btn btn-danger btn-small btn-icon" data-action="delete-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Eine entfernen">🗑️</button>` : ''}
             </li>
         `).join('');
 
@@ -165,6 +170,25 @@ export function renderWizardCreatedBauteile(step) {
         <h4>Zu dieser Frage angelegte Bauteile (${bauteile.length})</h4>
         <ul>${rows}</ul>
     `;
+
+    container.querySelectorAll('[data-action="edit-bauteil"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            openBauteilEdit(btn.getAttribute('data-bauteil-id'), () => {
+                renderWizardCreatedBauteile(step);
+                updateWizardSkipCheckbox(step);
+            });
+        });
+    });
+
+    container.querySelectorAll('[data-action="delete-bauteil"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            wizardDeleteBauteil(btn.getAttribute('data-bauteil-id'));
+        });
+    });
 }
 
 
@@ -211,8 +235,20 @@ export function wizardAddBauteilFromStep(typ) {
 
 export function wizardDeleteBauteil(bauteilId) {
     if (!appState.currentProjekt || !bauteilId) return;
+    if (!assertCanEdit('Bauteile im Assistenten')) return;
+
     const step = getCurrentWizardStep();
-    appState.currentProjekt.bauteile = (appState.currentProjekt.bauteile || []).filter(b => b.id !== bauteilId);
+    const bauteile = appState.currentProjekt.bauteile || [];
+    const idx = bauteile.findIndex(b => b.id === bauteilId);
+    if (idx < 0) return;
+
+    const bauteil = bauteile[idx];
+    if ((bauteil.anzahl || 1) > 1) {
+        bauteil.anzahl -= 1;
+    } else {
+        appState.currentProjekt.bauteile = bauteile.filter(b => b.id !== bauteilId);
+    }
+
     persistCurrentProjekt();
     renderWizardCreatedBauteile(step);
     updateWizardSkipCheckbox(step);

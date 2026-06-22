@@ -7,6 +7,7 @@ import { showModal } from './modal.js';
 import { showView } from './navigation.js';
 import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
+import { assertCanEdit, applyReadOnlyUI } from './project-access.js';
 import { setWizardOelflexMode, findOelflexArtikel } from './oelflex.js';
 import {
     stepHasLeitungen,
@@ -34,89 +35,112 @@ export function onWizardLaengeChange() {
 }
 
 
-export function updateWizardAutoArtikel() {
-    const resultDiv = document.getElementById('wizard-auto-artikel');
-    const artikelInput = document.getElementById('wizard-artikelnummer');
-    if (!resultDiv || !artikelInput) return;
+function laengeMatches(artikelLaenge, selectedLaenge) {
+    return typeof artikelLaenge === 'number'
+        && !Number.isNaN(selectedLaenge)
+        && Math.abs(artikelLaenge - selectedLaenge) < 0.001;
+}
 
+
+function pickBestArtikelMatch(matches, laenge) {
+    const filtered = typeof laenge === 'number' && !Number.isNaN(laenge)
+        ? matches.filter(a => laengeMatches(a.laenge, laenge))
+        : matches;
+
+    if (filtered.length === 0) return null;
+
+    return filtered.sort((a, b) => {
+        const aScore = (a.steckerA.includes('gewinkelt') ? 1 : 0) + (a.steckerB.includes('gewinkelt') ? 1 : 0);
+        const bScore = (b.steckerA.includes('gewinkelt') ? 1 : 0) + (b.steckerB.includes('gewinkelt') ? 1 : 0);
+        return aScore - bScore;
+    })[0];
+}
+
+
+/**
+ * Ermittelt den passenden Katalog-Artikel aus den aktuellen Wizard-Auswahlfeldern.
+ * @returns {{ artikel: object|null, artikelnummer: string, error?: string }}
+ */
+export function resolveWizardArtikelFromForm() {
     const step = getCurrentWizardStep();
     const kategorie = getWizardKategorie();
 
     if (kategorie === 'oelflex' || stepIsOelflexWizard(step)) {
         const adern = document.getElementById('wizard-oelflex-adern')?.value;
         const querschnitt = document.getElementById('wizard-oelflex-querschnitt')?.value;
-        const laengeRaw = document.getElementById('wizard-oelflex-laenge')?.value;
-
         if (!adern || !querschnitt) {
-            resultDiv.className = 'wizard-auto-result no-match';
-            resultDiv.innerHTML = '<span class="artikel-label">Aderzahl und Querschnitt wählen</span>';
-            return;
+            return { artikel: null, artikelnummer: '', error: 'Aderzahl und Querschnitt wählen.' };
         }
-
         const artikel = findOelflexArtikel(adern, querschnitt);
         if (!artikel) {
-            resultDiv.className = 'wizard-auto-result no-match';
-            resultDiv.innerHTML = '<span class="artikel-label">Kein passender Ölflex-Artikel gefunden</span>';
-            return;
+            return { artikel: null, artikelnummer: '', error: 'Kein passender Ölflex-Artikel gefunden.' };
         }
+        return { artikel, artikelnummer: artikel.artikelnummer || '' };
+    }
 
-        artikelInput.value = artikel.artikelnummer || '';
+    const hersteller = document.getElementById('wizard-hersteller')?.value;
+    const steckerABase = document.getElementById('wizard-stecker-a')?.value;
+    const steckerBBase = document.getElementById('wizard-stecker-b')?.value;
+    const laengeRaw = document.getElementById('wizard-laenge')?.value;
+    const laenge = laengeRaw ? parseFloat(laengeRaw) : null;
+
+    if (!hersteller || !steckerABase || !steckerBBase) {
+        return { artikel: null, artikelnummer: '', error: 'Bitte Hersteller, Stecker A und Stecker B wählen.' };
+    }
+
+    const matches = getWizardPairMatches(hersteller, steckerABase, steckerBBase);
+    if (matches.length === 0) {
+        return { artikel: null, artikelnummer: '', error: 'Keine passende Leitung gefunden.' };
+    }
+
+    if (laenge !== null && !Number.isNaN(laenge)) {
+        const artikel = pickBestArtikelMatch(matches, laenge);
+        if (!artikel) {
+            return { artikel: null, artikelnummer: '', error: 'Für diese Länge wurde kein Artikel gefunden.' };
+        }
+        return { artikel, artikelnummer: artikel.artikelnummer || '' };
+    }
+
+    if (matches.length === 1) {
+        return { artikel: matches[0], artikelnummer: matches[0].artikelnummer || '' };
+    }
+
+    return { artikel: null, artikelnummer: '', error: 'Mehrere Treffer – bitte Länge wählen.' };
+}
+
+
+export function updateWizardAutoArtikel() {
+    const resultDiv = document.getElementById('wizard-auto-artikel');
+    const artikelInput = document.getElementById('wizard-artikelnummer');
+    if (!resultDiv || !artikelInput) return;
+
+    const kategorie = getWizardKategorie();
+    const resolved = resolveWizardArtikelFromForm();
+
+    if (!resolved.artikel) {
+        resultDiv.className = 'wizard-auto-result no-match';
+        resultDiv.innerHTML = `<span class="artikel-label">${escapeHtml(resolved.error || 'Bitte Auswahl vervollständigen')}</span>`;
+        return;
+    }
+
+    artikelInput.value = resolved.artikelnummer;
+
+    if (kategorie === 'oelflex' || stepIsOelflexWizard(getCurrentWizardStep())) {
+        const laengeRaw = document.getElementById('wizard-oelflex-laenge')?.value;
         const laengeHinweis = laengeRaw ? `${laengeRaw} m (Meterware)` : 'Bitte Länge in Metern eingeben';
         resultDiv.className = 'wizard-auto-result';
         resultDiv.innerHTML = `
-            <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer)}</span>
-            <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung)}</span>
+            <span class="artikel-nummer">${escapeHtml(resolved.artikel.artikelnummer)}</span>
+            <span class="artikel-beschreibung">${escapeHtml(resolved.artikel.beschreibung)}</span>
             <span class="artikel-hinweis">${escapeHtml(laengeHinweis)}</span>
         `;
         return;
     }
 
-    const hersteller = document.getElementById('wizard-hersteller').value;
-    const steckerABase = document.getElementById('wizard-stecker-a').value;
-    const steckerBBase = document.getElementById('wizard-stecker-b').value;
-    const laengeRaw = document.getElementById('wizard-laenge').value;
-    const laenge = laengeRaw ? parseFloat(laengeRaw) : null;
-
-    if (!hersteller || !steckerABase || !steckerBBase) {
-        resultDiv.className = 'wizard-auto-result no-match';
-        resultDiv.innerHTML = '<span class="artikel-label">Bitte Hersteller, Stecker A/B und Länge wählen</span>';
-        return;
-    }
-
-    const matches = getWizardPairMatches(hersteller, steckerABase, steckerBBase);
-    if (matches.length === 0) {
-        resultDiv.className = 'wizard-auto-result no-match';
-        resultDiv.innerHTML = '<span class="artikel-label">Keine passende Leitung gefunden</span>';
-        return;
-    }
-
-    let artikel = null;
-    if (laenge !== null && !Number.isNaN(laenge)) {
-        artikel = matches
-            .filter(a => a.laenge === laenge)
-            .sort((a, b) => {
-                const aScore = (a.steckerA.includes('gewinkelt') ? 1 : 0) + (a.steckerB.includes('gewinkelt') ? 1 : 0);
-                const bScore = (b.steckerA.includes('gewinkelt') ? 1 : 0) + (b.steckerB.includes('gewinkelt') ? 1 : 0);
-                return aScore - bScore;
-            })[0] || null;
-        if (!artikel) {
-            resultDiv.className = 'wizard-auto-result no-match';
-            resultDiv.innerHTML = '<span class="artikel-label">Für diese Länge wurde kein Artikel gefunden</span>';
-            return;
-        }
-    } else if (matches.length === 1) {
-        artikel = matches[0];
-    } else {
-        resultDiv.className = 'wizard-auto-result no-match';
-        resultDiv.innerHTML = '<span class="artikel-label">Mehrere Treffer - bitte Länge wählen</span>';
-        return;
-    }
-
-    artikelInput.value = artikel.artikelnummer || '';
     resultDiv.className = 'wizard-auto-result';
     resultDiv.innerHTML = `
-        <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer || '')}</span>
-        <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung || '')}</span>
+        <span class="artikel-nummer">${escapeHtml(resolved.artikel.artikelnummer || '')}</span>
+        <span class="artikel-beschreibung">${escapeHtml(resolved.artikel.beschreibung || '')}</span>
     `;
 }
 
@@ -139,6 +163,7 @@ export function populateWizardArtikelVorschlaege() {
 
 export function wizardAddLeitungFromStep() {
     if (!appState.currentProjekt) return;
+    if (!assertCanEdit('Leitungen im Assistenten')) return;
     ensureWizardAnswers(appState.currentProjekt);
 
     const step = appState.wizardSteps[appState.wizardStepIndex];
@@ -148,11 +173,17 @@ export function wizardAddLeitungFromStep() {
     const anzahlInput = document.getElementById('wizard-anzahl');
     const bezInput = document.getElementById('wizard-leitungsbezeichnung');
 
-    const artikelnummerRaw = artikelInput.value.trim();
+    const resolved = resolveWizardArtikelFromForm();
+    let artikelnummerRaw = artikelInput?.value?.trim() || '';
+    if (!artikelnummerRaw && resolved.artikelnummer) {
+        artikelnummerRaw = resolved.artikelnummer;
+        if (artikelInput) artikelInput.value = artikelnummerRaw;
+    }
+
     if (!artikelnummerRaw) {
-        showModal('Bitte eine Artikelnummer eingeben, um eine Leitung anzulegen.', {
+        showModal(resolved.error || 'Bitte Hersteller, Stecker und Länge wählen oder eine Artikelnummer eingeben.', {
             type: 'warning',
-            title: 'Artikelnummer fehlt'
+            title: 'Leitung kann nicht angelegt werden'
         });
         return;
     }
@@ -161,7 +192,7 @@ export function wizardAddLeitungFromStep() {
     if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
     if (anzahl > 200) anzahl = 200;
 
-    const artikel = getArtikelByNummer(artikelnummerRaw);
+    const artikel = getArtikelByNummer(artikelnummerRaw) || resolved.artikel;
     const bezeichnung = bezInput.value.trim() || getWizardDefaultBezeichnung(step);
     const kategorie = getWizardKategorie() || artikel?.kategorie || 'sonstiges';
 
@@ -254,7 +285,6 @@ export function renderProjektWizard() {
         hinweisDiv.style.display = step.hinweis ? '' : 'none';
     }
     document.getElementById('wizard-antwort').value = answer;
-    document.getElementById('wizard-hersteller').value = 'Beckhoff';
     document.getElementById('wizard-stecker-a').innerHTML = '<option value="">-- Bitte wählen --</option>';
     document.getElementById('wizard-stecker-b').innerHTML = '<option value="">-- Bitte wählen --</option>';
     document.getElementById('wizard-laenge').innerHTML = '<option value="">-- Bitte wählen --</option>';
@@ -280,12 +310,22 @@ export function renderProjektWizard() {
         populateWizardKategorieDropdown();
         document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
         populateWizardHerstellerDropdown();
+        const herstellerSelect = document.getElementById('wizard-hersteller');
+        if (herstellerSelect) {
+            const preferred = ['Beckhoff', 'Murr Elektronik', 'Phoenix Contact'];
+            const available = preferred.find(h =>
+                Array.from(herstellerSelect.options).some(opt => opt.value === h)
+            );
+            if (available) herstellerSelect.value = available;
+        }
         onWizardKategorieChange();
         renderWizardCreatedLeitungen(step);
     } else {
         setWizardOelflexMode(false);
         renderWizardCreatedLeitungen(step);
     }
+
+    applyReadOnlyUI();
 }
 
 

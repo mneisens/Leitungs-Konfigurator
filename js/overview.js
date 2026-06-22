@@ -6,11 +6,13 @@ import { escapeHtml, formatDate } from './utils.js';
 import { showModal } from './modal.js';
 import { showView } from './navigation.js';
 import { getBauteilTypName } from './catalog.js';
-import { getProjects, saveProjects } from './projects.js';
+import { getProjects, saveProjects, persistCurrentProjekt } from './projects.js';
+import { openBauteilEdit } from './bauteil-edit.js';
 import {
     canEditProject,
     getProjectRole,
     getRoleLabel,
+    getProjectOwnerLabel,
     updateReadOnlyBanner,
     updateSharingButton,
     applyReadOnlyUI
@@ -38,6 +40,10 @@ export function renderUebersicht() {
         <div class="info-item">
             <span class="info-label">Projektname</span>
             <span class="info-value">${escapeHtml(appState.currentProjekt.name)}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Ersteller</span>
+            <span class="info-value">${escapeHtml(getProjectOwnerLabel(appState.currentProjekt))}</span>
         </div>
         ${appState.currentProjekt.kunde ? `
         <div class="info-item">
@@ -103,12 +109,16 @@ export function renderBauteileTable() {
                 hersteller: b.hersteller || '-',
                 artikelnummer: b.artikelnummer || '-',
                 bezeichnung: b.bezeichnung || '-',
-                count: 0
+                count: 0,
+                ids: []
             });
         }
-        grouped.get(key).count += b.anzahl || 1;
+        const g = grouped.get(key);
+        g.count += b.anzahl || 1;
+        if (b.id) g.ids.push(b.id);
     });
 
+    const canEdit = canEditProject(appState.currentProjekt);
     const rows = Array.from(grouped.values())
         .sort((a, b) => a.gruppe.localeCompare(b.gruppe, 'de') || a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
         .map(item => `
@@ -119,6 +129,15 @@ export function renderBauteileTable() {
                 <td>${escapeHtml(item.artikelnummer)}</td>
                 <td>${escapeHtml(item.bezeichnung)}</td>
                 <td>${item.count}</td>
+                <td class="table-actions">
+                    ${canEdit ? `
+                    <button type="button" class="btn btn-secondary btn-small btn-icon" data-action="edit-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Bearbeiten">
+                        ✏️
+                    </button>
+                    <button type="button" class="btn btn-danger btn-small btn-icon" data-action="delete-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Eine entfernen">
+                        🗑️
+                    </button>` : ''}
+                </td>
             </tr>
         `).join('');
 
@@ -139,6 +158,7 @@ export function renderBauteileTable() {
                             <th>Artikelnr.</th>
                             <th>Bezeichnung</th>
                             <th>Anzahl</th>
+                            <th>Aktionen</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -146,6 +166,22 @@ export function renderBauteileTable() {
             </div>
         </div>
     `;
+
+    container.querySelectorAll('[data-action="edit-bauteil"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            openBauteilEdit(btn.getAttribute('data-bauteil-id'), () => renderUebersicht());
+        });
+    });
+
+    container.querySelectorAll('[data-action="delete-bauteil"]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteBauteil(btn.getAttribute('data-bauteil-id'));
+        });
+    });
 }
 
 
@@ -267,6 +303,34 @@ export function renderLeitungTable() {
     });
     
     container.innerHTML = html;
+}
+
+
+/**
+ * Entfernt ein Bauteil (oder verringert die Anzahl um 1).
+ * @param {string} bauteilId
+ * @returns {void}
+ */
+export function deleteBauteil(bauteilId) {
+    if (!appState.currentProjekt || !bauteilId) return;
+    if (!canEditProject(appState.currentProjekt)) {
+        showModal('Sie haben nur Lesezugriff auf dieses Projekt.', { type: 'warning', title: 'Keine Berechtigung' });
+        return;
+    }
+
+    const bauteile = appState.currentProjekt.bauteile || [];
+    const idx = bauteile.findIndex(b => b.id === bauteilId);
+    if (idx < 0) return;
+
+    const bauteil = bauteile[idx];
+    if ((bauteil.anzahl || 1) > 1) {
+        bauteil.anzahl -= 1;
+    } else {
+        appState.currentProjekt.bauteile = bauteile.filter(b => b.id !== bauteilId);
+    }
+
+    persistCurrentProjekt();
+    renderUebersicht();
 }
 
 
