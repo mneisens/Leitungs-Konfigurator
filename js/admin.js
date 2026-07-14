@@ -129,6 +129,9 @@ function renderStepBadges(step) {
     if (step.mengenfeld?.aktiv) {
         badges.push('<span class="admin-badge badge-menge">Mengenfeld</span>');
     }
+    if (step.vorauswahl && Object.keys(step.vorauswahl).length > 0) {
+        badges.push('<span class="admin-badge badge-vorauswahl">Vorauswahl</span>');
+    }
     if (step.optional) {
         badges.push('<span class="admin-badge badge-optional">Optional</span>');
     }
@@ -190,6 +193,23 @@ function renderStepForm(step) {
                 <div class="form-group">
                     <label>Gruppe</label>
                     <input type="text" data-field="gruppe" value="${escapeHtml(step.gruppe || '')}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Vorauswahl (wird beim Öffnen der Frage automatisch gesetzt)</label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Hersteller</label>
+                        <input type="text" data-field="vorauswahlHersteller" value="${escapeHtml(step.vorauswahl?.hersteller || '')}" placeholder="z. B. Beckhoff">
+                    </div>
+                    <div class="form-group">
+                        <label>Stecker A</label>
+                        <input type="text" data-field="vorauswahlSteckerA" value="${escapeHtml(step.vorauswahl?.steckerA || '')}" placeholder="z. B. M12">
+                    </div>
+                    <div class="form-group">
+                        <label>Stecker B</label>
+                        <input type="text" data-field="vorauswahlSteckerB" value="${escapeHtml(step.vorauswahl?.steckerB || '')}" placeholder="z. B. offen">
+                    </div>
                 </div>
             </div>
             <div class="form-row">
@@ -312,6 +332,22 @@ function handleAdminFieldChange(event) {
             } else {
                 delete step.mengenfeld;
             }
+            break;
+        }
+        case 'vorauswahlHersteller':
+        case 'vorauswahlSteckerA':
+        case 'vorauswahlSteckerB': {
+            const keyMap = {
+                vorauswahlHersteller: 'hersteller',
+                vorauswahlSteckerA: 'steckerA',
+                vorauswahlSteckerB: 'steckerB'
+            };
+            const vorauswahl = { ...(step.vorauswahl || {}) };
+            const value = event.target.value.trim();
+            if (value) vorauswahl[keyMap[field]] = value;
+            else delete vorauswahl[keyMap[field]];
+            if (Object.keys(vorauswahl).length > 0) step.vorauswahl = vorauswahl;
+            else delete step.vorauswahl;
             break;
         }
         case 'allowedCategories':

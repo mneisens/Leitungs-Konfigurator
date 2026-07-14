@@ -22,6 +22,14 @@ export function normalizeWizardStep(step, index) {
     }
     if (step?.defaultCategory) normalized.defaultCategory = step.defaultCategory;
     if (step?.hinweis) normalized.hinweis = String(step.hinweis).trim();
+    if (step?.vorauswahl && typeof step.vorauswahl === 'object') {
+        const vorauswahl = {};
+        ['hersteller', 'steckerA', 'steckerB'].forEach(key => {
+            const value = String(step.vorauswahl[key] || '').trim();
+            if (value) vorauswahl[key] = value;
+        });
+        if (Object.keys(vorauswahl).length > 0) normalized.vorauswahl = vorauswahl;
+    }
     if (step?.optional === true) normalized.optional = true;
     if (step?.mengenfeld?.aktiv) {
         normalized.mengenfeld = {

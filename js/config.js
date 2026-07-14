@@ -6,7 +6,7 @@ export const WIZARD_CAT = {
     sensor: ['sensor'],
     power: ['power', 'sonstiges'],
     oelflex: ['oelflex'],
-    antrieb: ['power', 'oelflex', 'sonstiges'],
+    antrieb: ['power', 'sensor', 'oelflex', 'sonstiges'],
     geber: ['sensor', 'power'],
     mts: ['power', 'sensor'],
     zuleitung: ['oelflex', 'sonstiges'],
@@ -14,77 +14,79 @@ export const WIZARD_CAT = {
 };
 
 /**
- * Erzeugt die Fragen für eine Spindel (Motor, Bremsen, Linearmaßstab, DMS, Temperatur, Not-Halt).
+ * Erzeugt die Fragen für eine Spindel
+ * (Antrieb, Bremse, Linearmaßstab Power, Kraftsensoren, Temperatur, Not-Halt, Beleuchtung).
  * @param {number} spindel Spindel-Nummer (1-4)
  * @param {number} basis Basis-Gruppennummer (10, 20, 30, 40)
  * @returns {object[]}
  */
 function spindelSteps(spindel, basis) {
     const g = n => `=${String(basis + n).padStart(3, '0')}`;
+    const nr = n => String(basis + n).padStart(3, '0');
     return [
         {
-            id: `${String(basis).padStart(3, '0')}-motorleitung`,
+            id: `${nr(0)}-antrieb`,
             gruppe: g(0),
-            frage: `Motorleitung Spindel ${spindel}?`,
+            frage: `Spindel ${spindel} Antrieb?`,
             allowedCategories: WIZARD_CAT.antrieb,
             defaultCategory: 'power',
-            hinweis: 'In der Regel ÖLFLEX SERVO 719 CY 4G35+2x(2x1,5).\n2x(2x1,5) ist für die Temperaturfühler – hat die Leitung diese nicht, zusätzlich eine Ölflex-Leitung anlegen.'
+            bauteilTypen: ['regler', 'netzwechselrichter', 'kapazitaetsmodul', 'ringkern'],
+            vorauswahl: { hersteller: 'Lapp Kabel' },
+            hinweis: 'Motorleitung: Hersteller Lapp oder Helukabel, Typ angeben (z. B. 4G35+2x(2x1,5 mm²)), Länge angeben.\nGeberleitung: Hersteller IGUS oder Baumüller, Länge angeben (z. B. 20 m).\nBauteile: Regler-Typ (händisch eingeben), Netzwechselrichter, Kapazitätsmodule + Anzahl, Ringkerne (Anzahl pro Netzwechselrichter).'
         },
         {
-            id: `${String(basis).padStart(3, '0')}-geberleitung`,
-            gruppe: g(0),
-            frage: `Geberleitung Spindel ${spindel}?`,
-            allowedCategories: WIZARD_CAT.geber,
-            defaultCategory: 'sensor',
-            hinweis: 'Hersteller Baumüller oder IGUS Sonderfertigung.'
-        },
-        {
-            id: `${String(basis + 1).padStart(3, '0')}-bremsen`,
+            id: `${nr(1)}-bremse`,
             gruppe: g(1),
-            frage: `Bremsen Spindel ${spindel}?`,
+            frage: `Spindel ${spindel} Bremse?`,
             allowedCategories: WIZARD_CAT.sensor,
             defaultCategory: 'sensor',
-            bauteilTypen: ['bremse', 'ventil'],
-            hinweis: 'Bremse z. B. Artikelnummer DV 030 FPM 101 R 12.\nFesto Ventil: VOFA-L26-T32C-M-G14-1C1-APP.\nSensorleitungen:\n• M12 Buchse → M8 3-polig Stift (Bremse geöffnet)\n• M8 3-polig Buchse → M12 Buchse (Ventil geöffnet)\n• M12 → Magnetventilstecker (Ventil öffnen)'
+            bauteilTypen: ['ventil'],
+            vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M12', steckerB: 'M8' },
+            hinweis: 'Bauteil: Bremsventil.\nSensorleitungen:\n• Beckhoff M12 Buchse → M8 3-polig Stift (Bremse geöffnet)\n• M12 Stift → M8 4-polig\n• M12 Stift → Ventilstecker (Murr)'
         },
         {
-            id: `${String(basis + 2).padStart(3, '0')}-linearmassstab`,
+            id: `${nr(2)}-linearmassstab-power`,
             gruppe: g(2),
-            frage: `Linearmaßstab Spindel ${spindel}?`,
+            frage: `Linearmaßstab Power (Spindel ${spindel})?`,
             allowedCategories: WIZARD_CAT.mts,
-            defaultCategory: 'power'
+            defaultCategory: 'power',
+            vorauswahl: { steckerA: 'M8', steckerB: 'offen' },
+            hinweis: 'Powerleitung M8 → offenes Ende.'
         },
         {
-            id: `${String(basis + 3).padStart(3, '0')}-dms`,
+            id: `${nr(3)}-kraftsensoren`,
             gruppe: g(3),
-            frage: `DMS Sensoren Spindel ${spindel}?`,
+            frage: `Spindel ${spindel} Kraftsensoren?`,
             bauteilTypen: ['dms'],
-            hinweis: 'Typ: DZ1 – Anzahl beim Bauteil eingeben.'
+            hinweis: 'Bauteil: DZ1-Sensoren.\nLängenangabe: 2 m, 4 m oder 6 m.\nAnzahl angeben.'
         },
         {
-            id: `${String(basis + 4).padStart(3, '0')}-temp-tisch`,
+            id: `${nr(4)}-temperatur`,
             gruppe: g(4),
-            frage: `Temperatur Tisch Spindel ${spindel}?`,
+            frage: `Temperatursensoren (Spindel ${spindel})?`,
             allowedCategories: WIZARD_CAT.sensor,
             defaultCategory: 'sensor',
-            hinweis: 'Sensorleitung M12 gewinkelt → offenes Ende (Regelfall, kann abweichen).'
+            vorauswahl: { steckerA: 'M12', steckerB: 'offen' },
+            hinweis: 'Spindellager: Sensorleitung M12 gewinkelt → offenes Ende.\nMutter: Sensorleitung M12 gewinkelt → M12 gerade.'
         },
         {
-            id: `${String(basis + 4).padStart(3, '0')}-temp-stoessel`,
-            gruppe: g(4),
-            frage: `Temperatur Stößel Spindel ${spindel}?`,
-            allowedCategories: WIZARD_CAT.sensor,
-            defaultCategory: 'sensor',
-            hinweis: 'Sensorleitung M12 gewinkelt Buchse → M12 gewinkelt Stift (Regelfall, kann abweichen).'
-        },
-        {
-            id: `${String(basis + 5).padStart(3, '0')}-nothalt`,
+            id: `${nr(5)}-nothalt`,
             gruppe: g(5),
-            frage: `Not-Halt Taster Spindel ${spindel}?`,
+            frage: `Not-Halt (Spindel ${spindel})?`,
             allowedCategories: WIZARD_CAT.sensor,
             defaultCategory: 'sensor',
             bauteilTypen: ['nothalt-taster', 'schild'],
-            hinweis: 'Sensorleitung M12 Buchse → offenes Ende.\nTaster Typ: C22-PV-K02-P1 (mit M12-Stecker).\nNot-Halt Schild nicht vergessen.'
+            vorauswahl: { steckerA: 'M12', steckerB: 'offen' },
+            hinweis: 'Bauteil: Not-Halt Taster, Typ C22-PV-K02-P1.\nSensorleitung: M12 Buchse → offenes Ende.'
+        },
+        {
+            id: `${nr(6)}-beleuchtung`,
+            gruppe: g(6),
+            frage: `Beleuchtung (Spindel ${spindel})?`,
+            allowedCategories: WIZARD_CAT.sensor,
+            defaultCategory: 'sensor',
+            vorauswahl: { steckerA: 'M12', steckerB: 'offen' },
+            hinweis: 'Sensorleitung: M12 gerade Buchse → offenes Ende.'
         }
     ];
 }
@@ -93,87 +95,188 @@ export const DEFAULT_WIZARD_STEPS = [
     {
         id: '004-ethercat-presse',
         gruppe: '=004',
-        frage: 'EtherCAT Schaltschrank → Presse?',
+        frage: 'Bustopologie: EtherCAT Presse?',
         allowedCategories: WIZARD_CAT.ethercat,
         defaultCategory: 'ethercat',
-        hinweis: 'Hier werden nur die EtherCAT-Leitungen angelegt, mehr muss nicht ausgewählt werden.'
+        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M8' },
+        hinweis: 'Hier werden nur EtherCAT-Leitungen verwendet.\nIn der Regel M8 → M8 und M8 → RJ45.'
     },
     {
         id: '004-ethercat-linearmassstab',
         gruppe: '=004',
-        frage: 'EtherCAT Linearmaßstab?',
+        frage: 'Bustopologie: EtherCAT Linearmaßstäbe und Werkzeugsicherung?',
         allowedCategories: WIZARD_CAT.ethercat,
         defaultCategory: 'ethercat',
-        hinweis: 'Hier werden nur die EtherCAT-Leitungen angelegt, mehr muss nicht ausgewählt werden.'
+        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M12' },
+        hinweis: 'In der Regel M12 → M12, M12 → M8 oder M8 → M8.'
     },
     {
-        id: '005-ipc',
+        id: '005-ipc-panel',
         gruppe: '=005',
-        frage: 'IPC?',
-        bauteilTypen: ['ipc'],
-        hinweis: 'Aktuell gibt es nur den Beckhoff IPC C6930-0070, weitere können folgen.'
-    },
-    {
-        id: '005-panel',
-        gruppe: '=005',
-        frage: 'Panel?',
-        bauteilTypen: ['panel'],
-        hinweis: 'Aktuell gibt es nur das Panel C3921-1035-0010 (000095718), weitere können folgen.'
-    },
-    {
-        id: '005-panel-cplink',
-        gruppe: '=005',
-        frage: 'CP-Link Leitung für das Panel?',
-        allowedCategories: WIZARD_CAT.panel,
+        frage: 'IPC und Panel?',
+        bauteilTypen: ['ipc', 'panel'],
+        allowedCategories: ['sonstiges', 'sensor'],
         defaultCategory: 'sonstiges',
-        hinweis: 'Standard ist C9900-K706 mit 20 m – andere Längen sind möglich.'
+        hinweis: 'Bauteile: IPC C6930-0070, Panel CP3921-1035-0010.\nLeitungen: CP-Link Leitung (Sonstige) und Phoenix Leitung Art.-Nr. 1430802 (Sonstiges) – hiervon werden immer zwei pro Panel benötigt.'
     },
     {
-        id: '005-panel-taster',
-        gruppe: '=005',
-        frage: 'Panel Taster-Leitungen?',
-        allowedCategories: ['sensor', 'sonstiges'],
-        defaultCategory: 'sonstiges',
-        hinweis: 'Hier wird immer 2x die Phoenix Leitung 632582 (Sonepar Bestellnummer) verwendet.'
-    },
-    {
-        id: '007-tuerschalter',
+        id: '007-schutztueren',
         gruppe: '=007',
-        frage: 'Türschalter?',
+        frage: 'Sicherheitstechnik: Schutztüren?',
         allowedCategories: WIZARD_CAT.sensor,
         defaultCategory: 'sensor',
         bauteilTypen: ['tuerschalter'],
-        hinweis: 'Hersteller SSP, Pilz oder Euchner – die Typen sind noch nicht festgelegt.\nManchmal werden zusätzlich spezielle Sensorleitungen benötigt (Leitungstyp folgt noch).'
+        hinweis: 'Bauteil: Türschalter SSP, Pilz oder Euchner – der Typ kann auch händisch eingegeben werden.\nDazu passende Sensorleitung anlegen.'
     },
     {
         id: '007-lichtschranke',
         gruppe: '=007',
-        frage: 'Lichtschranke?',
+        frage: 'Sicherheitstechnik: Lichtschranke?',
         allowedCategories: WIZARD_CAT.sensor,
         defaultCategory: 'sensor',
         bauteilTypen: ['lichtschranke'],
         optional: true,
-        hinweis: 'Manchmal werden Lichtschranken verwendet: SSP, Pilz oder SICK.\nDazu kommen noch spezielle Sensorleitungen.'
+        hinweis: 'Bauteil: Typ, Artikel-Nr. und Hersteller angeben (auch händisch möglich).\nDazu passende Leitungen anlegen.'
     },
     {
         id: '007-fusstaster',
         gruppe: '=007',
-        frage: 'Fußtaster?',
+        frage: 'Sicherheitstechnik: Fußtaster?',
         allowedCategories: WIZARD_CAT.oelflex,
         defaultCategory: 'oelflex',
         bauteilTypen: ['fusstaster'],
         optional: true,
-        hinweis: 'Typ vom Fußtaster auswählen – als Leitung wird eine Ölflex-Leitung verwendet.'
+        hinweis: 'Ölflex-Leitung verwenden.'
     },
     {
-        id: '009-baumueller',
-        gruppe: '=009',
-        frage: 'Baumüller Aufbau?',
-        bauteilTypen: ['netzwechselrichter', 'regler', 'drossel', 'filter', 'ringkern', 'saf-modul', 'kapazitaetsmodul', 'motor'],
-        hinweis: 'Jeweils Typ und Anzahl angeben: Netzwechselrichter, Regler, Drossel, Filter, Ringkern, SAF-Modul, Kapazitätsmodul und Motor.'
+        id: '007-zweihand',
+        gruppe: '=007',
+        frage: 'Sicherheitstechnik: Zweihand-Taster?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        optional: true,
+        hinweis: 'Ölflex-Leitung verwenden.'
     },
     ...spindelSteps(1, 10),
     ...spindelSteps(2, 20),
     ...spindelSteps(3, 30),
-    ...spindelSteps(4, 40)
+    ...spindelSteps(4, 40),
+    {
+        id: '100-vorschub',
+        gruppe: '=100',
+        frage: 'Vorschub?',
+        allowedCategories: WIZARD_CAT.antrieb,
+        defaultCategory: 'power',
+        bauteilTypen: ['motor', 'regler'],
+        hinweis: 'Motortyp und Reglertyp angeben.\nMotorleitung anlegen.\nÖlflex-Leitung für Bremse öffnen/Lüften und Materialkontrolle.'
+    },
+    {
+        id: '101-vorschub-hoehenverstellung',
+        gruppe: '=101',
+        frage: 'Vorschub Höhenverstellung?',
+        allowedCategories: WIZARD_CAT.antrieb,
+        defaultCategory: 'power',
+        bauteilTypen: ['motor', 'regler'],
+        hinweis: 'Motor, Regler und Motorleitung angeben.'
+    },
+    {
+        id: '105-bandbeoelung',
+        gruppe: '=105',
+        frage: 'Bandbeölung?',
+        allowedCategories: WIZARD_CAT.sensor,
+        defaultCategory: 'sensor',
+        bauteilTypen: ['bandbeoelung'],
+        vorauswahl: { steckerA: 'M12', steckerB: 'offen' },
+        hinweis: 'Hersteller: Raziol.\nDazu Sensorleitung anlegen.'
+    },
+    {
+        id: '110-externe-schnittstelle',
+        gruppe: '=110',
+        frage: 'Externe Schnittstelle?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        hinweis: '400V-Anschluss (optional): Ölflex-Leitung.\nSteuerleitung: Ölflex.'
+    },
+    {
+        id: '200-kuehlung',
+        gruppe: '=200',
+        frage: 'Kühlung?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        bauteilTypen: ['kuehlgeraet', 'harting'],
+        hinweis: 'Hersteller: Pfannenberg oder Hydac.\nLeitung: Ölflex.\nStecker: Harting-Stecker.'
+    },
+    {
+        id: '210-schmierung',
+        gruppe: '=210',
+        frage: 'Schmierung?',
+        allowedCategories: WIZARD_CAT.sensor,
+        defaultCategory: 'sensor',
+        mengenfeld: { aktiv: true, label: 'Anzahl Progressivverteiler' },
+        vorauswahl: { steckerA: 'M12', steckerB: 'offen' },
+        hinweis: 'Anzahl der Progressivverteiler angeben.\nFür jeden Progressivverteiler wird eine Sensorleitung M12 → offenes Ende benötigt.'
+    },
+    {
+        id: '220-tuerantriebe',
+        gruppe: '=220',
+        frage: 'Türantriebe?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        bauteilTypen: ['tuerantrieb'],
+        optional: true,
+        hinweis: 'Extern oder intern angeben (Notiz).\nMotor/Geber-Set: Anzahl + Länge angeben.\nÖlflex-Leitung anlegen.'
+    },
+    {
+        id: '230-hba',
+        gruppe: '=230',
+        frage: 'HBA?',
+        bauteilTypen: ['hba'],
+        hinweis: 'Bauteil: HBA auswählen.'
+    },
+    {
+        id: '240-transportband',
+        gruppe: '=240',
+        frage: 'Transportband?',
+        allowedCategories: ['oelflex', 'sensor'],
+        defaultCategory: 'oelflex',
+        optional: true,
+        hinweis: 'Leitung: Ölflex.\nSensorleitung: M12 → offenes Ende (optional).'
+    },
+    {
+        id: '250-steckdosen',
+        gruppe: '=250',
+        frage: 'Steckdosen?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        bauteilTypen: ['steckdose'],
+        mengenfeld: { aktiv: true, label: 'Anzahl Steckdosen' },
+        hinweis: 'Anzahl der Steckdosen 400 V angeben – jeweils schaltbar und nicht schaltbar.\nLeitungslänge angeben.'
+    },
+    {
+        id: '270-druckluft',
+        gruppe: '=270',
+        frage: 'Druckluft / Wartungseinheit?',
+        allowedCategories: WIZARD_CAT.sensor,
+        defaultCategory: 'sensor',
+        vorauswahl: { steckerA: 'M8', steckerB: 'offen' },
+        hinweis: 'Verbaut an: Schaltschrank oder Presse? (als Notiz angeben)\nSensorleitungen:\n• M8 4-polig → offenes Ende (Druckluft-Wartungseinheit)\n• M12 → offenes Ende (Freischalten Druckluft)\n• M8 4-polig → M8 3-polig Stift (Druckluft Stößel)'
+    },
+    {
+        id: '301-ep-module',
+        gruppe: '=301',
+        frage: 'EP-Module Powerleitung?',
+        allowedCategories: WIZARD_CAT.power,
+        defaultCategory: 'power',
+        bauteilTypen: ['ep-modul'],
+        hinweis: 'EP-Modul angeben:\n• EP1018-0001: Stößel (Bremsen, Druckluft, Beka)\n• EP3204-0022: Stößel Temperatur Mutter\n• EP3356-0022: Kraftsensoren\n• EP1957-0022: Safety-Modul Bremsen\n• ZS2020-4308: Powermodul\n• EP3174-0002: Werkzeugsicherung Analog\n• EP1819-0022: Werkzeugsicherung Digital Eingang\n• EP2008-0022: Werkzeugsicherung Digital Ausgang'
+    },
+    {
+        id: '302-klemmkasten',
+        gruppe: '=302',
+        frage: 'Klemmkasten?',
+        allowedCategories: WIZARD_CAT.oelflex,
+        defaultCategory: 'oelflex',
+        mengenfeld: { aktiv: true, label: 'Anzahl Klemmkästen' },
+        hinweis: 'Anzahl und Position angeben (vorne oder/und hinten).\nLeitung: Ölflex.'
+    }
 ];

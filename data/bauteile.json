@@ -20,7 +20,11 @@
     { "id": "ventil", "name": "Ventil" },
     { "id": "dms", "name": "DMS-Sensor" },
     { "id": "nothalt-taster", "name": "Not-Halt Taster" },
-    { "id": "schild", "name": "Schild" }
+    { "id": "schild", "name": "Schild" },
+    { "id": "hba", "name": "HBA" },
+    { "id": "ep-modul", "name": "EP-Modul" },
+    { "id": "tuerantrieb", "name": "Türantrieb Motor/Geber-Set" },
+    { "id": "bandbeoelung", "name": "Bandbeölung" }
   ],
   "artikel": [
     {
@@ -133,8 +137,8 @@
     },
     {
       "hersteller": "Beckhoff",
-      "artikelnummer": "C3921-1035-0010",
-      "beschreibung": "Panel C3921-1035-0010 (000095718)",
+      "artikelnummer": "CP3921-1035-0010",
+      "beschreibung": "Panel CP3921-1035-0010 (000095718)",
       "typ": "panel"
     },
     {
@@ -256,6 +260,72 @@
       "artikelnummer": "NOT-HALT-SCHILD",
       "beschreibung": "Not-Halt Schild",
       "typ": "schild"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "HBA",
+      "beschreibung": "HBA (Typ angeben)",
+      "typ": "hba"
+    },
+    {
+      "hersteller": "Diverse",
+      "artikelnummer": "MOTOR-GEBER-SET",
+      "beschreibung": "Türantrieb Motor/Geber-Set (Anzahl + Länge angeben)",
+      "typ": "tuerantrieb"
+    },
+    {
+      "hersteller": "Raziol",
+      "artikelnummer": "RAZIOL-BANDBEOELUNG",
+      "beschreibung": "Bandbeölung Raziol (Typ angeben)",
+      "typ": "bandbeoelung"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP1018-0001",
+      "beschreibung": "EP-Modul EP1018-0001 – Stößel (Bremsen, Druckluft, Beka)",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP3204-0022",
+      "beschreibung": "EP-Modul EP3204-0022 – Stößel Temperatur Mutter",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP3356-0022",
+      "beschreibung": "EP-Modul EP3356-0022 – Kraftsensoren",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP1957-0022",
+      "beschreibung": "EP-Modul EP1957-0022 – Safety-Modul Bremsen",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "ZS2020-4308",
+      "beschreibung": "Powermodul ZS2020-4308",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP3174-0002",
+      "beschreibung": "EP-Modul EP3174-0002 – Werkzeugsicherung Analog",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP1819-0022",
+      "beschreibung": "EP-Modul EP1819-0022 – Werkzeugsicherung Digital Eingang",
+      "typ": "ep-modul"
+    },
+    {
+      "hersteller": "Beckhoff",
+      "artikelnummer": "EP2008-0022",
+      "beschreibung": "EP-Modul EP2008-0022 – Werkzeugsicherung Digital Ausgang",
+      "typ": "ep-modul"
     }
   ]
 }

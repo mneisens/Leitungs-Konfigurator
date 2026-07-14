@@ -96,6 +96,10 @@ export function renderWizardBauteilForms(step) {
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>oder Typ händisch eingeben</label>
+                        <input type="text" class="wizard-bauteil-custom" placeholder="z. B. Typbezeichnung / Art.-Nr.">
+                    </div>
+                    <div class="form-group">
                         <label>Anzahl</label>
                         <input type="number" class="wizard-bauteil-anzahl" min="1" step="1" value="1">
                     </div>
@@ -202,31 +206,49 @@ export function wizardAddBauteilFromStep(typ) {
     if (!form) return;
 
     const select = form.querySelector('.wizard-bauteil-select');
+    const customInput = form.querySelector('.wizard-bauteil-custom');
+    const herstellerSelect = form.querySelector('.wizard-bauteil-hersteller');
     const anzahlInput = form.querySelector('.wizard-bauteil-anzahl');
     const artikelnummer = select?.value?.trim();
-    if (!artikelnummer) {
-        showModal('Bitte ein Bauteil auswählen.', { type: 'warning', title: 'Bauteil fehlt' });
+    const customTyp = customInput?.value?.trim();
+    if (!artikelnummer && !customTyp) {
+        showModal('Bitte ein Bauteil auswählen oder den Typ händisch eingeben.', { type: 'warning', title: 'Bauteil fehlt' });
         return;
     }
 
     let anzahl = parseInt(anzahlInput?.value, 10);
     if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
 
-    const bauteil = getBauteilByNummer(artikelnummer);
-    const entry = {
-        id: generateId('btl'),
-        wizardStepId: step.id,
-        gruppe: step.gruppe,
-        typ: typ,
-        hersteller: bauteil?.hersteller || '',
-        artikelnummer: bauteil ? bauteil.artikelnummer : artikelnummer,
-        bezeichnung: bauteil?.beschreibung || getBauteilTypName(typ),
-        anzahl: anzahl
-    };
+    let entry;
+    if (customTyp) {
+        entry = {
+            id: generateId('btl'),
+            wizardStepId: step.id,
+            gruppe: step.gruppe,
+            typ: typ,
+            hersteller: herstellerSelect?.value || '',
+            artikelnummer: customTyp,
+            bezeichnung: `${getBauteilTypName(typ)} (händisch angegeben)`,
+            anzahl: anzahl
+        };
+    } else {
+        const bauteil = getBauteilByNummer(artikelnummer);
+        entry = {
+            id: generateId('btl'),
+            wizardStepId: step.id,
+            gruppe: step.gruppe,
+            typ: typ,
+            hersteller: bauteil?.hersteller || '',
+            artikelnummer: bauteil ? bauteil.artikelnummer : artikelnummer,
+            bezeichnung: bauteil?.beschreibung || getBauteilTypName(typ),
+            anzahl: anzahl
+        };
+    }
 
     appState.currentProjekt.bauteile.push(entry);
     persistCurrentProjekt();
     if (select) select.value = '';
+    if (customInput) customInput.value = '';
     if (anzahlInput) anzahlInput.value = '1';
     renderWizardCreatedBauteile(step);
     updateWizardSkipCheckbox(step);

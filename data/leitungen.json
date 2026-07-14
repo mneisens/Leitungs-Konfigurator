@@ -4590,6 +4590,15 @@
             "kategorie": "sonstiges"
         },
         {
+            "hersteller": "Phoenix Contact",
+            "artikelnummer": "1430802",
+            "beschreibung": "Phoenix Leitung 1430802 (Panel – immer 2 Stück pro Panel)",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "sonstiges"
+        },
+        {
             "hersteller": "Lapp Kabel",
             "artikelnummer": "OELFLEX-SERVO-719CY-4G35",
             "beschreibung": "ÖLFLEX SERVO 719 CY 4G35+2x(2x1,5) Motorleitung",

@@ -27,8 +27,58 @@ import {
     populateWizardKategorieDropdown,
     populateWizardHerstellerDropdown,
     onWizardKategorieChange,
+    onWizardHerstellerChange,
+    onWizardSteckerAChange,
+    onWizardSteckerBChange,
     renderWizardCreatedLeitungen
 } from './wizard-leitungen.js';
+
+
+/**
+ * Wählt in einem Dropdown den passenden Eintrag zu einem Wunschwert.
+ * Es wird zuerst exakt, dann per Präfix, dann per Teilstring verglichen –
+ * so trifft z. B. „M8" auch „M8 4-polig".
+ * @param {string} selectId
+ * @param {string} wunsch
+ * @returns {boolean} true, wenn ein Eintrag ausgewählt wurde
+ */
+function selectWizardOption(selectId, wunsch) {
+    const select = document.getElementById(selectId);
+    if (!select || !wunsch) return false;
+
+    const values = Array.from(select.options).map(o => o.value).filter(Boolean);
+    const lower = wunsch.toLowerCase();
+    const match = values.find(v => v.toLowerCase() === lower)
+        || values.find(v => v.toLowerCase().startsWith(lower))
+        || values.find(v => v.toLowerCase().includes(lower));
+
+    if (!match) return false;
+    select.value = match;
+    return true;
+}
+
+
+/**
+ * Wendet die in der Frage konfigurierte Vorauswahl
+ * (Hersteller, Stecker A, Stecker B) auf die Leitungs-Dropdowns an.
+ * @param {object} step
+ * @returns {void}
+ */
+function applyWizardVorauswahl(step) {
+    const vorauswahl = step?.vorauswahl;
+    if (!vorauswahl) return;
+    if (getWizardKategorie() === 'oelflex' || stepIsOelflexWizard(step)) return;
+
+    if (vorauswahl.hersteller && selectWizardOption('wizard-hersteller', vorauswahl.hersteller)) {
+        onWizardHerstellerChange();
+    }
+    if (vorauswahl.steckerA && selectWizardOption('wizard-stecker-a', vorauswahl.steckerA)) {
+        onWizardSteckerAChange();
+        if (vorauswahl.steckerB && selectWizardOption('wizard-stecker-b', vorauswahl.steckerB)) {
+            onWizardSteckerBChange();
+        }
+    }
+}
 
 export function onWizardLaengeChange() {
     updateWizardAutoArtikel();
@@ -311,7 +361,7 @@ export function renderProjektWizard() {
         document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
         populateWizardHerstellerDropdown();
         const herstellerSelect = document.getElementById('wizard-hersteller');
-        if (herstellerSelect) {
+        if (herstellerSelect && !step.vorauswahl?.hersteller) {
             const preferred = ['Beckhoff', 'Murr Elektronik', 'Phoenix Contact'];
             const available = preferred.find(h =>
                 Array.from(herstellerSelect.options).some(opt => opt.value === h)
@@ -319,6 +369,7 @@ export function renderProjektWizard() {
             if (available) herstellerSelect.value = available;
         }
         onWizardKategorieChange();
+        applyWizardVorauswahl(step);
         renderWizardCreatedLeitungen(step);
     } else {
         setWizardOelflexMode(false);
