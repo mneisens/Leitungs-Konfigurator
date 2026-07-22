@@ -33,24 +33,25 @@ export function initKonfigurator() {
 
 
 export function populateGruppenDropdown() {
-    const select = document.getElementById('leitung-gruppe');
-    if (!select) return;
+    const input = document.getElementById('leitung-gruppe');
+    const datalist = document.getElementById('leitung-gruppen-vorschlaege');
+    if (!input || !datalist) return;
 
-    const currentValue = select.value;
-    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    const currentValue = input.value;
+    datalist.innerHTML = '';
 
     appState.leitungGruppen.forEach(gruppe => {
         const option = document.createElement('option');
         option.value = gruppe.code;
-        option.textContent = gruppe.label || gruppe.code;
+        option.label = gruppe.label || gruppe.bezeichnung || gruppe.code;
         if (gruppe.bemerkung) {
             option.title = gruppe.bemerkung;
         }
-        select.appendChild(option);
+        datalist.appendChild(option);
     });
 
     if (currentValue) {
-        select.value = currentValue;
+        input.value = currentValue;
     }
 }
 

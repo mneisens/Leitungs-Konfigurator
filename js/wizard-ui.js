@@ -8,6 +8,7 @@ import { showView } from './navigation.js';
 import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
 import { assertCanEdit, applyReadOnlyUI } from './project-access.js';
+import { getGruppeDisplay } from './overview.js';
 import { setWizardOelflexMode, findOelflexArtikel } from './oelflex.js';
 import {
     stepHasLeitungen,
@@ -327,7 +328,7 @@ export function renderProjektWizard() {
     document.getElementById('wizard-titel').textContent =
         `Schaltplan-Assistent - ${appState.currentProjekt.projektnummer} - ${appState.currentProjekt.name}`;
     document.getElementById('wizard-progress').textContent = `Frage ${appState.wizardStepIndex + 1} von ${total}`;
-    document.getElementById('wizard-gruppe').textContent = step.gruppe;
+    document.getElementById('wizard-gruppe').textContent = getGruppeDisplay(step.gruppe);
     document.getElementById('wizard-frage').textContent = step.frage;
     const hinweisDiv = document.getElementById('wizard-hinweis');
     if (hinweisDiv) {

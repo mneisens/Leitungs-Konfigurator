@@ -7,6 +7,7 @@ import { showModal } from './modal.js';
 import { showView } from './navigation.js';
 import { getWizardConfigDoc } from './firebase.js';
 import { validateWizardSteps } from './wizard-config.js';
+import { getGruppeDisplay } from './overview.js';
 /**
  * getAdminKategorieOptions.
  * @returns {void}
@@ -50,6 +51,28 @@ export function syncAdminJsonTextarea() {
 
 
 /**
+ * Optionen für Gruppen-Dropdowns (alle definierten + ggf. unbekannte aus Fragen).
+ * @param {string} [currentCode]
+ * @returns {{ value: string, label: string }[]}
+ */
+function getAdminGruppeOptions(currentCode = '') {
+    const known = (appState.leitungGruppen || []).map(g => ({
+        value: g.code,
+        label: g.label || g.bezeichnung || g.code
+    }));
+    const knownCodes = new Set(known.map(g => g.value));
+    const extras = Array.from(new Set(appState.wizardSteps.map(s => s.gruppe).filter(Boolean)))
+        .filter(code => !knownCodes.has(code))
+        .map(code => ({ value: code, label: getGruppeDisplay(code) }));
+    const options = [...known, ...extras];
+    if (currentCode && !options.some(o => o.value === currentCode)) {
+        options.push({ value: currentCode, label: getGruppeDisplay(currentCode) });
+    }
+    return options.sort((a, b) => a.value.localeCompare(b.value, 'de', { numeric: true }));
+}
+
+
+/**
  * Füllt das Gruppen-Filter-Dropdown mit allen vorhandenen Gruppen.
  * @returns {void}
  */
@@ -62,7 +85,7 @@ function populateGruppeFilter() {
         .sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
 
     select.innerHTML = '<option value="">Alle Gruppen</option>'
-        + gruppen.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+        + gruppen.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(getGruppeDisplay(g))}</option>`).join('');
 
     if (current && gruppen.includes(current)) {
         select.value = current;
@@ -81,7 +104,7 @@ function getFilteredSteps() {
         .filter(({ step }) => {
             if (adminGruppeFilter && step.gruppe !== adminGruppeFilter) return false;
             if (!text) return true;
-            return `${step.frage || ''} ${step.id || ''} ${step.gruppe || ''}`.toLowerCase().includes(text);
+            return `${step.frage || ''} ${step.id || ''} ${step.gruppe || ''} ${getGruppeDisplay(step.gruppe)}`.toLowerCase().includes(text);
         });
 }
 
@@ -140,6 +163,46 @@ function renderStepBadges(step) {
 
 
 /**
+ * Tag-Picker: Ausgewählte Einträge oben, Dropdown zum Hinzufügen.
+ * @param {string} field
+ * @param {{ value: string, label: string }[]} options
+ * @param {string[]} selected
+ * @param {string} addLabel
+ * @returns {string}
+ */
+function renderTagPicker(field, options, selected, addLabel) {
+    if (!options.length) {
+        return '<span class="text-muted">Keine Einträge verfügbar</span>';
+    }
+
+    const tags = selected.map(id => {
+        const label = options.find(o => o.value === id)?.label || id;
+        return `
+            <span class="admin-tag-chip admin-tag-chip--${field}">
+                ${escapeHtml(label)}
+                <button type="button" class="admin-tag-remove" data-field="${field}" data-value="${escapeHtml(id)}" title="Entfernen" aria-label="Entfernen">×</button>
+            </span>
+        `;
+    }).join('');
+
+    const available = options.filter(o => !selected.includes(o.value));
+    const selectOptions = available.map(o =>
+        `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`
+    ).join('');
+
+    return `
+        <div class="admin-tag-picker" data-picker-field="${field}">
+            <div class="admin-tag-list">${tags || '<span class="text-muted admin-tag-empty">Noch nichts ausgewählt</span>'}</div>
+            <select class="admin-tag-add" data-field="${field}" ${available.length === 0 ? 'disabled' : ''}>
+                <option value="">${escapeHtml(addLabel)}</option>
+                ${selectOptions}
+            </select>
+        </div>
+    `;
+}
+
+
+/**
  * Formular einer aufgeklappten Frage.
  * @param {object} step
  * @returns {string}
@@ -150,22 +213,25 @@ function renderStepForm(step) {
     const allowed = step.allowedCategories || [];
     const bauteilTypen = step.bauteilTypen || [];
 
-    const kategorieChecks = kategorien.map(k => `
-        <label class="admin-check">
-            <input type="checkbox" data-field="allowedCategories" value="${escapeHtml(k.value)}" ${allowed.includes(k.value) ? 'checked' : ''}>
-            ${escapeHtml(k.label)}
-        </label>
-    `).join('');
-    const bauteilChecks = bauteiltypen.map(t => `
-        <label class="admin-check">
-            <input type="checkbox" data-field="bauteilTypen" value="${escapeHtml(t.value)}" ${bauteilTypen.includes(t.value) ? 'checked' : ''}>
-            ${escapeHtml(t.label)}
-        </label>
-    `).join('');
-    const defaultOptions = ['', ...kategorien.map(k => k.value)].map(v => {
+    const kategoriePicker = renderTagPicker(
+        'allowedCategories',
+        kategorien,
+        allowed,
+        '+ Leitungs-Kategorie hinzufügen…'
+    );
+    const bauteilPicker = renderTagPicker(
+        'bauteilTypen',
+        bauteiltypen,
+        bauteilTypen,
+        '+ Bauteiltyp hinzufügen…'
+    );
+    const defaultOptions = ['', ...allowed].map(v => {
         const label = v ? kategorien.find(k => k.value === v)?.label || v : '-- Keine --';
         return `<option value="${escapeHtml(v)}" ${step.defaultCategory === v ? 'selected' : ''}>${escapeHtml(label)}</option>`;
     }).join('');
+    const gruppeOptions = getAdminGruppeOptions(step.gruppe || '').map(g =>
+        `<option value="${escapeHtml(g.value)}" ${step.gruppe === g.value ? 'selected' : ''}>${escapeHtml(g.label)}</option>`
+    ).join('');
 
     return `
         <div class="admin-step-form">
@@ -179,11 +245,11 @@ function renderStepForm(step) {
             </div>
             <div class="form-group">
                 <label>Erlaubte Leitungs-Kategorien</label>
-                <div class="admin-check-group">${kategorieChecks}</div>
+                ${kategoriePicker}
             </div>
             <div class="form-group">
                 <label>Bauteiltypen</label>
-                <div class="admin-check-group">${bauteilChecks || '<span class="text-muted">Keine Bauteiltypen im Katalog</span>'}</div>
+                ${bauteilPicker}
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -192,7 +258,7 @@ function renderStepForm(step) {
                 </div>
                 <div class="form-group">
                     <label>Gruppe</label>
-                    <input type="text" data-field="gruppe" value="${escapeHtml(step.gruppe || '')}">
+                    <select data-field="gruppe">${gruppeOptions}</select>
                 </div>
             </div>
             <div class="form-group">
@@ -271,7 +337,7 @@ export function renderAdminStepsEditor() {
                 <div class="admin-step-row" onclick="adminToggleStep(${index})">
                     <span class="admin-step-toggle">${expanded ? '▾' : '▸'}</span>
                     <span class="admin-step-nr">${index + 1}</span>
-                    <span class="admin-badge badge-gruppe">${escapeHtml(step.gruppe || '—')}</span>
+                    <span class="admin-badge badge-gruppe">${escapeHtml(getGruppeDisplay(step.gruppe) || '—')}</span>
                     <span class="admin-step-frage">${escapeHtml(step.frage || '(ohne Frage)')}</span>
                     <span class="admin-step-badges">${renderStepBadges(step)}</span>
                     <span class="admin-step-actions" onclick="event.stopPropagation()">
@@ -288,11 +354,52 @@ export function renderAdminStepsEditor() {
 
 
 /**
+ * Fügt einen Tag über das Dropdown hinzu oder entfernt ihn per Klick.
+ * @param {number} index
+ * @param {string} field
+ * @param {string} value
+ * @param {'add'|'remove'} action
+ * @returns {void}
+ */
+function updateStepTagSelection(index, field, value, action) {
+    const step = appState.wizardSteps[index];
+    if (!step || !value) return;
+
+    const current = step[field] || [];
+    if (action === 'add') {
+        if (current.includes(value)) return;
+        step[field] = [...current, value];
+    } else {
+        const next = current.filter(v => v !== value);
+        if (next.length) step[field] = next;
+        else delete step[field];
+        if (field === 'allowedCategories' && step.defaultCategory === value) {
+            delete step.defaultCategory;
+        }
+    }
+
+    syncAdminJsonTextarea();
+    renderAdminStepsEditor();
+}
+
+
+/**
  * Überträgt eine Formularänderung direkt in den State.
  * @param {Event} event
  * @returns {void}
  */
 function handleAdminFieldChange(event) {
+    if (event.target?.classList?.contains('admin-tag-add')) {
+        const field = event.target.dataset.field;
+        const value = event.target.value;
+        if (!value || !field) return;
+
+        const card = event.target.closest('.admin-step-card');
+        const index = parseInt(card?.dataset?.stepIndex, 10);
+        updateStepTagSelection(index, field, value, 'add');
+        return;
+    }
+
     const field = event.target?.dataset?.field;
     if (!field) return;
 
@@ -350,16 +457,29 @@ function handleAdminFieldChange(event) {
             else delete step.vorauswahl;
             break;
         }
-        case 'allowedCategories':
-        case 'bauteilTypen': {
-            const values = Array.from(card.querySelectorAll(`[data-field="${field}"]:checked`)).map(el => el.value);
-            if (values.length) step[field] = values;
-            else delete step[field];
-            break;
-        }
     }
 
     syncAdminJsonTextarea();
+}
+
+
+/**
+ * Entfernt einen Tag aus der Auswahl.
+ * @param {Event} event
+ * @returns {void}
+ */
+function handleAdminTagRemove(event) {
+    const btn = event.target.closest('.admin-tag-remove');
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const field = btn.dataset.field;
+    const value = btn.dataset.value;
+    const card = btn.closest('.admin-step-card');
+    const index = parseInt(card?.dataset?.stepIndex, 10);
+    updateStepTagSelection(index, field, value, 'remove');
 }
 
 
@@ -463,6 +583,7 @@ export function renderAdminView() {
         container.dataset.bound = '1';
         container.addEventListener('input', handleAdminFieldChange);
         container.addEventListener('change', handleAdminFieldChange);
+        container.addEventListener('click', handleAdminTagRemove);
     }
 
     renderAdminStepsEditor();
