@@ -6,7 +6,7 @@ import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
 import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
-import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung, addNewLeitung } from './konfigurator-stecker.js';
+import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung, addNewLeitung, getLeitungStueckzahl } from './konfigurator-stecker.js';
 import { canEditProject, applyReadOnlyUI } from './project-access.js';
 import { getFullSteckerTyp, findArtikel, getUniqueSteckerA, getUniqueSteckerB, getAvailableLaengen, populateHerstellerDropdown, populateKategorieDropdown } from './konfigurator-form.js';
 
@@ -78,7 +78,7 @@ export function renderKonfigGruppenliste() {
         }
 
         const artikelMap = gruppenMap.get(gruppe);
-        artikelMap.set(artikelnummer, (artikelMap.get(artikelnummer) || 0) + 1);
+        artikelMap.set(artikelnummer, (artikelMap.get(artikelnummer) || 0) + getLeitungStueckzahl(leitung));
     });
 
     if (gruppenMap.size === 0) {
@@ -452,6 +452,10 @@ export function renderLeitungForm() {
             }
             document.getElementById('leitung-artikel-custom').value = leitung.artikelCustom || '';
             document.getElementById('leitung-notiz').value = leitung.notiz || '';
+            const anzahlInput = document.getElementById('konfig-leitung-anzahl');
+            if (anzahlInput) {
+                anzahlInput.value = String(leitung.anzahl || 1);
+            }
             updateArtikelVorschlag();
             renderKonfigGruppenliste();
             return;
@@ -514,6 +518,10 @@ export function renderLeitungForm() {
         
         document.getElementById('leitung-artikel-custom').value = leitung.artikelCustom || '';
         document.getElementById('leitung-notiz').value = leitung.notiz || '';
+        const anzahlInput = document.getElementById('konfig-leitung-anzahl');
+        if (anzahlInput) {
+            anzahlInput.value = String(leitung.anzahl || 1);
+        }
         
         if (leitung.kategorie) {
             document.getElementById('leitung-kategorie').value = leitung.kategorie;

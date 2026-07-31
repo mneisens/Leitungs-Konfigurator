@@ -4,6 +4,7 @@
 import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
+import { getLeitungStueckzahl } from './konfigurator-stecker.js';
 
 export function renderKonfigGruppenliste() {
     const container = document.getElementById('konfig-gruppenliste');
@@ -27,7 +28,7 @@ export function renderKonfigGruppenliste() {
         }
 
         const artikelMap = gruppenMap.get(gruppe);
-        artikelMap.set(artikelnummer, (artikelMap.get(artikelnummer) || 0) + 1);
+        artikelMap.set(artikelnummer, (artikelMap.get(artikelnummer) || 0) + getLeitungStueckzahl(leitung));
     });
 
     if (gruppenMap.size === 0) {

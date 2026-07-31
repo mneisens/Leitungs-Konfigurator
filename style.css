@@ -918,6 +918,8 @@ body {
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    align-items: flex-end;
 }
 
 /* ===== Übersicht ===== */
@@ -954,6 +956,24 @@ body {
     gap: 1rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+}
+
+.uebersicht-add-row,
+.konfig-add-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.uebersicht-anzahl-group,
+.konfig-anzahl-group {
+    margin-bottom: 0;
+    min-width: 5rem;
+}
+
+.uebersicht-anzahl-group input,
+.konfig-anzahl-group input {
+    width: 5rem;
 }
 
 .export-buttons {

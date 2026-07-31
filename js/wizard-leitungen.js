@@ -5,6 +5,7 @@ import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
 import { setWizardOelflexMode, getOelflexHersteller, populateWizardOelflexAdern } from './oelflex.js';
 import { getBaseSteckerTyp } from './konfigurator-stecker.js';
+import { getSteckerBasetypenForKategorie } from './konfigurator-form.js';
 import { stepIsOelflexWizard } from './wizard-core.js';
 import { updateWizardAutoArtikel } from './wizard-ui.js';
 
@@ -155,6 +156,7 @@ export function onWizardHerstellerChange() {
         if (a.steckerA) steckerAOptions.add(getBaseSteckerTyp(a.steckerA));
         if (a.steckerB) steckerAOptions.add(getBaseSteckerTyp(a.steckerB));
     });
+    getSteckerBasetypenForKategorie(getWizardKategorie()).forEach(s => steckerAOptions.add(s));
 
     Array.from(steckerAOptions).sort((a, b) => a.localeCompare(b, 'de')).forEach(s => {
         const option = document.createElement('option');
@@ -187,6 +189,9 @@ export function onWizardSteckerAChange() {
         const baseB = getBaseSteckerTyp(a.steckerB);
         if (baseA === steckerABase && baseB) steckerBOptions.add(baseB);
         if (baseB === steckerABase && baseA) steckerBOptions.add(baseA);
+    });
+    getSteckerBasetypenForKategorie(getWizardKategorie()).forEach(s => {
+        if (s !== steckerABase) steckerBOptions.add(s);
     });
 
     Array.from(steckerBOptions)

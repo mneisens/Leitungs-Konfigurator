@@ -106,6 +106,7 @@ export function clearLeitungForm() {
     document.getElementById('leitung-laenge').value = '';
     document.getElementById('leitung-artikel-custom').value = '';
     document.getElementById('leitung-notiz').value = '';
+    resetNewLeitungAnzahl();
 
     // Ölflex-Felder zurücksetzen und wieder Stecker-Ansicht zeigen
     const oelflexAdern = document.getElementById('oelflex-adern');
@@ -127,17 +128,78 @@ export function clearLeitungForm() {
 }
 
 
-export function saveCurrentLeitung() {
-    if (!appState.currentProjekt) return;
-    if (!canEditProject(appState.currentProjekt)) return;
-    
+export function getLeitungStueckzahl(leitung) {
+    const anzahl = parseInt(leitung?.anzahl, 10);
+    if (Number.isNaN(anzahl) || anzahl < 1) return 1;
+    return anzahl;
+}
+
+
+function getNewLeitungAnzahl() {
+    const input = document.getElementById('konfig-leitung-anzahl')
+        || document.getElementById('uebersicht-leitung-anzahl');
+    let anzahl = parseInt(input?.value, 10);
+    if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
+    if (anzahl > 200) anzahl = 200;
+    return anzahl;
+}
+
+
+export function resetNewLeitungAnzahl() {
+    ['konfig-leitung-anzahl', 'uebersicht-leitung-anzahl'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '1';
+    });
+}
+
+
+function renumberLeitungen() {
+    (appState.currentProjekt.leitungen || []).forEach((leitung, index) => {
+        leitung.position = index + 1;
+    });
+}
+
+
+function createEmptyLeitung() {
+    return {
+        id: generateId('ltg'),
+        position: (appState.currentProjekt.leitungen?.length || 0) + 1,
+        bezeichnung: '',
+        kategorie: '',
+        gruppe: '',
+        hersteller: '',
+        artikelnummer: '',
+        laenge: 0,
+        steckerA: '',
+        steckerB: '',
+        notiz: '',
+        anzahl: 1,
+        erledigt: false
+    };
+}
+
+
+function appendLeitungen(leitungen) {
+    if (!appState.currentProjekt.leitungen) {
+        appState.currentProjekt.leitungen = [];
+    }
+    leitungen.forEach(leitung => appState.currentProjekt.leitungen.push(leitung));
+    renumberLeitungen();
+}
+
+
+/**
+ * Liest die aktuellen Formularwerte als Leitungsobjekt.
+ * @returns {object}
+ */
+export function buildLeitungFromForm() {
     const laengeSelect = document.getElementById('leitung-laenge-select').value;
     const laengeInput = document.getElementById('leitung-laenge').value;
     const laenge = parseFloat(laengeSelect || laengeInput) || 0;
-    
+
     let artikelnummer = '';
     let kategorie = document.getElementById('leitung-kategorie').value;
-    
+
     if (appState.currentArtikelVorschlag) {
         artikelnummer = appState.currentArtikelVorschlag.artikelnummer;
         if (!kategorie && appState.currentArtikelVorschlag.kategorie) {
@@ -148,11 +210,10 @@ export function saveCurrentLeitung() {
     if (artikelCustom) {
         artikelnummer = artikelCustom;
     }
-    
-    // Vollständige Steckertypen mit Ausrichtung erstellen
-    let fullSteckerA, fullSteckerB;
+
+    let fullSteckerA;
+    let fullSteckerB;
     if (kategorie === 'oelflex') {
-        // Meterware ohne Stecker
         fullSteckerA = 'offen';
         fullSteckerB = 'offen';
     } else {
@@ -163,7 +224,7 @@ export function saveCurrentLeitung() {
         fullSteckerA = getFullSteckerTyp(steckerABase, ausrichtungA);
         fullSteckerB = getFullSteckerTyp(steckerBBase, ausrichtungB);
     }
-    
+
     const bezeichnung = document.getElementById('leitung-bezeichnung').value.trim();
     const gruppe = document.getElementById('leitung-gruppe').value;
     const hersteller = document.getElementById('leitung-hersteller').value;
@@ -173,7 +234,7 @@ export function saveCurrentLeitung() {
         kategorie = 'sonstiges';
     }
 
-    const leitung = {
+    return {
         id: document.getElementById('leitung-id').value || generateId('ltg'),
         position: appState.currentLeitungIndex + 1,
         bezeichnung,
@@ -186,9 +247,17 @@ export function saveCurrentLeitung() {
         steckerA: fullSteckerA,
         steckerB: fullSteckerB,
         notiz,
-        erledigt: !!(appState.currentProjekt.leitungen[appState.currentLeitungIndex] && appState.currentProjekt.leitungen[appState.currentLeitungIndex].erledigt)
+        anzahl: getNewLeitungAnzahl(),
+        erledigt: !!(appState.currentProjekt.leitungen?.[appState.currentLeitungIndex]?.erledigt)
     };
+}
 
+
+export function saveCurrentLeitung() {
+    if (!appState.currentProjekt) return;
+    if (!canEditProject(appState.currentProjekt)) return;
+
+    const leitung = buildLeitungFromForm();
     if (!isLeitungMeaningful(leitung)) return;
 
     if (!appState.currentProjekt.leitungen) {
@@ -249,40 +318,31 @@ export function addNewLeitung() {
     if (!appState.currentProjekt) return;
     if (!assertCanEdit('neue Leitungen')) return;
 
-    const isKonfiguratorActive = document.getElementById('view-konfigurator').classList.contains('active');
+    const anzahl = getNewLeitungAnzahl();
+    const isKonfiguratorActive = document.getElementById('view-konfigurator')?.classList.contains('active');
 
-    // Nur im aktiven Konfigurator die aktuelle Leitung mitspeichern.
-    // So vermeiden wir, dass alte Formularwerte aus anderen Views übernommen werden.
-    if (isKonfiguratorActive && appState.currentProjekt.leitungen && appState.currentProjekt.leitungen.length > 0) {
-        saveCurrentLeitung();
-    }
-    
     if (!appState.currentProjekt.leitungen) {
         appState.currentProjekt.leitungen = [];
     }
-    
-    const newLeitung = {
-        id: generateId('ltg'),
-        position: appState.currentProjekt.leitungen.length + 1,
-        bezeichnung: '',
-        kategorie: '',
-        gruppe: '',
-        hersteller: '',
-        artikelnummer: '',
-        laenge: 0,
-        steckerA: '',
-        steckerB: '',
-        notiz: '',
-        erledigt: false
-    };
-    
-    appState.currentProjekt.leitungen.push(newLeitung);
+
+    if (isKonfiguratorActive && appState.currentProjekt.leitungen.length > 0) {
+        saveCurrentLeitung();
+    }
+
+    discardEmptyCurrentLeitung();
+    appendLeitungen([createEmptyLeitung()]);
     appState.currentLeitungIndex = appState.currentProjekt.leitungen.length - 1;
+    persistCurrentProjekt();
 
     if (isKonfiguratorActive) {
         renderLeitungForm();
     } else {
         showView('konfigurator');
+    }
+
+    const anzahlInput = document.getElementById('konfig-leitung-anzahl');
+    if (anzahlInput) {
+        anzahlInput.value = String(anzahl);
     }
 }
 

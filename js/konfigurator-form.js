@@ -36,6 +36,32 @@ export function isSteckerErlaubtFuerKategorie(steckerBase, kategorie) {
 }
 
 
+/**
+ * Liefert die im Katalog hinterlegten Stecker-Basistypen für eine Kategorie.
+ * @param {string} kategorie
+ * @returns {string[]}
+ */
+export function getSteckerBasetypenForKategorie(kategorie) {
+    const typen = appState.katalog?.steckertypen || [];
+    const seen = new Set();
+
+    return typen
+        .map(typ => getBaseSteckerTyp(typ))
+        .filter(typ => {
+            if (!typ || seen.has(typ)) return false;
+            if (!isSteckerErlaubtFuerKategorie(typ, kategorie)) return false;
+            seen.add(typ);
+            return true;
+        })
+        .sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+
+function mergeSteckerOptions(steckerSet, kategorie) {
+    getSteckerBasetypenForKategorie(kategorie).forEach(typ => steckerSet.add(typ));
+}
+
+
 export function getUniqueSteckerA(hersteller) {
     const artikel = getArtikelForHersteller(hersteller);
     const kategorie = document.getElementById('leitung-kategorie').value;
@@ -50,7 +76,9 @@ export function getUniqueSteckerA(hersteller) {
             stecker.add(baseTyp);
         }
     });
-    return Array.from(stecker).sort();
+
+    mergeSteckerOptions(stecker, kategorie);
+    return Array.from(stecker).sort((a, b) => a.localeCompare(b, 'de'));
 }
 
 
@@ -88,7 +116,12 @@ export function getUniqueSteckerB(hersteller, steckerABase, ausrichtungA) {
         // Nur Basis-Typ von Stecker B speichern
         stecker.add(baseTypB);
     });
-    return Array.from(stecker).sort();
+
+    mergeSteckerOptions(stecker, kategorie);
+    if (steckerABase) {
+        stecker.delete(steckerABase);
+    }
+    return Array.from(stecker).sort((a, b) => a.localeCompare(b, 'de'));
 }
 
 

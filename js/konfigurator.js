@@ -2,7 +2,7 @@
  * @file konfigurator.js – Re-Exports für den Einstiegspunkt.
  */
 import { showView } from './navigation.js';
-import { saveCurrentLeitung, handleLeaveKonfigurator } from './konfigurator-stecker.js';
+import { saveCurrentLeitung, handleLeaveKonfigurator, resetNewLeitungAnzahl } from './konfigurator-stecker.js';
 import { assertCanEdit } from './project-access.js';
 
 export { saveLeitung, prevLeitung, nextLeitung, addNewLeitung } from './konfigurator-stecker.js';
@@ -25,5 +25,6 @@ export function backToOverview() {
 export function saveLeitungAndNotify() {
     if (!assertCanEdit('Leitungen')) return;
     saveCurrentLeitung();
+    resetNewLeitungAnzahl();
     showView('uebersicht');
 }

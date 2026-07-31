@@ -450,9 +450,15 @@
                                     <button type="button" class="btn btn-success" onclick="saveLeitungAndNotify()">
                                         💾 Speichern
                                     </button>
-                                    <button type="button" class="btn btn-secondary" onclick="addNewLeitung()">
-                                        + Neue Leitung
-                                    </button>
+                                    <div class="konfig-add-row">
+                                        <div class="form-group konfig-anzahl-group">
+                                            <label for="konfig-leitung-anzahl">Anzahl</label>
+                                            <input type="number" id="konfig-leitung-anzahl" min="1" step="1" value="1">
+                                        </div>
+                                        <button type="button" class="btn btn-secondary" onclick="addNewLeitung()">
+                                            + Neue Leitung
+                                        </button>
+                                    </div>
                                     <button type="button" class="btn btn-primary" onclick="backToOverview()">
                                         Zur Übersicht
                                     </button>
@@ -488,9 +494,15 @@
             </div>
 
             <div class="uebersicht-actions">
-                <button class="btn btn-primary" onclick="addNewLeitung()">
-                    + Neue Leitung anlegen
-                </button>
+                <div class="uebersicht-add-row">
+                    <div class="form-group uebersicht-anzahl-group">
+                        <label for="uebersicht-leitung-anzahl">Anzahl</label>
+                        <input type="number" id="uebersicht-leitung-anzahl" min="1" step="1" value="1">
+                    </div>
+                    <button class="btn btn-primary" onclick="addNewLeitung()">
+                        + Neue Leitung anlegen
+                    </button>
+                </div>
                 <div class="export-buttons">
                     <button class="btn btn-secondary" onclick="startProjektWizard()">
                         📝 Schaltplan-Assistent

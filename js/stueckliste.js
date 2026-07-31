@@ -6,6 +6,7 @@ import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
 import { getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
+import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
 
 /**
  * renderStueckliste.
@@ -31,7 +32,7 @@ export function renderStueckliste() {
         emptyState.style.display = 'block';
     } else {
         const grouped = new Map();
-        leitungen.forEach(l => {
+        leitungen.filter(isLeitungMeaningful).forEach(l => {
             const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
             const hersteller = (l.hersteller || '-').trim() || '-';
             const typText = getLeitungstypText(l);
@@ -39,13 +40,13 @@ export function renderStueckliste() {
             const existing = grouped.get(key);
 
             if (existing) {
-                existing.count += 1;
+                existing.count += getLeitungStueckzahl(l);
             } else {
                 grouped.set(key, {
                     artikelnummer,
                     hersteller,
                     typText,
-                    count: 1
+                    count: getLeitungStueckzahl(l)
                 });
             }
         });
