@@ -136,8 +136,7 @@ export function getLeitungStueckzahl(leitung) {
 
 
 function getNewLeitungAnzahl() {
-    const input = document.getElementById('konfig-leitung-anzahl')
-        || document.getElementById('uebersicht-leitung-anzahl');
+    const input = document.getElementById('konfig-leitung-anzahl');
     let anzahl = parseInt(input?.value, 10);
     if (Number.isNaN(anzahl) || anzahl < 1) anzahl = 1;
     if (anzahl > 200) anzahl = 200;
@@ -146,10 +145,8 @@ function getNewLeitungAnzahl() {
 
 
 export function resetNewLeitungAnzahl() {
-    ['konfig-leitung-anzahl', 'uebersicht-leitung-anzahl'].forEach(id => {
-        const input = document.getElementById(id);
-        if (input) input.value = '1';
-    });
+    const input = document.getElementById('konfig-leitung-anzahl');
+    if (input) input.value = '1';
 }
 
 

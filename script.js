@@ -9,12 +9,21 @@ import {
     initFirebase,
     ensureUserProfile,
     loadWizardQuestions,
+    loadKatalogAdditions,
     updateAuthUI,
     loginUser,
     registerUser,
     logoutUser,
-    showAuthMode
+    showAuthMode,
+    resetPassword
 } from './js/firebase.js';
+import {
+    onKatalogKategorieChange,
+    onKatalogSearch,
+    onKatalogHerstellerChange,
+    addKatalogArtikel,
+    deleteKatalogArtikel
+} from './js/katalog-view.js';
 import {
     loadProjects,
     openNewProjektForm,
@@ -34,6 +43,7 @@ import {
     adminLoadFromJson,
     adminMoveWizardStep,
     adminRemoveWizardStep,
+    adminSetWizardStepPosition,
     adminFilterSteps,
     adminToggleStep
 } from './js/admin.js';
@@ -58,7 +68,8 @@ import {
     onWizardKategorieChange,
     onWizardHerstellerChange,
     onWizardSteckerAChange,
-    onWizardSteckerBChange
+    onWizardSteckerBChange,
+    toggleWizardAusrichtung
 } from './js/wizard-leitungen.js';
 import { onWizardOelflexChange, onOelflexChange } from './js/oelflex.js';
 import {
@@ -97,6 +108,8 @@ document.addEventListener('keydown', e => {
             loginUser();
         } else if (id === 'reg-email' || id === 'reg-password' || id === 'reg-password-repeat') {
             registerUser();
+        } else if (id === 'reset-email') {
+            resetPassword();
         }
     }
 });
@@ -123,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             appState.currentUser = user;
             await ensureUserProfile(user);
             await loadWizardQuestions();
+            await loadKatalogAdditions();
             await loadProjects();
             updateAuthUI();
             showView('home');
@@ -130,6 +144,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         await loadProjects();
         updateAuthUI();
+        // Lokal: Katalog-Nachträge aus localStorage laden
+        const { mergeKatalogAdditions } = await import('./js/catalog.js');
+        try {
+            const raw = localStorage.getItem('leitungskonfigurator_katalog_additions');
+            const additions = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(additions)) mergeKatalogAdditions(additions);
+        } catch { /* ignore */ }
         showView('home');
         if (window.firebaseConfig?.apiKey) {
             const { showModal } = await import('./js/modal.js');
@@ -148,6 +169,7 @@ Object.assign(window, {
     registerUser,
     loginUser,
     showAuthMode,
+    resetPassword,
     exportAllProjects,
     importProjects,
     openNewProjektForm,
@@ -161,8 +183,14 @@ Object.assign(window, {
     adminLoadFromJson,
     adminMoveWizardStep,
     adminRemoveWizardStep,
+    adminSetWizardStepPosition,
     adminFilterSteps,
     adminToggleStep,
+    onKatalogKategorieChange,
+    onKatalogSearch,
+    onKatalogHerstellerChange,
+    addKatalogArtikel,
+    deleteKatalogArtikel,
     wizardJumpToQuestion,
     wizardApplyJump,
     wizardCancelJump,
@@ -170,6 +198,7 @@ Object.assign(window, {
     onWizardHerstellerChange,
     onWizardSteckerAChange,
     onWizardSteckerBChange,
+    toggleWizardAusrichtung,
     onWizardLaengeChange,
     onWizardOelflexChange,
     wizardAddLeitungFromStep,

@@ -10,7 +10,7 @@ export const WIZARD_CAT = {
     geber: ['sensor', 'power'],
     mts: ['power', 'sensor'],
     zuleitung: ['oelflex', 'sonstiges'],
-    panel: ['ethercat', 'sonstiges']
+    panel: ['cplink', 'sonstiges', 'sensor']
 };
 
 /**
@@ -95,29 +95,45 @@ export const DEFAULT_WIZARD_STEPS = [
     {
         id: '004-ethercat-presse',
         gruppe: '=004',
-        frage: 'Bustopologie: EtherCAT Presse?',
+        frage: 'EtherCAT vom IPC → Stößel?',
         allowedCategories: WIZARD_CAT.ethercat,
         defaultCategory: 'ethercat',
-        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M8' },
-        hinweis: 'Hier werden nur EtherCAT-Leitungen verwendet.\nIn der Regel M8 → M8 und M8 → RJ45.'
+        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'RJ45', steckerB: 'M8' },
+        hinweis: 'Hier werden nur EtherCAT-Leitungen verwendet.\nHersteller Beckhoff, Leitungstyp EtherCAT und Stecker RJ45 → M8 sind vorausgewählt.'
     },
     {
         id: '004-ethercat-linearmassstab',
         gruppe: '=004',
-        frage: 'Bustopologie: EtherCAT Linearmaßstäbe und Werkzeugsicherung?',
+        frage: 'EtherCAT Linearmaßstäbe?',
         allowedCategories: WIZARD_CAT.ethercat,
         defaultCategory: 'ethercat',
-        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M12' },
-        hinweis: 'In der Regel M12 → M12, M12 → M8 oder M8 → M8.'
+        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'M8', steckerB: 'M12' },
+        hinweis: 'Hersteller Beckhoff, Leitungstyp EtherCAT und Stecker M8 → M12 sind vorausgewählt.'
+    },
+    {
+        id: '004-ethercat-werkzeugsicherung',
+        gruppe: '=004',
+        frage: 'EtherCAT Werkzeugsicherungen?',
+        allowedCategories: WIZARD_CAT.ethercat,
+        defaultCategory: 'ethercat',
+        vorauswahl: {
+            hersteller: 'Beckhoff',
+            steckerA: 'M8',
+            steckerB: 'M8',
+            ausrichtungA: 'gerade',
+            ausrichtungB: 'gewinkelt'
+        },
+        hinweis: 'Hersteller Beckhoff, Leitungstyp EtherCAT und Stecker M8 gerade → M8 gewinkelt sind vorausgewählt.'
     },
     {
         id: '005-ipc-panel',
         gruppe: '=005',
         frage: 'IPC und Panel?',
         bauteilTypen: ['ipc', 'panel'],
-        allowedCategories: ['sonstiges', 'sensor'],
-        defaultCategory: 'sonstiges',
-        hinweis: 'Bauteile: IPC C6930-0070, Panel CP3921-1035-0010.\nLeitungen: CP-Link Leitung (Sonstige) und Phoenix Leitung Art.-Nr. 1430802 (Sonstiges) – hiervon werden immer zwei pro Panel benötigt.'
+        allowedCategories: WIZARD_CAT.panel,
+        defaultCategory: 'cplink',
+        vorauswahl: { hersteller: 'Beckhoff', steckerA: 'RJ45', steckerB: 'RJ45 IP65' },
+        hinweis: 'Bauteile: IPC C6930-0070, Panel CP3921-1035-0010.\nLeitung: CP-Link Leitung (Beckhoff, RJ45 → RJ45 IP65 für Control Panel CP39xx-0010).'
     },
     {
         id: '007-schutztueren',

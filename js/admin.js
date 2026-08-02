@@ -8,6 +8,8 @@ import { showView } from './navigation.js';
 import { getWizardConfigDoc } from './firebase.js';
 import { validateWizardSteps } from './wizard-config.js';
 import { getGruppeDisplay } from './overview.js';
+import { getBaseSteckerTyp } from './konfigurator-stecker.js';
+
 /**
  * getAdminKategorieOptions.
  * @returns {void}
@@ -18,6 +20,7 @@ export function getAdminKategorieOptions() {
         { id: 'power', name: 'Power Leitung' },
         { id: 'sensor', name: 'Sensorleitung' },
         { id: 'oelflex', name: 'Ölflexleitung' },
+        { id: 'cplink', name: 'CP-Link Leitung' },
         { id: 'sonstiges', name: 'Sonstiges' }
     ]).map(k => ({ value: k.id, label: k.name }));
 }
@@ -29,6 +32,83 @@ export function getAdminKategorieOptions() {
  */
 export function getAdminBauteilTypOptions() {
     return (appState.bauteileKatalog?.bauteiltypen || []).map(t => ({ value: t.id, label: t.name }));
+}
+
+
+/**
+ * Hersteller für Vorauswahl-Dropdown.
+ * @returns {string[]}
+ */
+function getAdminHerstellerOptions() {
+    const fromList = appState.katalog?.hersteller || [];
+    const fromArtikel = (appState.katalog?.artikel || []).map(a => a.hersteller).filter(Boolean);
+    return Array.from(new Set([...fromList, ...fromArtikel])).sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+
+/**
+ * Stecker-Basistypen für Vorauswahl-Dropdown (ohne gerade/gewinkelt).
+ * @returns {string[]}
+ */
+function getAdminSteckerOptions() {
+    const types = new Set();
+    (appState.katalog?.steckertypen || []).forEach(s => {
+        if (s) types.add(getBaseSteckerTyp(s));
+    });
+    (appState.katalog?.artikel || []).forEach(a => {
+        if (a.steckerA) types.add(getBaseSteckerTyp(a.steckerA));
+        if (a.steckerB) types.add(getBaseSteckerTyp(a.steckerB));
+    });
+    return Array.from(types).filter(Boolean).sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+
+/**
+ * Wählt den passenden Select-Wert zu einem gespeicherten Vorauswahl-String.
+ * @param {string[]} options
+ * @param {string} stored
+ * @returns {string}
+ */
+function matchAdminSelectValue(options, stored) {
+    if (!stored) return '';
+    const lower = stored.toLowerCase();
+    const exact = options.find(o => o.toLowerCase() === lower);
+    if (exact) return exact;
+
+    const prefixMatches = options.filter(o =>
+        o.toLowerCase() === lower
+        || o.toLowerCase().startsWith(`${lower} `)
+        || o.toLowerCase().startsWith(lower)
+    );
+    if (prefixMatches.length === 1) return prefixMatches[0];
+    if (prefixMatches.length > 1) {
+        // Bei kurzer Angabe wie „M8“ bevorzugt 4-polig (häufigster EtherCAT-/Sensor-Fall)
+        return prefixMatches.find(o => /4-polig/i.test(o)) || prefixMatches[0];
+    }
+
+    return options.find(o =>
+        lower.startsWith(o.toLowerCase()) || o.toLowerCase().includes(lower)
+    ) || '';
+}
+
+
+/**
+ * Baut Select-Optionen inkl. aktueller Auswahl.
+ * @param {string[]} options
+ * @param {string} selected
+ * @param {string} emptyLabel
+ * @returns {string}
+ */
+function renderAdminSelectOptions(options, selected, emptyLabel = '-- Keine --') {
+    const matched = matchAdminSelectValue(options, selected);
+    const extra = selected && !matched
+        ? `<option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)} (manuell)</option>`
+        : '';
+    return `<option value="">${escapeHtml(emptyLabel)}</option>`
+        + extra
+        + options.map(o =>
+            `<option value="${escapeHtml(o)}" ${matched === o ? 'selected' : ''}>${escapeHtml(o)}</option>`
+        ).join('');
 }
 
 
@@ -266,15 +346,39 @@ function renderStepForm(step) {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Hersteller</label>
-                        <input type="text" data-field="vorauswahlHersteller" value="${escapeHtml(step.vorauswahl?.hersteller || '')}" placeholder="z. B. Beckhoff">
+                        <select data-field="vorauswahlHersteller">
+                            ${renderAdminSelectOptions(getAdminHerstellerOptions(), step.vorauswahl?.hersteller || '')}
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Stecker A</label>
-                        <input type="text" data-field="vorauswahlSteckerA" value="${escapeHtml(step.vorauswahl?.steckerA || '')}" placeholder="z. B. M12">
+                        <select data-field="vorauswahlSteckerA">
+                            ${renderAdminSelectOptions(getAdminSteckerOptions(), step.vorauswahl?.steckerA || '')}
+                        </select>
                     </div>
                     <div class="form-group">
+                        <label>Ausrichtung A</label>
+                        <select data-field="vorauswahlAusrichtungA">
+                            <option value="">-- Keine --</option>
+                            <option value="gerade" ${step.vorauswahl?.ausrichtungA === 'gerade' ? 'selected' : ''}>gerade</option>
+                            <option value="gewinkelt" ${step.vorauswahl?.ausrichtungA === 'gewinkelt' ? 'selected' : ''}>gewinkelt</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
                         <label>Stecker B</label>
-                        <input type="text" data-field="vorauswahlSteckerB" value="${escapeHtml(step.vorauswahl?.steckerB || '')}" placeholder="z. B. offen">
+                        <select data-field="vorauswahlSteckerB">
+                            ${renderAdminSelectOptions(getAdminSteckerOptions(), step.vorauswahl?.steckerB || '')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ausrichtung B</label>
+                        <select data-field="vorauswahlAusrichtungB">
+                            <option value="">-- Keine --</option>
+                            <option value="gerade" ${step.vorauswahl?.ausrichtungB === 'gerade' ? 'selected' : ''}>gerade</option>
+                            <option value="gewinkelt" ${step.vorauswahl?.ausrichtungB === 'gewinkelt' ? 'selected' : ''}>gewinkelt</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -336,7 +440,15 @@ export function renderAdminStepsEditor() {
             <div class="admin-step-card ${expanded ? 'expanded' : ''}" data-step-index="${index}">
                 <div class="admin-step-row" onclick="adminToggleStep(${index})">
                     <span class="admin-step-toggle">${expanded ? '▾' : '▸'}</span>
-                    <span class="admin-step-nr">${index + 1}</span>
+                    <label class="admin-step-pos" onclick="event.stopPropagation()" title="Position (1–${total})">
+                        <input type="number"
+                            class="admin-step-nr-input"
+                            min="1"
+                            max="${total}"
+                            value="${index + 1}"
+                            onchange="adminSetWizardStepPosition(${index}, this.value)"
+                            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+                    </label>
                     <span class="admin-badge badge-gruppe">${escapeHtml(getGruppeDisplay(step.gruppe) || '—')}</span>
                     <span class="admin-step-frage">${escapeHtml(step.frage || '(ohne Frage)')}</span>
                     <span class="admin-step-badges">${renderStepBadges(step)}</span>
@@ -443,11 +555,15 @@ function handleAdminFieldChange(event) {
         }
         case 'vorauswahlHersteller':
         case 'vorauswahlSteckerA':
-        case 'vorauswahlSteckerB': {
+        case 'vorauswahlSteckerB':
+        case 'vorauswahlAusrichtungA':
+        case 'vorauswahlAusrichtungB': {
             const keyMap = {
                 vorauswahlHersteller: 'hersteller',
                 vorauswahlSteckerA: 'steckerA',
-                vorauswahlSteckerB: 'steckerB'
+                vorauswahlSteckerB: 'steckerB',
+                vorauswahlAusrichtungA: 'ausrichtungA',
+                vorauswahlAusrichtungB: 'ausrichtungB'
             };
             const vorauswahl = { ...(step.vorauswahl || {}) };
             const value = event.target.value.trim();
@@ -538,6 +654,46 @@ export function adminMoveWizardStep(index, delta) {
 
     if (adminExpandedIndex === index) adminExpandedIndex = newIndex;
     else if (adminExpandedIndex === newIndex) adminExpandedIndex = index;
+
+    renderAdminStepsEditor();
+    syncAdminJsonTextarea();
+}
+
+
+/**
+ * Setzt eine Frage direkt auf eine gewünschte Position (1-basiert).
+ * @param {number} index Aktueller Index (0-basiert)
+ * @param {string|number} position 1-basierte Zielposition
+ * @returns {void}
+ */
+export function adminSetWizardStepPosition(index, position) {
+    const total = appState.wizardSteps.length;
+    if (index < 0 || index >= total) return;
+
+    let target = parseInt(position, 10);
+    if (Number.isNaN(target)) {
+        renderAdminStepsEditor();
+        return;
+    }
+    target = Math.max(1, Math.min(total, target));
+    const newIndex = target - 1;
+    if (newIndex === index) {
+        renderAdminStepsEditor();
+        return;
+    }
+
+    const [step] = appState.wizardSteps.splice(index, 1);
+    appState.wizardSteps.splice(newIndex, 0, step);
+
+    if (adminExpandedIndex === index) {
+        adminExpandedIndex = newIndex;
+    } else if (adminExpandedIndex !== null) {
+        if (index < adminExpandedIndex && newIndex >= adminExpandedIndex) {
+            adminExpandedIndex--;
+        } else if (index > adminExpandedIndex && newIndex <= adminExpandedIndex) {
+            adminExpandedIndex++;
+        }
+    }
 
     renderAdminStepsEditor();
     syncAdminJsonTextarea();

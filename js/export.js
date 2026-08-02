@@ -115,6 +115,7 @@ export function exportCSV() {
         { id: 'power', name: 'Power Leitung' },
         { id: 'sensor', name: 'Sensorleitung' },
         { id: 'oelflex', name: 'Ölflexleitung' },
+        { id: 'cplink', name: 'CP-Link Leitung' },
         { id: 'sonstiges', name: 'Sonstiges' }
     ];
     
@@ -190,6 +191,7 @@ export function exportPDF() {
         { id: 'power', name: 'Power Leitung', color: [245, 158, 11] },
         { id: 'sensor', name: 'Sensorleitung', color: [16, 185, 129] },
         { id: 'oelflex', name: 'Ölflexleitung', color: [139, 92, 246] },
+        { id: 'cplink', name: 'CP-Link Leitung', color: [14, 116, 144] },
         { id: 'sonstiges', name: 'Sonstiges', color: [107, 114, 128] }
     ];
     
@@ -198,6 +200,7 @@ export function exportPDF() {
         'power': [230, 92, 0],
         'sensor': [58, 58, 58],
         'oelflex': [74, 74, 74],
+        'cplink': [14, 116, 144],
         'sonstiges': [90, 90, 90]
     };
     

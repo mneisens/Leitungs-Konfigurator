@@ -474,6 +474,27 @@ body {
     margin-top: 0.5rem;
 }
 
+.auth-forgot {
+    margin: -0.35rem 0 0.75rem;
+    text-align: right;
+    font-size: 0.85rem;
+}
+
+.auth-forgot a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.auth-forgot a:hover {
+    color: var(--primary-color, #2563eb);
+    text-decoration: underline;
+}
+
+.auth-reset-hint {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
 .auth-switch {
     margin-top: 1.25rem;
     text-align: center;
@@ -965,13 +986,11 @@ body {
     gap: 0.75rem;
 }
 
-.uebersicht-anzahl-group,
 .konfig-anzahl-group {
     margin-bottom: 0;
     min-width: 5rem;
 }
 
-.uebersicht-anzahl-group input,
 .konfig-anzahl-group input {
     width: 5rem;
 }
@@ -1245,6 +1264,10 @@ body {
     background: linear-gradient(135deg, #5a5a5a, #4a4a4a);
 }
 
+.kategorie-header.cplink {
+    background: linear-gradient(135deg, #0e7490, #155e75);
+}
+
 .kategorie-header.sonstiges {
     background: linear-gradient(135deg, #6a6a6a, #5a5a5a);
 }
@@ -1516,6 +1539,69 @@ body {
     margin-left: auto;
 }
 
+.katalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.katalog-toolbar .form-group {
+    margin-bottom: 0;
+}
+
+.katalog-search-group {
+    flex: 1;
+    min-width: 220px;
+}
+
+.katalog-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding-bottom: 0.55rem;
+    white-space: nowrap;
+}
+
+.katalog-table-wrap {
+    max-height: 55vh;
+    overflow: auto;
+}
+
+.katalog-table tbody tr {
+    cursor: default;
+}
+
+.katalog-row-custom {
+    background: #f0fdf4;
+}
+
+.katalog-badge-custom {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #166534;
+    vertical-align: middle;
+}
+
+.katalog-add-card {
+    margin-top: 1.25rem;
+}
+
+.katalog-add-card h3 {
+    margin-bottom: 1rem;
+}
+
+.katalog-meterware-group {
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 0.35rem;
+}
+
 .admin-steps-editor {
     display: flex;
     flex-direction: column;
@@ -1559,6 +1645,29 @@ body {
     min-width: 1.6rem;
     text-align: right;
     flex-shrink: 0;
+}
+
+.admin-step-pos {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.admin-step-nr-input {
+    width: 3.2rem;
+    padding: 0.2rem 0.3rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: #fff;
+}
+
+.admin-step-nr-input:focus {
+    outline: none;
+    border-color: var(--primary-color, #2563eb);
+    color: var(--text-color);
 }
 
 .admin-step-frage {

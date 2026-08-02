@@ -25,6 +25,9 @@ import {
     getWizardDefaultKategorie,
     getWizardKategorie,
     getWizardPairMatches,
+    getWizardAusrichtung,
+    setWizardAusrichtung,
+    filterWizardMatchesByAusrichtung,
     populateWizardKategorieDropdown,
     populateWizardHerstellerDropdown,
     onWizardKategorieChange,
@@ -61,7 +64,7 @@ function selectWizardOption(selectId, wunsch) {
 
 /**
  * Wendet die in der Frage konfigurierte Vorauswahl
- * (Hersteller, Stecker A, Stecker B) auf die Leitungs-Dropdowns an.
+ * (Hersteller, Stecker A/B, Ausrichtung) auf die Leitungs-Dropdowns an.
  * @param {object} step
  * @returns {void}
  */
@@ -78,6 +81,11 @@ function applyWizardVorauswahl(step) {
         if (vorauswahl.steckerB && selectWizardOption('wizard-stecker-b', vorauswahl.steckerB)) {
             onWizardSteckerBChange();
         }
+    }
+    if (vorauswahl.ausrichtungA) setWizardAusrichtung('a', vorauswahl.ausrichtungA);
+    if (vorauswahl.ausrichtungB) setWizardAusrichtung('b', vorauswahl.ausrichtungB);
+    if (vorauswahl.ausrichtungA || vorauswahl.ausrichtungB) {
+        onWizardSteckerBChange();
     }
 }
 
@@ -139,9 +147,12 @@ export function resolveWizardArtikelFromForm() {
         return { artikel: null, artikelnummer: '', error: 'Bitte Hersteller, Stecker A und Stecker B wählen.' };
     }
 
-    const matches = getWizardPairMatches(hersteller, steckerABase, steckerBBase);
+    const ausrA = getWizardAusrichtung('a');
+    const ausrB = getWizardAusrichtung('b');
+    let matches = getWizardPairMatches(hersteller, steckerABase, steckerBBase);
+    matches = filterWizardMatchesByAusrichtung(matches, steckerABase, steckerBBase, ausrA, ausrB);
     if (matches.length === 0) {
-        return { artikel: null, artikelnummer: '', error: 'Keine passende Leitung gefunden.' };
+        return { artikel: null, artikelnummer: '', error: 'Keine passende Leitung für diese Ausrichtung gefunden.' };
     }
 
     if (laenge !== null && !Number.isNaN(laenge)) {
@@ -359,18 +370,34 @@ export function renderProjektWizard() {
     if (stepHasLeitungen(step)) {
         populateWizardArtikelVorschlaege();
         populateWizardKategorieDropdown();
-        document.getElementById('wizard-kategorie').value = getWizardDefaultKategorie(step);
-        populateWizardHerstellerDropdown();
+
+        // Ausrichtung vor jeder Frage zurücksetzen (Vorauswahl setzt sie ggf. neu)
+        setWizardAusrichtung('a', 'gerade');
+        setWizardAusrichtung('b', 'gerade');
+
+        // Leitungstyp: Standard-Kategorie der Frage (z. B. EtherCAT)
+        const kategorieSelect = document.getElementById('wizard-kategorie');
+        const defaultKategorie = getWizardDefaultKategorie(step);
+        if (kategorieSelect && defaultKategorie) {
+            kategorieSelect.value = defaultKategorie;
+        }
+
+        onWizardKategorieChange();
+
+        // Hersteller/Stecker/Ausrichtung laut Vorauswahl der Frage
+        applyWizardVorauswahl(step);
         const herstellerSelect = document.getElementById('wizard-hersteller');
-        if (herstellerSelect && !step.vorauswahl?.hersteller) {
+        if (herstellerSelect && !herstellerSelect.value) {
             const preferred = ['Beckhoff', 'Murr Elektronik', 'Phoenix Contact'];
             const available = preferred.find(h =>
                 Array.from(herstellerSelect.options).some(opt => opt.value === h)
             );
-            if (available) herstellerSelect.value = available;
+            if (available) {
+                herstellerSelect.value = available;
+                onWizardHerstellerChange();
+            }
         }
-        onWizardKategorieChange();
-        applyWizardVorauswahl(step);
+
         renderWizardCreatedLeitungen(step);
     } else {
         setWizardOelflexMode(false);

@@ -130,29 +130,30 @@ export function onKategorieFilterChange() {
 
     setOelflexMode(false);
 
-    // Bei EtherCAT, Power und Sensor automatisch Beckhoff auswählen
-    if (kategorie === 'ethercat' || kategorie === 'power' || kategorie === 'sensor') {
+    // Bei EtherCAT, Power, Sensor und CP-Link automatisch Beckhoff auswählen
+    if (kategorie === 'ethercat' || kategorie === 'power' || kategorie === 'sensor' || kategorie === 'cplink') {
         herstellerSelect.value = 'Beckhoff';
     }
     
     // Stecker-Dropdowns neu laden (mit Kategorie-Filter)
     onHerstellerChange();
 
-    // Für EtherCAT gewünschte Defaults setzen, sofern verfügbar
-    if (kategorie === 'ethercat') {
+    // Kategorie-spezifische Stecker-Defaults
+    if (kategorie === 'ethercat' || kategorie === 'cplink') {
         const steckerASelect = document.getElementById('leitung-stecker-a');
         const steckerBSelect = document.getElementById('leitung-stecker-b');
-        const defaultStecker = 'M8 4-polig';
+        const defaultSteckerA = kategorie === 'cplink' ? 'RJ45' : 'M8 4-polig';
+        const defaultSteckerB = kategorie === 'cplink' ? 'RJ45 IP65' : 'M8 4-polig';
 
-        const hasSteckerA = Array.from(steckerASelect.options).some(option => option.value === defaultStecker);
+        const hasSteckerA = Array.from(steckerASelect.options).some(option => option.value === defaultSteckerA);
         if (hasSteckerA) {
-            steckerASelect.value = defaultStecker;
+            steckerASelect.value = defaultSteckerA;
             onSteckerChange();
         }
 
-        const hasSteckerB = Array.from(steckerBSelect.options).some(option => option.value === defaultStecker);
+        const hasSteckerB = Array.from(steckerBSelect.options).some(option => option.value === defaultSteckerB);
         if (hasSteckerB) {
-            steckerBSelect.value = defaultStecker;
+            steckerBSelect.value = defaultSteckerB;
         }
 
         loadLaengen();

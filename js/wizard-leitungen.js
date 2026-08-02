@@ -108,6 +108,80 @@ export function getWizardPairMatches(hersteller, steckerABase, steckerBBase) {
 }
 
 
+/**
+ * @param {'a'|'b'} seite
+ * @returns {'gerade'|'gewinkelt'}
+ */
+export function getWizardAusrichtung(seite) {
+    const btn = document.getElementById(`wizard-ausrichtung-${seite}`);
+    if (!btn) return 'gerade';
+    return btn.classList.contains('gewinkelt') ? 'gewinkelt' : 'gerade';
+}
+
+
+/**
+ * @param {'a'|'b'} seite
+ * @param {'gerade'|'gewinkelt'|string} ausrichtung
+ * @returns {void}
+ */
+export function setWizardAusrichtung(seite, ausrichtung) {
+    const btn = document.getElementById(`wizard-ausrichtung-${seite}`);
+    if (!btn) return;
+    const gewinkelt = ausrichtung === 'gewinkelt';
+    btn.classList.toggle('gewinkelt', gewinkelt);
+    const text = btn.querySelector('.toggle-text');
+    if (text) text.textContent = gewinkelt ? 'gewinkelt' : 'gerade';
+}
+
+
+/**
+ * @param {'a'|'b'} seite
+ * @returns {void}
+ */
+export function toggleWizardAusrichtung(seite) {
+    const next = getWizardAusrichtung(seite) === 'gewinkelt' ? 'gerade' : 'gewinkelt';
+    setWizardAusrichtung(seite, next);
+    onWizardSteckerBChange();
+}
+
+
+/**
+ * @param {string} stecker
+ * @param {string|undefined} ausrichtung
+ * @returns {boolean}
+ */
+function steckerMatchesAusrichtung(stecker, ausrichtung) {
+    if (!ausrichtung || !stecker) return true;
+    if (!/M8|M12/i.test(stecker)) return true;
+    if (ausrichtung === 'gewinkelt') return stecker.includes('gewinkelt');
+    return !stecker.includes('gewinkelt');
+}
+
+
+/**
+ * @param {object[]} matches
+ * @param {string} steckerABase
+ * @param {string} steckerBBase
+ * @param {string} ausrA
+ * @param {string} ausrB
+ * @returns {object[]}
+ */
+export function filterWizardMatchesByAusrichtung(matches, steckerABase, steckerBBase, ausrA, ausrB) {
+    if (!ausrA && !ausrB) return matches;
+    return matches.filter(a => {
+        const baseA = getBaseSteckerTyp(a.steckerA);
+        const baseB = getBaseSteckerTyp(a.steckerB);
+        const direct = baseA === steckerABase && baseB === steckerBBase
+            && steckerMatchesAusrichtung(a.steckerA, ausrA)
+            && steckerMatchesAusrichtung(a.steckerB, ausrB);
+        const reverse = baseA === steckerBBase && baseB === steckerABase
+            && steckerMatchesAusrichtung(a.steckerA, ausrB)
+            && steckerMatchesAusrichtung(a.steckerB, ausrA);
+        return direct || reverse;
+    });
+}
+
+
 export function onWizardKategorieChange() {
     const step = getCurrentWizardStep();
     const kategorie = getWizardKategorie();
@@ -220,8 +294,18 @@ export function onWizardSteckerBChange() {
         return;
     }
 
+    const ausrA = getWizardAusrichtung('a');
+    const ausrB = getWizardAusrichtung('b');
+    const matches = filterWizardMatchesByAusrichtung(
+        getWizardPairMatches(hersteller, steckerABase, steckerBBase),
+        steckerABase,
+        steckerBBase,
+        ausrA,
+        ausrB
+    );
+
     const laengen = Array.from(new Set(
-        getWizardPairMatches(hersteller, steckerABase, steckerBBase)
+        matches
             .map(a => a.laenge)
             .filter(l => typeof l === 'number' && l > 0)
     )).sort((a, b) => a - b);

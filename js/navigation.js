@@ -36,6 +36,7 @@ function runViewHandler(viewName) {
         auth: () => import('./firebase.js').then(m => m.showAuthMode('login')),
         home: () => import('./projects.js').then(m => m.loadProjects()),
         admin: () => import('./admin.js').then(m => m.renderAdminView()),
+        katalog: () => import('./katalog-view.js').then(m => m.renderKatalogView()),
         'projekt-form': () => {},
         'projekt-wizard': () => import('./wizard-ui.js').then(m => m.renderProjektWizard()),
         konfigurator: () => import('./konfigurator-core.js').then(m => m.initKonfigurator()),

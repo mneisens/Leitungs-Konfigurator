@@ -24,7 +24,7 @@ export function normalizeWizardStep(step, index) {
     if (step?.hinweis) normalized.hinweis = String(step.hinweis).trim();
     if (step?.vorauswahl && typeof step.vorauswahl === 'object') {
         const vorauswahl = {};
-        ['hersteller', 'steckerA', 'steckerB'].forEach(key => {
+        ['hersteller', 'steckerA', 'steckerB', 'ausrichtungA', 'ausrichtungB'].forEach(key => {
             const value = String(step.vorauswahl[key] || '').trim();
             if (value) vorauswahl[key] = value;
         });

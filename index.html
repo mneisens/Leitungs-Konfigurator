@@ -12,6 +12,7 @@
             <h1 class="logo" onclick="showView('home')">synchropress <span>Leitungskonfigurator</span></h1>
             <nav class="main-nav">
                 <button class="nav-btn" onclick="showView('home')">Projekte</button>
+                <button class="nav-btn hidden" id="nav-katalog" onclick="showView('katalog')">Katalog</button>
                 <button class="nav-btn hidden" id="nav-admin" onclick="showView('admin')">Admin</button>
                 <span class="nav-user hidden" id="nav-user"></span>
                 <button class="nav-btn hidden" id="nav-logout" onclick="logoutUser()">Logout</button>
@@ -33,6 +34,9 @@
                         <label for="auth-password">Passwort *</label>
                         <input type="password" id="auth-password" placeholder="Passwort" autocomplete="current-password" required>
                     </div>
+                    <p class="auth-forgot">
+                        <a href="#" onclick="showAuthMode('reset'); return false;">Passwort vergessen?</a>
+                    </p>
                     <button type="button" class="btn btn-primary btn-block" onclick="loginUser()">Anmelden</button>
                     <p class="auth-switch">
                         Noch kein Konto?
@@ -58,6 +62,21 @@
                     <p class="auth-switch">
                         Bereits registriert?
                         <a href="#" onclick="showAuthMode('login'); return false;">Zur Anmeldung</a>
+                    </p>
+                </div>
+
+                <div class="form-card auth-card" id="auth-reset-box" hidden>
+                    <h2>Passwort zurücksetzen</h2>
+                    <p class="text-muted auth-reset-hint">
+                        Gib deine E-Mail-Adresse ein. Wir senden dir einen Link zum Zurücksetzen des Passworts.
+                    </p>
+                    <div class="form-group">
+                        <label for="reset-email">E-Mail *</label>
+                        <input type="email" id="reset-email" placeholder="name@firma.de" autocomplete="email" required>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-block" onclick="resetPassword()">Link senden</button>
+                    <p class="auth-switch">
+                        <a href="#" onclick="showAuthMode('login'); return false;">Zurück zur Anmeldung</a>
                     </p>
                 </div>
             </div>
@@ -90,6 +109,104 @@
                 <button class="btn btn-primary" onclick="openNewProjektForm()">
                     Projekt anlegen
                 </button>
+            </div>
+        </section>
+
+        <!-- View: Leitungskatalog -->
+        <section id="view-katalog" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('home')">← Zurück</button>
+                <h2>Leitungskatalog</h2>
+            </div>
+
+            <div class="form-card">
+                <p class="text-muted">
+                    Alle verfügbaren Leitungen nach Kategorie. Neue Leitungen hier nachtragen – sie stehen danach in Assistent und Konfigurator zur Verfügung.
+                </p>
+
+                <div class="katalog-toolbar">
+                    <div class="form-group">
+                        <label for="katalog-kategorie-filter">Kategorie</label>
+                        <select id="katalog-kategorie-filter" onchange="onKatalogKategorieChange()">
+                            <option value="">Alle Kategorien</option>
+                        </select>
+                    </div>
+                    <div class="form-group katalog-search-group">
+                        <label for="katalog-search">Suche</label>
+                        <input type="search" id="katalog-search" placeholder="Artikelnummer, Hersteller, Beschreibung…" oninput="onKatalogSearch()">
+                    </div>
+                    <span class="katalog-count" id="katalog-count"></span>
+                </div>
+
+                <div class="table-container katalog-table-wrap">
+                    <table class="leitung-table katalog-table">
+                        <thead>
+                            <tr>
+                                <th>Artikelnummer</th>
+                                <th>Hersteller</th>
+                                <th>Beschreibung</th>
+                                <th>Stecker A</th>
+                                <th>Stecker B</th>
+                                <th>Länge</th>
+                                <th>Kategorie</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="katalog-tabelle-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="form-card katalog-add-card">
+                <h3>Leitung nachtragen</h3>
+                <form id="katalog-add-form" onsubmit="event.preventDefault(); addKatalogArtikel();">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="katalog-form-kategorie">Kategorie *</label>
+                            <select id="katalog-form-kategorie" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-hersteller">Hersteller *</label>
+                            <select id="katalog-form-hersteller" onchange="onKatalogHerstellerChange()" required></select>
+                        </div>
+                        <div class="form-group" id="katalog-hersteller-custom-group" hidden>
+                            <label for="katalog-form-hersteller-custom">Neuer Hersteller *</label>
+                            <input type="text" id="katalog-form-hersteller-custom" placeholder="z. B. Harting">
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-artikelnummer">Artikelnummer *</label>
+                            <input type="text" id="katalog-form-artikelnummer" placeholder="z. B. ZK1090-…" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="katalog-form-beschreibung">Beschreibung *</label>
+                        <input type="text" id="katalog-form-beschreibung" placeholder="Kurzbeschreibung der Leitung" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="katalog-form-stecker-a">Stecker Seite A *</label>
+                            <input type="text" id="katalog-form-stecker-a" list="katalog-stecker-vorschlaege" placeholder="z. B. M8 4-polig gerade" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-stecker-b">Stecker Seite B *</label>
+                            <input type="text" id="katalog-form-stecker-b" list="katalog-stecker-vorschlaege" placeholder="z. B. RJ45" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-laenge">Länge (m) *</label>
+                            <input type="number" id="katalog-form-laenge" min="0" step="0.01" placeholder="z. B. 5">
+                        </div>
+                        <div class="form-group katalog-meterware-group">
+                            <label class="admin-check">
+                                <input type="checkbox" id="katalog-form-meterware">
+                                Meterware (Länge frei wählbar)
+                            </label>
+                        </div>
+                    </div>
+                    <datalist id="katalog-stecker-vorschlaege"></datalist>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">+ Leitung speichern</button>
+                    </div>
+                </form>
             </div>
         </section>
 
@@ -244,6 +361,12 @@
                             <select id="wizard-stecker-a" onchange="onWizardSteckerAChange()">
                                 <option value="">-- Bitte wählen --</option>
                             </select>
+                            <div class="ausrichtung-toggle" id="wizard-ausrichtung-a-wrap">
+                                <button type="button" id="wizard-ausrichtung-a" class="toggle-btn" onclick="toggleWizardAusrichtung('a')">
+                                    <span class="toggle-icon">↑</span>
+                                    <span class="toggle-text">gerade</span>
+                                </button>
+                            </div>
                         </div>
                         <div id="wizard-stecker-row" class="wizard-grid-pass">
                             <div class="form-group">
@@ -251,6 +374,12 @@
                                 <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
                                     <option value="">-- Bitte wählen --</option>
                                 </select>
+                                <div class="ausrichtung-toggle" id="wizard-ausrichtung-b-wrap">
+                                    <button type="button" id="wizard-ausrichtung-b" class="toggle-btn" onclick="toggleWizardAusrichtung('b')">
+                                        <span class="toggle-icon">↑</span>
+                                        <span class="toggle-text">gerade</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="form-group" id="wizard-laenge-group">
                                 <label for="wizard-laenge">Länge</label>
@@ -495,10 +624,6 @@
 
             <div class="uebersicht-actions">
                 <div class="uebersicht-add-row">
-                    <div class="form-group uebersicht-anzahl-group">
-                        <label for="uebersicht-leitung-anzahl">Anzahl</label>
-                        <input type="number" id="uebersicht-leitung-anzahl" min="1" step="1" value="1">
-                    </div>
                     <button class="btn btn-primary" onclick="addNewLeitung()">
                         + Neue Leitung anlegen
                     </button>

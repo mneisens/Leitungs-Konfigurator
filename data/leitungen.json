@@ -1,5 +1,14 @@
 {
-    "hersteller": ["Beckhoff", "Murr Elektronik", "Phoenix Contact", "Weidmüller", "Sonepar", "Lapp Kabel", "Sick", "ifm electronic"],
+    "hersteller": [
+        "Beckhoff",
+        "Murr Elektronik",
+        "Phoenix Contact",
+        "Weidmüller",
+        "Sonepar",
+        "Lapp Kabel",
+        "Sick",
+        "ifm electronic"
+    ],
     "kategorien": [
         {
             "id": "ethercat",
@@ -20,6 +29,11 @@
             "id": "oelflex",
             "name": "Ölflexleitung",
             "icon": "🔌"
+        },
+        {
+            "id": "cplink",
+            "name": "CP-Link Leitung",
+            "icon": "🖥️"
         },
         {
             "id": "sonstiges",
@@ -3382,7 +3396,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 1.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3418,7 +3432,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 2.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -3427,7 +3441,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 3.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -3445,7 +3459,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 5.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -3463,7 +3477,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 8.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 8.0,
+            "laenge": 8,
             "kategorie": "sensor"
         },
         {
@@ -3472,7 +3486,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 10.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -3481,7 +3495,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 15.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -3490,7 +3504,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 17.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 17.0,
+            "laenge": 17,
             "kategorie": "sensor"
         },
         {
@@ -3499,7 +3513,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 4p Buchse gerade 20.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 4-polig Buchse gerade",
-            "laenge": 20.0,
+            "laenge": 20,
             "kategorie": "sensor"
         },
         {
@@ -3526,7 +3540,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 1.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3544,7 +3558,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 2.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -3553,7 +3567,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 4.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 4.0,
+            "laenge": 4,
             "kategorie": "sensor"
         },
         {
@@ -3562,7 +3576,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 5.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -3571,7 +3585,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 6.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 6.0,
+            "laenge": 6,
             "kategorie": "sensor"
         },
         {
@@ -3589,7 +3603,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 8.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 8.0,
+            "laenge": 8,
             "kategorie": "sensor"
         },
         {
@@ -3598,7 +3612,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 10.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -3607,7 +3621,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 15.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -3616,7 +3630,7 @@
             "beschreibung": "Sensor M12 4p Buchse gerade - offen 20.00m",
             "steckerA": "M12 4-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 20.0,
+            "laenge": 20,
             "kategorie": "sensor"
         },
         {
@@ -3634,7 +3648,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 1.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3643,7 +3657,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 3.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -3652,7 +3666,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 5.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -3670,7 +3684,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 10.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -3679,7 +3693,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 20.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 20.0,
+            "laenge": 20,
             "kategorie": "sensor"
         },
         {
@@ -3688,7 +3702,7 @@
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 30.00m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
             "steckerB": "offen",
-            "laenge": 30.0,
+            "laenge": 30,
             "kategorie": "sensor"
         },
         {
@@ -3706,7 +3720,7 @@
             "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 1.00m",
             "steckerA": "M12 5-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3715,7 +3729,7 @@
             "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 2.00m",
             "steckerA": "M12 5-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -3724,7 +3738,7 @@
             "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 3.00m",
             "steckerA": "M12 5-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -3751,7 +3765,7 @@
             "beschreibung": "Sensor M12 5p Stecker gerade - M8 3p Buchse gerade 5.00m",
             "steckerA": "M12 5-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -3814,7 +3828,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 1.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3841,7 +3855,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 2.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -3868,7 +3882,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 3.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -3886,7 +3900,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 4.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 4.0,
+            "laenge": 4,
             "kategorie": "sensor"
         },
         {
@@ -3904,7 +3918,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 5.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -3913,7 +3927,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 6.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 6.0,
+            "laenge": 6,
             "kategorie": "sensor"
         },
         {
@@ -3922,7 +3936,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 7.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 7.0,
+            "laenge": 7,
             "kategorie": "sensor"
         },
         {
@@ -3931,7 +3945,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 8.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 8.0,
+            "laenge": 8,
             "kategorie": "sensor"
         },
         {
@@ -3940,7 +3954,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 10.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -3949,7 +3963,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 15.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -3958,7 +3972,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 20.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 20.0,
+            "laenge": 20,
             "kategorie": "sensor"
         },
         {
@@ -3967,7 +3981,7 @@
             "beschreibung": "Sensor M8 3p Stecker gerade - M8 3p Buchse gerade 30.00m",
             "steckerA": "M8 3-polig Stecker gerade",
             "steckerB": "M8 3-polig Buchse gerade",
-            "laenge": 30.0,
+            "laenge": 30,
             "kategorie": "sensor"
         },
         {
@@ -3976,7 +3990,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -3985,7 +3999,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -3994,7 +4008,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -4003,7 +4017,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -4012,7 +4026,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -4021,7 +4035,7 @@
             "beschreibung": "Sensorleitung M8 Buchse gerade 3-polig LED - offenes Ende",
             "steckerA": "M8 3-polig Buchse gerade",
             "steckerB": "offen",
-            "laenge": 20.0,
+            "laenge": 20,
             "kategorie": "sensor"
         },
         {
@@ -4030,7 +4044,7 @@
             "beschreibung": "Sensorleitung Ventilstecker Bauform C gewinkelt LED - offenes Ende",
             "steckerA": "Ventilstecker DIN C",
             "steckerB": "offen",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -4039,7 +4053,7 @@
             "beschreibung": "Sensorleitung Ventilstecker Bauform C gewinkelt LED - offenes Ende",
             "steckerA": "Ventilstecker DIN C",
             "steckerB": "offen",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -4048,7 +4062,7 @@
             "beschreibung": "Sensorleitung Ventilstecker Bauform C gewinkelt LED - offenes Ende",
             "steckerA": "Ventilstecker DIN C",
             "steckerB": "offen",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -4075,7 +4089,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -4084,7 +4098,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -4102,7 +4116,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -4111,7 +4125,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 4.0,
+            "laenge": 4,
             "kategorie": "sensor"
         },
         {
@@ -4120,7 +4134,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -4129,7 +4143,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 7.0,
+            "laenge": 7,
             "kategorie": "sensor"
         },
         {
@@ -4138,7 +4152,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gewinkelt 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gewinkelt",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -4201,7 +4215,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -4246,7 +4260,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -4273,7 +4287,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 4.0,
+            "laenge": 4,
             "kategorie": "sensor"
         },
         {
@@ -4282,7 +4296,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -4291,7 +4305,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 6.0,
+            "laenge": 6,
             "kategorie": "sensor"
         },
         {
@@ -4300,7 +4314,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 7.0,
+            "laenge": 7,
             "kategorie": "sensor"
         },
         {
@@ -4318,7 +4332,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 9.0,
+            "laenge": 9,
             "kategorie": "sensor"
         },
         {
@@ -4327,7 +4341,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -4336,7 +4350,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade 4-polig A-kodiert - M12 Buchse gerade 4-polig A-kodiert",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "M12 4-polig Buchse gerade",
-            "laenge": 15.0,
+            "laenge": 15,
             "kategorie": "sensor"
         },
         {
@@ -4345,7 +4359,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade A-kodiert - MSUD Ventilstecker Bauform C 8mm",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "Ventilstecker DIN C",
-            "laenge": 2.0,
+            "laenge": 2,
             "kategorie": "sensor"
         },
         {
@@ -4354,7 +4368,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade A-kodiert - MSUD Ventilstecker Bauform C 8mm",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "Ventilstecker DIN C",
-            "laenge": 1.0,
+            "laenge": 1,
             "kategorie": "sensor"
         },
         {
@@ -4390,7 +4404,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade A-kodiert - MSUD Ventilstecker Bauform C 8mm",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "Ventilstecker DIN C",
-            "laenge": 3.0,
+            "laenge": 3,
             "kategorie": "sensor"
         },
         {
@@ -4399,7 +4413,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade A-kodiert - MSUD Ventilstecker Bauform C 8mm",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "Ventilstecker DIN C",
-            "laenge": 5.0,
+            "laenge": 5,
             "kategorie": "sensor"
         },
         {
@@ -4408,7 +4422,7 @@
             "beschreibung": "Sensorleitung M12 Stecker gerade A-kodiert - MSUD Ventilstecker Bauform C 8mm",
             "steckerA": "M12 4-polig Stecker gerade",
             "steckerB": "Ventilstecker DIN C",
-            "laenge": 10.0,
+            "laenge": 10,
             "kategorie": "sensor"
         },
         {
@@ -4572,27 +4586,9 @@
             "meterware": true
         },
         {
-            "hersteller": "Beckhoff",
-            "artikelnummer": "C9900-K706",
-            "beschreibung": "CP-Link 4 Leitung 20m (Standard für Panel)",
-            "steckerA": "RJ45",
-            "steckerB": "RJ45",
-            "laenge": 20,
-            "kategorie": "sonstiges"
-        },
-        {
             "hersteller": "Phoenix Contact",
             "artikelnummer": "632582",
             "beschreibung": "Panel Taster-Leitung (Sonepar Bestellnummer 632582)",
-            "steckerA": "offen",
-            "steckerB": "offen",
-            "laenge": 0,
-            "kategorie": "sonstiges"
-        },
-        {
-            "hersteller": "Phoenix Contact",
-            "artikelnummer": "1430802",
-            "beschreibung": "Phoenix Leitung 1430802 (Panel – immer 2 Stück pro Panel)",
             "steckerA": "offen",
             "steckerB": "offen",
             "laenge": 0,
@@ -4607,37 +4603,157 @@
             "laenge": 0,
             "kategorie": "power",
             "meterware": true
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K667",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 3 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 3,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K652",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 5 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 5,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K653",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 10 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 10,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K654",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 20 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 20,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K655",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 30 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 30,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K656",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 40 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 40,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K657",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 50 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 50,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K658",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 60 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 60,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K659",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 70 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 70,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K660",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 80 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 80,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K661",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 90 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 90,
+            "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "C9900-K662",
+            "beschreibung": "RJ45-Anschlusskabel Cat.6A, 100 m, ein Ende mit IP-65-Stecker für Control Panel CP39xx-0010",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45 IP65",
+            "laenge": 100,
+            "kategorie": "cplink"
         }
     ],
     "steckertypen": [
-        "M8 3-polig",
-        "M8 3-polig Stecker",
-        "M8 3-polig Buchse",
-        "M8 4-polig gerade",
-        "M8 4-polig gewinkelt",
-        "M8 8-polig",
+        "7/8\" 5-polig gewinkelt",
+        "M12 4-polig Buchse",
         "M12 4-polig gerade",
         "M12 4-polig gewinkelt",
         "M12 4-polig Stecker",
-        "M12 4-polig Buchse",
         "M12 5-polig",
-        "M12 5-polig Stecker",
         "M12 5-polig Buchse",
+        "M12 5-polig Stecker",
         "M12 8-polig",
         "M12 8-polig gerade",
         "M12 8-polig gewinkelt",
-        "7/8\" 5-polig gewinkelt",
+        "M12 SPEEDCON",
+        "M8 3-polig",
+        "M8 3-polig Buchse",
+        "M8 3-polig Stecker",
+        "M8 4-polig gerade",
+        "M8 4-polig gewinkelt",
+        "M8 8-polig",
+        "offen",
+        "Phoenix MSTB 2,5",
+        "Phoenix MSTB 5,08",
         "RJ45",
-        "Sub-D 9-polig",
+        "RJ45 IP65",
         "Sub-D 15-polig",
         "Sub-D 25-polig",
+        "Sub-D 9-polig",
         "Ventilstecker DIN A",
         "Ventilstecker DIN B",
         "Ventilstecker DIN C",
-        "Phoenix MSTB 2,5",
-        "Phoenix MSTB 5,08",
-        "Wago 2060",
-        "offen"
+        "Wago 2060"
     ],
-    "standardlaengen": [1, 2, 3, 5, 10, 15, 20, 25, 30]
+    "standardlaengen": [
+        1,
+        2,
+        3,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30
+    ]
 }

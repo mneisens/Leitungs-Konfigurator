@@ -100,6 +100,65 @@ export function getWizardConfigDoc() {
 
 
 /**
+ * Firestore-Dokument für nachgetragene Katalog-Leitungen.
+ * @returns {firebase.firestore.DocumentReference|null}
+ */
+export function getKatalogConfigDoc() {
+    if (!appState.firebaseReady || !appState.firebaseDb) return null;
+    return appState.firebaseDb.collection('config').doc('leitungenKatalog');
+}
+
+
+/**
+ * Lädt nachgetragene Leitungen aus Firestore.
+ * @returns {Promise<object[]>}
+ */
+export async function getKatalogAdditions() {
+    const ref = getKatalogConfigDoc();
+    if (!ref) return [];
+
+    const snap = await ref.get();
+    if (!snap.exists) return [];
+    const data = snap.data() || {};
+    return Array.isArray(data.additions) ? data.additions : [];
+}
+
+
+/**
+ * Speichert nachgetragene Leitungen in Firestore.
+ * @param {object[]} additions
+ * @returns {Promise<void>}
+ */
+export async function persistKatalogAdditions(additions) {
+    const ref = getKatalogConfigDoc();
+    if (!ref) throw new Error('Firebase ist nicht bereit.');
+
+    await ref.set({
+        additions: additions || [],
+        updatedBy: appState.currentUser?.uid || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+}
+
+
+/**
+ * Lädt Katalog-Nachträge und mischt sie in den lokalen Katalog.
+ * @returns {Promise<void>}
+ */
+export async function loadKatalogAdditions() {
+    if (!appState.firebaseReady) return;
+    try {
+        const { mergeKatalogAdditions, ensureKatalogLists } = await import('./catalog.js');
+        const additions = await getKatalogAdditions();
+        mergeKatalogAdditions(additions);
+        additions.forEach(a => ensureKatalogLists(a));
+    } catch (error) {
+        console.error('Katalog-Nachträge konnten nicht geladen werden:', error);
+    }
+}
+
+
+/**
  * ensureUserProfile.
  * @returns {void}
  */
@@ -142,7 +201,21 @@ export async function loadWizardQuestions() {
             step && step.id && step.gruppe && step.frage
         );
         if (valid.length > 0) {
-            appState.wizardSteps = valid.map((s, i) => normalizeWizardStep(s, i));
+            const defaultsById = new Map(DEFAULT_WIZARD_STEPS.map(s => [s.id, s]));
+            appState.wizardSteps = valid.map((s, i) => {
+                const normalized = normalizeWizardStep(s, i);
+                const fallback = defaultsById.get(normalized.id);
+                // Fehlende Vorauswahl/Standard-Kategorie aus den Code-Defaults ergänzen
+                if (fallback) {
+                    if (!normalized.defaultCategory && fallback.defaultCategory) {
+                        normalized.defaultCategory = fallback.defaultCategory;
+                    }
+                    if (!normalized.vorauswahl && fallback.vorauswahl) {
+                        normalized.vorauswahl = { ...fallback.vorauswahl };
+                    }
+                }
+                return normalized;
+            });
         }
     } catch (error) {
         console.error('Fehler beim Laden der Wizard-Fragen:', error);
@@ -158,12 +231,14 @@ export function updateAuthUI() {
     const navLogout = document.getElementById('nav-logout');
     const navUser = document.getElementById('nav-user');
     const navAdmin = document.getElementById('nav-admin');
+    const navKatalog = document.getElementById('nav-katalog');
     if (!navLogout || !navUser || !navAdmin) return;
 
     if (appState.currentUser) {
         navLogout.classList.remove('hidden');
         navUser.classList.remove('hidden');
         navUser.textContent = appState.currentUser.email || '';
+        navKatalog?.classList.remove('hidden');
         if (appState.currentUserRole === 'admin') {
             navAdmin.classList.remove('hidden');
         } else {
@@ -174,6 +249,12 @@ export function updateAuthUI() {
         navUser.classList.add('hidden');
         navAdmin.classList.add('hidden');
         navUser.textContent = '';
+        // Ohne Firebase (lokaler Modus) Katalog trotzdem zugänglich
+        if (!appState.firebaseReady) {
+            navKatalog?.classList.remove('hidden');
+        } else {
+            navKatalog?.classList.add('hidden');
+        }
     }
 }
 
@@ -240,21 +321,67 @@ export async function registerUser() {
 
 
 /**
- * Wechselt zwischen Login- und Registrierungs-Ansicht.
- * @param {'login'|'register'} mode
+ * Wechselt zwischen Login-, Registrierungs- und Passwort-Reset-Ansicht.
+ * @param {'login'|'register'|'reset'} mode
  * @returns {void}
  */
 export function showAuthMode(mode) {
     const loginBox = document.getElementById('auth-login-box');
     const registerBox = document.getElementById('auth-register-box');
-    if (!loginBox || !registerBox) return;
+    const resetBox = document.getElementById('auth-reset-box');
+    if (!loginBox || !registerBox || !resetBox) return;
 
     const showRegister = mode === 'register';
-    loginBox.hidden = showRegister;
+    const showReset = mode === 'reset';
+
+    loginBox.hidden = showRegister || showReset;
     registerBox.hidden = !showRegister;
+    resetBox.hidden = !showReset;
+
+    if (showReset) {
+        const loginEmail = document.getElementById('auth-email')?.value?.trim() || '';
+        const resetEmail = document.getElementById('reset-email');
+        if (resetEmail && loginEmail && !resetEmail.value) {
+            resetEmail.value = loginEmail;
+        }
+        resetEmail?.focus();
+        return;
+    }
 
     const focusField = document.getElementById(showRegister ? 'reg-email' : 'auth-email');
     focusField?.focus();
+}
+
+
+/**
+ * Sendet eine E-Mail zum Zurücksetzen des Passworts.
+ * @returns {Promise<void>}
+ */
+export async function resetPassword() {
+    if (!appState.firebaseReady || !appState.firebaseAuth) {
+        await showModal('Firebase ist nicht konfiguriert. Bitte zuerst `firebase-config.js` ausfüllen.', {
+            type: 'warning',
+            title: 'Firebase fehlt'
+        });
+        return;
+    }
+
+    const email = document.getElementById('reset-email')?.value.trim();
+    if (!email) {
+        showModal('Bitte E-Mail-Adresse eingeben.', { type: 'warning', title: 'Fehlende Eingabe' });
+        return;
+    }
+
+    try {
+        await appState.firebaseAuth.sendPasswordResetEmail(email);
+        showModal(
+            `Falls ein Konto mit ${email} existiert, wurde ein Link zum Zurücksetzen gesendet. Bitte prüfe auch den Spam-Ordner.`,
+            { type: 'success', title: 'E-Mail gesendet' }
+        );
+        showAuthMode('login');
+    } catch (error) {
+        showModal(`Passwort-Reset fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
 }
 
 

@@ -210,6 +210,7 @@ export function renderLeitungTable() {
         { id: 'power', name: 'Power Leitung', icon: '⚡' },
         { id: 'sensor', name: 'Sensorleitung', icon: '📡' },
         { id: 'oelflex', name: 'Ölflexleitung', icon: '🔌' },
+        { id: 'cplink', name: 'CP-Link Leitung', icon: '🖥️' },
         { id: 'sonstiges', name: 'Sonstiges', icon: '📦' }
     ];
     
