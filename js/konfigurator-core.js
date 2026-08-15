@@ -5,7 +5,16 @@ import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
 import { compareGruppenCode, getGruppeDisplay } from './overview.js';
-import { setOelflexMode, getOelflexHersteller, parseOelflexVariante, findOelflexArtikel, populateOelflexAdern, populateOelflexQuerschnitt } from './oelflex.js';
+import {
+    setOelflexMode,
+    getOelflexHersteller,
+    parseOelflexVariante,
+    findOelflexArtikel,
+    findMotorleitungArtikel,
+    populateOelflexAdern,
+    populateOelflexQuerschnitt,
+    populateMotorleitungTypen
+} from './oelflex.js';
 import { getAusrichtung, setAusrichtung, getBaseSteckerTyp, hasAusrichtung, addNewLeitung, getLeitungStueckzahl } from './konfigurator-stecker.js';
 import { canEditProject, applyReadOnlyUI } from './project-access.js';
 import { getFullSteckerTyp, findArtikel, getUniqueSteckerA, getUniqueSteckerB, getAvailableLaengen, populateHerstellerDropdown, populateKategorieDropdown } from './konfigurator-form.js';
@@ -116,7 +125,7 @@ export function onKategorieFilterChange() {
     const kategorie = document.getElementById('leitung-kategorie').value;
     const herstellerSelect = document.getElementById('leitung-hersteller');
 
-    // Ölflex-Modus: keine Stecker, sondern Aderzahl + Querschnitt
+    // Ölflex / Motorleitungen: Meterware ohne Steckerauswahl
     if (kategorie === 'oelflex') {
         setOelflexMode(true);
         const oelflexHersteller = getOelflexHersteller();
@@ -124,6 +133,21 @@ export function onKategorieFilterChange() {
             herstellerSelect.value = oelflexHersteller;
         }
         populateOelflexAdern();
+        updateArtikelVorschlag();
+        return;
+    }
+
+    if (kategorie === 'motor') {
+        setOelflexMode(true, { motorleitung: true });
+        herstellerSelect.value = 'Lapp Kabel';
+        populateMotorleitungTypen();
+        updateArtikelVorschlag();
+        return;
+    }
+
+    if (kategorie === 'geber') {
+        setOelflexMode(true, { geberleitung: true });
+        herstellerSelect.value = 'IGUS';
         updateArtikelVorschlag();
         return;
     }
@@ -327,6 +351,55 @@ export function updateArtikelVorschlag() {
     const vorschlagDiv = document.getElementById('artikel-vorschlag');
     const kategorieSelect = document.getElementById('leitung-kategorie');
 
+    // Geberleitungen: ohne Stecker, Länge frei, Artikelnummer manuell
+    if (kategorieSelect.value === 'geber') {
+        const hersteller = document.getElementById('leitung-hersteller').value;
+        const custom = document.getElementById('leitung-artikel-custom')?.value?.trim() || '';
+        appState.currentArtikelVorschlag = null;
+        if (!hersteller) {
+            vorschlagDiv.className = 'artikel-vorschlag no-match';
+            vorschlagDiv.innerHTML = '<span class="artikel-label">Hersteller wählen, Artikelnummer und Länge eingeben</span>';
+            return;
+        }
+        const laengeHinweis = laenge ? `${laenge} m` : 'Bitte Länge in Metern eingeben';
+        vorschlagDiv.className = 'artikel-vorschlag';
+        vorschlagDiv.innerHTML = `
+            <span class="artikel-beschreibung">Geberleitung (ohne Stecker)</span>
+            <span class="artikel-hinweis">${escapeHtml(hersteller)}${custom ? ` · ${escapeHtml(custom)}` : ''} · ${escapeHtml(laengeHinweis)}</span>
+        `;
+        return;
+    }
+
+    // Motorleitungen (Meterware): Typ = Artikelnummer
+    if (kategorieSelect.value === 'motor') {
+        const artikelnummer = document.getElementById('oelflex-querschnitt').value;
+        if (!artikelnummer) {
+            vorschlagDiv.className = 'artikel-vorschlag no-match';
+            vorschlagDiv.innerHTML = '<span class="artikel-label">Typ / Querschnitt wählen</span>';
+            appState.currentArtikelVorschlag = null;
+            return;
+        }
+        const artikel = findMotorleitungArtikel(artikelnummer);
+        if (!artikel) {
+            vorschlagDiv.className = 'artikel-vorschlag no-match';
+            vorschlagDiv.innerHTML = `
+                <span class="artikel-label">Kein passender Artikel gefunden</span>
+                <span class="artikel-hinweis">Artikelnummer manuell eingeben</span>
+            `;
+            appState.currentArtikelVorschlag = null;
+            return;
+        }
+        appState.currentArtikelVorschlag = artikel;
+        const laengeHinweis = laenge ? `${laenge} m (Meterware)` : 'Bitte Länge in Metern eingeben';
+        vorschlagDiv.className = 'artikel-vorschlag';
+        vorschlagDiv.innerHTML = `
+            <span class="artikel-nummer">${escapeHtml(artikel.artikelnummer)}</span>
+            <span class="artikel-beschreibung">${escapeHtml(artikel.beschreibung)}</span>
+            <span class="artikel-hinweis">${escapeHtml(laengeHinweis)}</span>
+        `;
+        return;
+    }
+
     // Ölflex (Meterware): Artikel über Aderzahl + Querschnitt bestimmen, Länge frei in Metern
     if (kategorieSelect.value === 'oelflex') {
         const adern = document.getElementById('oelflex-adern').value;
@@ -439,8 +512,42 @@ export function renderLeitungForm() {
         document.getElementById('leitung-gruppe').value = leitung.gruppe || '';
         document.getElementById('leitung-hersteller').value = leitung.hersteller || '';
 
-        // Ölflex (Meterware): über Aderzahl + Querschnitt rekonstruieren
-        if (leitung.kategorie === 'oelflex') {
+        // Geberleitungen / Motorleitungen / Ölflex (ohne Stecker bzw. Meterware)
+        if (leitung.kategorie === 'geber') {
+            onKategorieFilterChange();
+            if (leitung.hersteller) {
+                document.getElementById('leitung-hersteller').value = leitung.hersteller;
+            }
+            if (leitung.laenge) {
+                document.getElementById('leitung-laenge').value = leitung.laenge;
+            }
+            document.getElementById('leitung-artikel-custom').value =
+                leitung.artikelCustom || leitung.artikelnummer || '';
+            document.getElementById('leitung-notiz').value = leitung.notiz || '';
+            const anzahlInput = document.getElementById('konfig-leitung-anzahl');
+            if (anzahlInput) {
+                anzahlInput.value = String(leitung.anzahl || 1);
+            }
+            updateArtikelVorschlag();
+            renderKonfigGruppenliste();
+            return;
+        }
+        if (leitung.kategorie === 'motor') {
+            onKategorieFilterChange();
+            populateMotorleitungTypen(leitung.artikelnummer || '');
+            if (leitung.laenge) {
+                document.getElementById('leitung-laenge').value = leitung.laenge;
+            }
+            document.getElementById('leitung-artikel-custom').value = leitung.artikelCustom || '';
+            document.getElementById('leitung-notiz').value = leitung.notiz || '';
+            const anzahlInput = document.getElementById('konfig-leitung-anzahl');
+            if (anzahlInput) {
+                anzahlInput.value = String(leitung.anzahl || 1);
+            }
+            updateArtikelVorschlag();
+            renderKonfigGruppenliste();
+            return;
+        } else if (leitung.kategorie === 'oelflex') {
             onKategorieFilterChange();
             const art = (appState.katalog.artikel || []).find(a => a.artikelnummer === leitung.artikelnummer);
             const v = art ? parseOelflexVariante(art.beschreibung) : null;

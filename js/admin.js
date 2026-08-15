@@ -20,6 +20,8 @@ export function getAdminKategorieOptions() {
         { id: 'power', name: 'Power Leitung' },
         { id: 'sensor', name: 'Sensorleitung' },
         { id: 'oelflex', name: 'Ölflexleitung' },
+        { id: 'motor', name: 'Motorleitungen' },
+        { id: 'geber', name: 'Geberleitung' },
         { id: 'cplink', name: 'CP-Link Leitung' },
         { id: 'sonstiges', name: 'Sonstiges' }
     ]).map(k => ({ value: k.id, label: k.name }));
@@ -238,6 +240,9 @@ function renderStepBadges(step) {
     if (step.optional) {
         badges.push('<span class="admin-badge badge-optional">Optional</span>');
     }
+    if (step.motorleitung) {
+        badges.push('<span class="admin-badge badge-vorauswahl">Motorleitung</span>');
+    }
     return badges.join('');
 }
 
@@ -283,11 +288,25 @@ function renderTagPicker(field, options, selected, addLabel) {
 
 
 /**
- * Formular einer aufgeklappten Frage.
+ * Ob die Wizard-Fragen-Konfiguration bearbeitet werden darf.
+ * Aktuell: jeder eingeloggte Nutzer (bzw. lokaler Modus).
+ * Später z. B. auf Admin einschränkbar.
+ * @returns {boolean}
+ */
+export function canEditWizardConfig() {
+    if (appState.firebaseReady) {
+        return Boolean(appState.currentUser);
+    }
+    return true;
+}
+
+
+/**
+ * Formular einer aufgeklappten Frage (Admin + Assistent).
  * @param {object} step
  * @returns {string}
  */
-function renderStepForm(step) {
+export function renderWizardStepConfigForm(step) {
     const kategorien = getAdminKategorieOptions();
     const bauteiltypen = getAdminBauteilTypOptions();
     const allowed = step.allowedCategories || [];
@@ -394,6 +413,10 @@ function renderStepForm(step) {
                             <input type="checkbox" data-field="mengenfeldAktiv" ${step.mengenfeld?.aktiv ? 'checked' : ''}>
                             Mengenfeld anzeigen
                         </label>
+                        <label class="admin-check">
+                            <input type="checkbox" data-field="motorleitung" ${step.motorleitung ? 'checked' : ''}>
+                            Motorleitungen-Assistent (SERVO 719 CY)
+                        </label>
                     </div>
                 </div>
                 <div class="form-group">
@@ -458,10 +481,23 @@ export function renderAdminStepsEditor() {
                         <button type="button" class="btn btn-danger btn-small" onclick="adminRemoveWizardStep(${index})" title="Entfernen">🗑️</button>
                     </span>
                 </div>
-                ${expanded ? renderStepForm(step) : ''}
+                ${expanded ? renderWizardStepConfigForm(step) : ''}
             </div>
         `;
     }).join('');
+}
+
+
+/**
+ * @param {HTMLElement|null} el
+ * @returns {'admin'|'wizard'|null}
+ */
+function getStepFormContext(el) {
+    if (!el) return null;
+    // Zuerst Assistenten-Editor (enthält ebenfalls .admin-step-card)
+    if (el.closest('#wizard-step-editor')) return 'wizard';
+    if (el.closest('#admin-steps-editor') || el.closest('.admin-step-card')) return 'admin';
+    return null;
 }
 
 
@@ -471,9 +507,10 @@ export function renderAdminStepsEditor() {
  * @param {string} field
  * @param {string} value
  * @param {'add'|'remove'} action
+ * @param {'admin'|'wizard'} [context='admin']
  * @returns {void}
  */
-function updateStepTagSelection(index, field, value, action) {
+function updateStepTagSelection(index, field, value, action, context = 'admin') {
     const step = appState.wizardSteps[index];
     if (!step || !value) return;
 
@@ -491,7 +528,11 @@ function updateStepTagSelection(index, field, value, action) {
     }
 
     syncAdminJsonTextarea();
-    renderAdminStepsEditor();
+    if (context === 'wizard') {
+        mountWizardStepConfigForm(index);
+    } else {
+        renderAdminStepsEditor();
+    }
 }
 
 
@@ -501,21 +542,24 @@ function updateStepTagSelection(index, field, value, action) {
  * @returns {void}
  */
 function handleAdminFieldChange(event) {
+    const context = getStepFormContext(event.target);
+    if (!context) return;
+
     if (event.target?.classList?.contains('admin-tag-add')) {
         const field = event.target.dataset.field;
         const value = event.target.value;
         if (!value || !field) return;
 
-        const card = event.target.closest('.admin-step-card');
+        const card = event.target.closest('[data-step-index]');
         const index = parseInt(card?.dataset?.stepIndex, 10);
-        updateStepTagSelection(index, field, value, 'add');
+        updateStepTagSelection(index, field, value, 'add', context);
         return;
     }
 
     const field = event.target?.dataset?.field;
     if (!field) return;
 
-    const card = event.target.closest('.admin-step-card');
+    const card = event.target.closest('[data-step-index]');
     const index = parseInt(card?.dataset?.stepIndex, 10);
     const step = appState.wizardSteps[index];
     if (!step) return;
@@ -539,6 +583,10 @@ function handleAdminFieldChange(event) {
         case 'optional':
             if (event.target.checked) step.optional = true;
             else delete step.optional;
+            break;
+        case 'motorleitung':
+            if (event.target.checked) step.motorleitung = true;
+            else delete step.motorleitung;
             break;
         case 'mengenfeldAktiv':
         case 'mengenfeldLabel': {
@@ -591,11 +639,52 @@ function handleAdminTagRemove(event) {
     event.preventDefault();
     event.stopPropagation();
 
+    const context = getStepFormContext(btn);
+    if (!context) return;
+
     const field = btn.dataset.field;
     const value = btn.dataset.value;
-    const card = btn.closest('.admin-step-card');
+    const card = btn.closest('[data-step-index]');
     const index = parseInt(card?.dataset?.stepIndex, 10);
-    updateStepTagSelection(index, field, value, 'remove');
+    updateStepTagSelection(index, field, value, 'remove', context);
+}
+
+
+/**
+ * Bindet Event-Listener an einen Formular-Container (Admin oder Assistent).
+ * @param {HTMLElement} container
+ * @returns {void}
+ */
+export function bindWizardStepConfigForm(container) {
+    if (!container || container.dataset.bound === '1') return;
+    container.dataset.bound = '1';
+    container.addEventListener('input', handleAdminFieldChange);
+    container.addEventListener('change', handleAdminFieldChange);
+    container.addEventListener('click', handleAdminTagRemove);
+}
+
+
+/**
+ * Rendert das Konfigurationsformular einer Frage in den Assistenten-Editor.
+ * @param {number} index
+ * @returns {void}
+ */
+export function mountWizardStepConfigForm(index) {
+    const host = document.getElementById('wizard-step-editor-form');
+    if (!host) return;
+
+    const step = appState.wizardSteps[index];
+    if (!step) {
+        host.innerHTML = '<p class="text-muted">Keine Frage ausgewählt.</p>';
+        return;
+    }
+
+    host.innerHTML = `
+        <div class="admin-step-card expanded wizard-inline-step-card" data-step-index="${index}">
+            ${renderWizardStepConfigForm(step)}
+        </div>
+    `;
+    bindWizardStepConfigForm(document.getElementById('wizard-step-editor'));
 }
 
 
@@ -748,19 +837,29 @@ export function renderAdminView() {
 
 
 /**
- * saveAdminWizardConfig.
- * @returns {void}
+ * Validiert und speichert die Wizard-Fragen (Firestore bzw. lokal im Speicher).
+ * @param {{ silent?: boolean }} [options]
+ * @returns {Promise<boolean>}
  */
-export async function saveAdminWizardConfig() {
-    if (appState.currentUserRole !== 'admin') {
-        showModal('Nur Admin-Benutzer dürfen speichern.', { type: 'warning', title: 'Kein Zugriff' });
-        return;
+export async function persistWizardSteps(options = {}) {
+    const silent = options.silent === true;
+
+    if (!canEditWizardConfig()) {
+        if (!silent) {
+            showModal('Keine Berechtigung zum Speichern der Assistenten-Fragen.', {
+                type: 'warning',
+                title: 'Kein Zugriff'
+            });
+        }
+        return false;
     }
 
     const result = validateWizardSteps(appState.wizardSteps);
     if (!result.ok) {
-        showModal(result.message, { type: 'warning', title: 'Formatfehler' });
-        return;
+        if (!silent) {
+            showModal(result.message, { type: 'warning', title: 'Formatfehler' });
+        }
+        return false;
     }
 
     appState.wizardSteps = result.steps;
@@ -777,10 +876,32 @@ export async function saveAdminWizardConfig() {
                 });
             }
         } catch (error) {
-            showModal(`Speichern in Firestore fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
-            return;
+            if (!silent) {
+                showModal(`Speichern in Firestore fehlgeschlagen: ${error.message}`, {
+                    type: 'danger',
+                    title: 'Fehler'
+                });
+            }
+            return false;
         }
     }
 
-    showModal('Assistent-Fragen wurden gespeichert.', { type: 'success', title: 'Gespeichert' });
+    if (!silent) {
+        showModal('Assistent-Fragen wurden gespeichert.', { type: 'success', title: 'Gespeichert' });
+    }
+    return true;
+}
+
+
+/**
+ * Speichert die Wizard-Fragen aus dem Admin-Panel.
+ * @returns {Promise<void>}
+ */
+export async function saveAdminWizardConfig() {
+    // Admin-Seite bleibt Admin-only; Persistenz selbst erlaubt allen Auth-Nutzern
+    if (appState.currentUserRole !== 'admin') {
+        showModal('Nur Admin-Benutzer dürfen diese Seite speichern.', { type: 'warning', title: 'Kein Zugriff' });
+        return;
+    }
+    await persistWizardSteps();
 }

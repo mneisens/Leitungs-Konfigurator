@@ -22,7 +22,13 @@ import {
     onKatalogSearch,
     onKatalogHerstellerChange,
     addKatalogArtikel,
-    deleteKatalogArtikel
+    deleteKatalogArtikel,
+    setKatalogTab,
+    onKatalogBauteilTypChange,
+    onKatalogBauteilSearch,
+    onKatalogBauteilHerstellerChange,
+    addKatalogBauteil,
+    deleteKatalogBauteil
 } from './js/katalog-view.js';
 import {
     loadProjects,
@@ -54,7 +60,11 @@ import {
     wizardAddLeitungFromStep,
     wizardPrev,
     wizardNext,
-    onWizardLaengeChange
+    onWizardLaengeChange,
+    toggleWizardStepEditor,
+    cancelWizardStepEditor,
+    saveWizardStepFromAssistent,
+    updateWizardAutoArtikel
 } from './js/wizard-ui.js';
 import {
     filterWizardBauteilSelect,
@@ -85,6 +95,28 @@ import {
     onLaengeChange,
     toggleAusrichtung
 } from './js/konfigurator.js';
+import {
+    filterGruppenListe,
+    selectGruppe,
+    gruppeWechseln,
+    toggleGruppeNichtBenoetigt,
+    updateGruppeNotiz,
+    gruppeAddLeitung,
+    gruppeUpdateLeitung,
+    gruppeUpdateLeitungText,
+    gruppeToggleAusrichtung,
+    gruppeToggleFreieLaenge,
+    gruppeCopyLeitung,
+    gruppeDeleteLeitung,
+    gruppeAddBauteil,
+    gruppeUpdateBauteil,
+    gruppeUpdateBauteilText,
+    gruppeDeleteBauteil,
+    gruppeOpenBauteilFormular,
+    gruppeCancelBauteilFormular,
+    gruppeOnNeuBauteilTypChange,
+    gruppeSaveNeuesBauteil
+} from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 document.addEventListener('keydown', e => {
@@ -191,6 +223,12 @@ Object.assign(window, {
     onKatalogHerstellerChange,
     addKatalogArtikel,
     deleteKatalogArtikel,
+    setKatalogTab,
+    onKatalogBauteilTypChange,
+    onKatalogBauteilSearch,
+    onKatalogBauteilHerstellerChange,
+    addKatalogBauteil,
+    deleteKatalogBauteil,
     wizardJumpToQuestion,
     wizardApplyJump,
     wizardCancelJump,
@@ -201,9 +239,13 @@ Object.assign(window, {
     toggleWizardAusrichtung,
     onWizardLaengeChange,
     onWizardOelflexChange,
+    updateWizardAutoArtikel,
     wizardAddLeitungFromStep,
     wizardPrev,
     wizardNext,
+    toggleWizardStepEditor,
+    cancelWizardStepEditor,
+    saveWizardStepFromAssistent,
     filterWizardBauteilSelect,
     wizardAddBauteilFromStep,
     wizardDeleteBauteil,
@@ -223,6 +265,26 @@ Object.assign(window, {
     addNewLeitung,
     saveLeitung,
     startProjektWizard,
+    filterGruppenListe,
+    selectGruppe,
+    gruppeWechseln,
+    toggleGruppeNichtBenoetigt,
+    updateGruppeNotiz,
+    gruppeAddLeitung,
+    gruppeUpdateLeitung,
+    gruppeUpdateLeitungText,
+    gruppeToggleAusrichtung,
+    gruppeToggleFreieLaenge,
+    gruppeCopyLeitung,
+    gruppeDeleteLeitung,
+    gruppeAddBauteil,
+    gruppeUpdateBauteil,
+    gruppeUpdateBauteilText,
+    gruppeDeleteBauteil,
+    gruppeOpenBauteilFormular,
+    gruppeCancelBauteilFormular,
+    gruppeOnNeuBauteilTypChange,
+    gruppeSaveNeuesBauteil,
     exportCSV,
     exportPDF,
     closeModal,

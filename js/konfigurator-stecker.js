@@ -7,9 +7,11 @@ import { showView } from './navigation.js';
 import { persistCurrentProjekt } from './projects.js';
 import { assertCanEdit, canEditProject } from './project-access.js';
 import { setOelflexMode } from './oelflex.js';
-import { getFullSteckerTyp } from './konfigurator-form.js';
+import { getFullSteckerTyp } from './stecker-utils.js';
 import { renderKonfigGruppenliste } from './konfigurator-list.js';
 import { renderLeitungForm } from './konfigurator-core.js';
+
+export { getBaseSteckerTyp, hasAusrichtung } from './stecker-utils.js';
 
 
 /**
@@ -210,7 +212,7 @@ export function buildLeitungFromForm() {
 
     let fullSteckerA;
     let fullSteckerB;
-    if (kategorie === 'oelflex') {
+    if (kategorie === 'oelflex' || kategorie === 'motor' || kategorie === 'geber') {
         fullSteckerA = 'offen';
         fullSteckerB = 'offen';
     } else {
@@ -341,19 +343,6 @@ export function addNewLeitung() {
     if (anzahlInput) {
         anzahlInput.value = String(anzahl);
     }
-}
-
-
-export function getBaseSteckerTyp(stecker) {
-    if (!stecker) return '';
-    return stecker.replace(/ (gerade|gewinkelt)$/, '');
-}
-
-
-export function hasAusrichtung(stecker) {
-    if (!stecker) return false;
-    const base = getBaseSteckerTyp(stecker);
-    return base.includes('M8') || base.includes('M12');
 }
 
 

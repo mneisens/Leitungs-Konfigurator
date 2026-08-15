@@ -3,10 +3,15 @@
  */
 import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
-import { setWizardOelflexMode, getOelflexHersteller, populateWizardOelflexAdern } from './oelflex.js';
+import {
+    setWizardOelflexMode,
+    getOelflexHersteller,
+    populateWizardOelflexAdern,
+    populateWizardMotorleitungTypen
+} from './oelflex.js';
 import { getBaseSteckerTyp } from './konfigurator-stecker.js';
 import { getSteckerBasetypenForKategorie } from './konfigurator-form.js';
-import { stepIsOelflexWizard } from './wizard-core.js';
+import { stepIsOelflexWizard, stepIsMotorleitungWizard } from './wizard-core.js';
 import { updateWizardAutoArtikel } from './wizard-ui.js';
 
 export function getWizardArtikelPool() {
@@ -27,7 +32,8 @@ export function getWizardDefaultKategorie(step) {
     const text = (step?.frage || '').toLowerCase();
     if (text.includes('ethercat')) return 'ethercat';
     if (text.includes('power')) return 'power';
-    if (text.includes('sensor') || text.includes('geber') || text.includes('lichtschranken') || text.includes('not-halt')) {
+    if (text.includes('geber')) return 'geber';
+    if (text.includes('sensor') || text.includes('lichtschranken') || text.includes('not-halt')) {
         return 'sensor';
     }
     return '';
@@ -90,6 +96,36 @@ export function populateWizardHerstellerDropdown() {
 
     if (currentValue && hersteller.includes(currentValue)) {
         select.value = currentValue;
+    }
+}
+
+
+/**
+ * Hersteller für Geberleitungen (auch ohne Katalogartikel).
+ * @returns {void}
+ */
+export function populateWizardGeberHerstellerDropdown() {
+    const select = document.getElementById('wizard-hersteller');
+    if (!select) return;
+
+    const fromArtikel = getWizardArtikelByKategorie().map(a => a.hersteller).filter(Boolean);
+    const preferred = ['IGUS', 'Baumüller'];
+    const hersteller = Array.from(new Set([...preferred, ...fromArtikel]))
+        .sort((a, b) => a.localeCompare(b, 'de'));
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    hersteller.forEach(h => {
+        const option = document.createElement('option');
+        option.value = h;
+        option.textContent = h;
+        select.appendChild(option);
+    });
+
+    if (currentValue && hersteller.includes(currentValue)) {
+        select.value = currentValue;
+    } else if (hersteller.includes('IGUS')) {
+        select.value = 'IGUS';
     }
 }
 
@@ -189,8 +225,24 @@ export function onWizardKategorieChange() {
     const steckerBSelect = document.getElementById('wizard-stecker-b');
     const laengeSelect = document.getElementById('wizard-laenge');
 
+    if (kategorie === 'motor' || stepIsMotorleitungWizard(step)) {
+        setWizardOelflexMode(true, { motorleitung: true });
+        populateWizardMotorleitungTypen();
+        const herstellerSelect = document.getElementById('wizard-hersteller');
+        if (herstellerSelect) herstellerSelect.value = 'Lapp Kabel';
+        updateWizardAutoArtikel();
+        return;
+    }
+
+    if (kategorie === 'geber') {
+        setWizardOelflexMode(true, { geberleitung: true });
+        populateWizardGeberHerstellerDropdown();
+        updateWizardAutoArtikel();
+        return;
+    }
+
     if (kategorie === 'oelflex' || stepIsOelflexWizard(step)) {
-        setWizardOelflexMode(true);
+        setWizardOelflexMode(true, { motorleitung: false });
         populateWizardOelflexAdern();
         const herstellerSelect = document.getElementById('wizard-hersteller');
         const oelflexHersteller = getOelflexHersteller();
@@ -215,6 +267,11 @@ export function onWizardHerstellerChange() {
     const steckerASelect = document.getElementById('wizard-stecker-a');
     const steckerBSelect = document.getElementById('wizard-stecker-b');
     const laengeSelect = document.getElementById('wizard-laenge');
+
+    if (getWizardKategorie() === 'geber') {
+        updateWizardAutoArtikel();
+        return;
+    }
 
     steckerASelect.innerHTML = '<option value="">-- Bitte wählen --</option>';
     steckerBSelect.innerHTML = '<option value="">-- Bitte wählen --</option>';

@@ -31,6 +31,7 @@ export function normalizeWizardStep(step, index) {
         if (Object.keys(vorauswahl).length > 0) normalized.vorauswahl = vorauswahl;
     }
     if (step?.optional === true) normalized.optional = true;
+    if (step?.motorleitung === true) normalized.motorleitung = true;
     if (step?.mengenfeld?.aktiv) {
         normalized.mengenfeld = {
             aktiv: true,

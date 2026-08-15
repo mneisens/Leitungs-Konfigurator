@@ -3,19 +3,34 @@
  */
 import { appState } from './state.js';
 import { updateArtikelVorschlag } from './konfigurator-core.js';
+import { updateWizardAutoArtikel } from './wizard-ui.js';
 
 /**
  * setOelflexMode.
+ * @param {boolean} active
+ * @param {{ motorleitung?: boolean, geberleitung?: boolean }} [options]
  * @returns {void}
  */
-export function setOelflexMode(active) {
+export function setOelflexMode(active, options = {}) {
     const steckerRow = document.getElementById('stecker-row');
     const oelflexRow = document.getElementById('oelflex-row');
     const laengeSelect = document.getElementById('leitung-laenge-select');
+    const adernGroup = document.getElementById('oelflex-adern')?.closest('.form-group');
+    const qsGroup = document.getElementById('oelflex-querschnitt')?.closest('.form-group');
+    const qsLabel = document.querySelector('label[for="oelflex-querschnitt"]');
+    const motor = active && options.motorleitung === true;
+    const geber = active && options.geberleitung === true;
+
     if (steckerRow) steckerRow.style.display = active ? 'none' : '';
-    if (oelflexRow) oelflexRow.style.display = active ? '' : 'none';
-    // Bei Meterware nur das Meter-Eingabefeld, keine Längen-Auswahlliste
+    // Geber: nur freie Länge, keine Adern/Typ-Felder
+    if (oelflexRow) oelflexRow.style.display = active && !geber ? '' : 'none';
     if (laengeSelect) laengeSelect.style.display = active ? 'none' : '';
+
+    if (adernGroup) adernGroup.style.display = motor || geber ? 'none' : '';
+    if (qsGroup) qsGroup.style.display = geber ? 'none' : '';
+    if (qsLabel) {
+        qsLabel.textContent = motor ? '2. Typ / Querschnitt' : '3. Querschnitt';
+    }
 }
 
 
@@ -26,6 +41,20 @@ export function setOelflexMode(active) {
 export function getOelflexArtikel() {
     if (!appState.katalog || !appState.katalog.artikel) return [];
     return appState.katalog.artikel.filter(a => a.kategorie === 'oelflex');
+}
+
+
+/**
+ * Artikel der Kategorie Motorleitungen (ÖLFLEX SERVO 719 CY).
+ * @returns {object[]}
+ */
+export function getMotorleitungArtikel() {
+    if (!appState.katalog || !appState.katalog.artikel) return [];
+    return appState.katalog.artikel.filter(a =>
+        a.kategorie === 'motor'
+        || a.serie === 'servo719cy'
+        || /SERVO\s*719\s*CY/i.test(a.beschreibung || '')
+    );
 }
 
 
@@ -128,6 +157,11 @@ export function populateOelflexQuerschnitt(adern, selectedQuerschnitt) {
  * @returns {void}
  */
 export function onOelflexChange() {
+    const kategorie = document.getElementById('leitung-kategorie')?.value;
+    if (kategorie === 'motor') {
+        updateArtikelVorschlag();
+        return;
+    }
     const adern = document.getElementById('oelflex-adern').value;
     populateOelflexQuerschnitt(adern, document.getElementById('oelflex-querschnitt').value);
     updateArtikelVorschlag();
@@ -136,17 +170,34 @@ export function onOelflexChange() {
 
 /**
  * setWizardOelflexMode.
+ * @param {boolean} active
+ * @param {{ motorleitung?: boolean, geberleitung?: boolean }} [options]
  * @returns {void}
  */
-export function setWizardOelflexMode(active) {
+export function setWizardOelflexMode(active, options = {}) {
     const steckerRow = document.getElementById('wizard-stecker-row');
     const steckerAGroup = document.getElementById('wizard-stecker-a-group');
     const laengeGroup = document.getElementById('wizard-laenge-group');
     const oelflexRow = document.getElementById('wizard-oelflex-row');
+    const adernGroup = document.getElementById('wizard-oelflex-adern-group');
+    const qsGroup = document.getElementById('wizard-oelflex-querschnitt-group');
+    const qsLabel = document.getElementById('wizard-oelflex-querschnitt-label');
+    const herstellerGroup = document.getElementById('wizard-hersteller')?.closest('.form-group');
+
     if (steckerRow) steckerRow.style.display = active ? 'none' : '';
     if (steckerAGroup) steckerAGroup.style.display = active ? 'none' : '';
     if (laengeGroup) laengeGroup.style.display = active ? 'none' : '';
     if (oelflexRow) oelflexRow.style.display = active ? '' : 'none';
+
+    const motor = active && options.motorleitung === true;
+    const geber = active && options.geberleitung === true;
+    if (adernGroup) adernGroup.style.display = motor || geber ? 'none' : '';
+    if (qsGroup) qsGroup.style.display = geber ? 'none' : '';
+    if (qsLabel) qsLabel.textContent = motor ? 'Typ / Querschnitt' : 'Querschnitt';
+    if (herstellerGroup) {
+        // Bei Motorleitung immer Lapp – Hersteller-Dropdown ausblenden
+        herstellerGroup.style.display = motor ? 'none' : '';
+    }
 }
 
 
@@ -200,10 +251,104 @@ export function populateWizardOelflexQuerschnitt(adern) {
 
 
 /**
+ * Sortierte Motorleitungs-Artikel.
+ * @returns {object[]}
+ */
+function getSortedMotorleitungArtikel() {
+    return getMotorleitungArtikel().slice().sort((a, b) => {
+        const va = parseOelflexVariante(a.beschreibung);
+        const vb = parseOelflexVariante(b.beschreibung);
+        const qa = va ? parseFloat(va.querschnitt.replace(',', '.')) : 0;
+        const qb = vb ? parseFloat(vb.querschnitt.replace(',', '.')) : 0;
+        return qa - qb;
+    });
+}
+
+
+/**
+ * Füllt ein Select mit Motorleitungs-Typen (Value = Artikelnummer).
+ * @param {HTMLSelectElement|null} select
+ * @param {string} [selectedArtikelnummer]
+ * @returns {void}
+ */
+function fillMotorleitungTypSelect(select, selectedArtikelnummer) {
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Typ wählen --</option>';
+    getSortedMotorleitungArtikel().forEach(a => {
+        const option = document.createElement('option');
+        option.value = a.artikelnummer;
+        const typ = (a.beschreibung || '')
+            .replace(/^ÖLFLEX\s+SERVO\s+719\s+CY\s+/i, '')
+            .replace(/\s*Motorleitung\s*$/i, '')
+            .trim();
+        option.textContent = `${typ} (${a.artikelnummer})`;
+        select.appendChild(option);
+    });
+    if (selectedArtikelnummer) select.value = selectedArtikelnummer;
+}
+
+
+/**
+ * Füllt die Typ-Auswahl für ÖLFLEX SERVO 719 CY Motorleitungen im Assistenten.
+ * @returns {void}
+ */
+export function populateWizardMotorleitungTypen() {
+    fillMotorleitungTypSelect(document.getElementById('wizard-oelflex-querschnitt'));
+}
+
+
+/**
+ * Füllt die Typ-Auswahl im Leitungs-Konfigurator.
+ * @param {string} [selectedArtikelnummer]
+ * @returns {void}
+ */
+export function populateMotorleitungTypen(selectedArtikelnummer) {
+    fillMotorleitungTypSelect(document.getElementById('oelflex-querschnitt'), selectedArtikelnummer);
+}
+
+
+/**
+ * Findet Motorleitungs-Artikel anhand der Artikelnummer aus der Typ-Auswahl.
+ * @param {string} artikelnummer
+ * @returns {object|null}
+ */
+export function findMotorleitungArtikel(artikelnummer) {
+    if (!artikelnummer) return null;
+    return getMotorleitungArtikel().find(a => a.artikelnummer === artikelnummer) || null;
+}
+
+
+/**
+ * Ob der Assistent gerade im Motorleitungs-Modus ist.
+ * @returns {boolean}
+ */
+export function isWizardMotorleitungMode() {
+    const kategorie = document.getElementById('wizard-kategorie')?.value || '';
+    if (kategorie === 'motor') return true;
+    const step = appState.wizardSteps?.[appState.wizardStepIndex];
+    return Boolean(step?.motorleitung) && !kategorie;
+}
+
+
+/**
+ * Ob der Assistent gerade Geberleitungen (ohne Stecker) bearbeitet.
+ * @returns {boolean}
+ */
+export function isWizardGeberleitungMode() {
+    return document.getElementById('wizard-kategorie')?.value === 'geber';
+}
+
+
+/**
  * onWizardOelflexChange.
  * @returns {void}
  */
 export function onWizardOelflexChange() {
+    if (isWizardMotorleitungMode() || isWizardGeberleitungMode()) {
+        // Motor: Typ-Dropdown; Geber: nur Länge – keine Querschnitt-Liste neu befüllen
+        updateWizardAutoArtikel();
+        return;
+    }
     const adern = document.getElementById('wizard-oelflex-adern')?.value;
     populateWizardOelflexQuerschnitt(adern);
     updateWizardAutoArtikel();

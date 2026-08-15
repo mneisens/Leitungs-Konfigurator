@@ -210,6 +210,8 @@ export function renderLeitungTable() {
         { id: 'power', name: 'Power Leitung', icon: '⚡' },
         { id: 'sensor', name: 'Sensorleitung', icon: '📡' },
         { id: 'oelflex', name: 'Ölflexleitung', icon: '🔌' },
+        { id: 'motor', name: 'Motorleitungen', icon: '⚙️' },
+        { id: 'geber', name: 'Geberleitung', icon: '🎛️' },
         { id: 'cplink', name: 'CP-Link Leitung', icon: '🖥️' },
         { id: 'sonstiges', name: 'Sonstiges', icon: '📦' }
     ];
@@ -271,6 +273,7 @@ export function renderLeitungTable() {
                                 <th>Länge</th>
                                 <th>Stecker A</th>
                                 <th>Stecker B</th>
+                                <th>Anzahl</th>
                                 <th>Aktionen</th>
                             </tr>
                         </thead>
@@ -285,6 +288,7 @@ export function renderLeitungTable() {
                                     <td>${l.laenge ? l.laenge + ' m' : '-'}</td>
                                     <td>${escapeHtml(l.steckerA || '-')}</td>
                                     <td>${escapeHtml(l.steckerB || '-')}</td>
+                                    <td>${l.anzahl || 1}</td>
                                     <td class="table-actions">
                                         <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="${canEditProject(appState.currentProjekt) ? 'Bearbeiten' : 'Ansehen'}">
                                             ${canEditProject(appState.currentProjekt) ? '✏️' : '👁️'}

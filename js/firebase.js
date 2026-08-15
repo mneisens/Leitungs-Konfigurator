@@ -148,13 +148,63 @@ export async function persistKatalogAdditions(additions) {
 export async function loadKatalogAdditions() {
     if (!appState.firebaseReady) return;
     try {
-        const { mergeKatalogAdditions, ensureKatalogLists } = await import('./catalog.js');
+        const {
+            mergeKatalogAdditions,
+            ensureKatalogLists,
+            mergeBauteileAdditions,
+            ensureBauteilTyp
+        } = await import('./catalog.js');
         const additions = await getKatalogAdditions();
         mergeKatalogAdditions(additions);
         additions.forEach(a => ensureKatalogLists(a));
+
+        const bauteilAdditions = await getBauteileAdditions();
+        mergeBauteileAdditions(bauteilAdditions);
+        bauteilAdditions.forEach(a => ensureBauteilTyp(a));
     } catch (error) {
         console.error('Katalog-Nachträge konnten nicht geladen werden:', error);
     }
+}
+
+
+/**
+ * @returns {firebase.firestore.DocumentReference|null}
+ */
+function getBauteileKatalogConfigDoc() {
+    if (!appState.firebaseReady || !appState.firebaseDb) return null;
+    return appState.firebaseDb.collection('config').doc('bauteileKatalog');
+}
+
+
+/**
+ * Lädt nachgetragene Bauteile aus Firestore.
+ * @returns {Promise<object[]>}
+ */
+export async function getBauteileAdditions() {
+    const ref = getBauteileKatalogConfigDoc();
+    if (!ref) return [];
+
+    const snap = await ref.get();
+    if (!snap.exists) return [];
+    const data = snap.data() || {};
+    return Array.isArray(data.additions) ? data.additions : [];
+}
+
+
+/**
+ * Speichert nachgetragene Bauteile in Firestore.
+ * @param {object[]} additions
+ * @returns {Promise<void>}
+ */
+export async function persistBauteileAdditions(additions) {
+    const ref = getBauteileKatalogConfigDoc();
+    if (!ref) throw new Error('Firebase ist nicht bereit.');
+
+    await ref.set({
+        additions: additions || [],
+        updatedBy: appState.currentUser?.uid || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 }
 
 
@@ -212,6 +262,19 @@ export async function loadWizardQuestions() {
                     }
                     if (!normalized.vorauswahl && fallback.vorauswahl) {
                         normalized.vorauswahl = { ...fallback.vorauswahl };
+                    }
+                    if (normalized.motorleitung !== true && fallback.motorleitung === true) {
+                        normalized.motorleitung = true;
+                    }
+                    if (fallback.motorleitung === true && fallback.defaultCategory === 'motor') {
+                        normalized.defaultCategory = 'motor';
+                        const allowed = new Set(normalized.allowedCategories || []);
+                        allowed.add('motor');
+                        allowed.add('geber');
+                        normalized.allowedCategories = Array.from(allowed);
+                    }
+                    if (!normalized.hinweis && fallback.hinweis) {
+                        normalized.hinweis = fallback.hinweis;
                     }
                 }
                 return normalized;

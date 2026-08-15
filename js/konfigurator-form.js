@@ -2,8 +2,11 @@
  * @file konfigurator-form.js
  */
 import { appState } from './state.js';
-import { getBaseSteckerTyp, hasAusrichtung, setAusrichtung } from './konfigurator-stecker.js';
+import { setAusrichtung } from './konfigurator-stecker.js';
+import { getBaseSteckerTyp, getFullSteckerTyp, hasAusrichtung } from './stecker-utils.js';
 import { onSteckerChange } from './konfigurator-core.js';
+
+export { getFullSteckerTyp } from './stecker-utils.js';
 
 export function toggleAusrichtung(seite) {
     const btn = document.getElementById(`ausrichtung-${seite}`);
@@ -13,13 +16,6 @@ export function toggleAusrichtung(seite) {
     setAusrichtung(seite, !isGewinkelt);
     
     onSteckerChange();
-}
-
-
-export function getFullSteckerTyp(baseTyp, ausrichtung) {
-    if (!baseTyp) return '';
-    if (!hasAusrichtung(baseTyp)) return baseTyp;
-    return `${baseTyp} ${ausrichtung}`;
 }
 
 

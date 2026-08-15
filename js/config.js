@@ -6,8 +6,9 @@ export const WIZARD_CAT = {
     sensor: ['sensor'],
     power: ['power', 'sonstiges'],
     oelflex: ['oelflex'],
-    antrieb: ['power', 'sensor', 'oelflex', 'sonstiges'],
-    geber: ['sensor', 'power'],
+    motor: ['motor'],
+    geber: ['geber'],
+    antrieb: ['motor', 'geber', 'power', 'sensor', 'oelflex', 'sonstiges'],
     mts: ['power', 'sensor'],
     zuleitung: ['oelflex', 'sonstiges'],
     panel: ['cplink', 'sonstiges', 'sensor']
@@ -29,10 +30,11 @@ function spindelSteps(spindel, basis) {
             gruppe: g(0),
             frage: `Spindel ${spindel} Antrieb?`,
             allowedCategories: WIZARD_CAT.antrieb,
-            defaultCategory: 'power',
+            defaultCategory: 'motor',
+            motorleitung: true,
             bauteilTypen: ['regler', 'netzwechselrichter', 'kapazitaetsmodul', 'ringkern'],
             vorauswahl: { hersteller: 'Lapp Kabel' },
-            hinweis: 'Motorleitung: Hersteller Lapp oder Helukabel, Typ angeben (z. B. 4G35+2x(2x1,5 mm²)), Länge angeben.\nGeberleitung: Hersteller IGUS oder Baumüller, Länge angeben (z. B. 20 m).\nBauteile: Regler-Typ (händisch eingeben), Netzwechselrichter, Kapazitätsmodule + Anzahl, Ringkerne (Anzahl pro Netzwechselrichter).'
+            hinweis: 'Motorleitung: Kategorie Motorleitungen – nur ÖLFLEX SERVO 719 CY (Lapp), Typ und Länge wählen.\nVarianten: 4G1,5+2x(2x0,75) / 4G2,5+2x(2x1) / 4G4+(2x1)+(2x1,5) / 4G10+(2x1)+(2x1,5) / 4G16+2x(2x1,5) / 4G25+2x(2x1,5) / 4G35+2x(2x1,5).\nGeberleitung: Kategorie Geberleitung – Hersteller IGUS oder Baumüller, Länge angeben (z. B. 20 m).\nBauteile: Regler-Typ (händisch eingeben), Netzwechselrichter, Kapazitätsmodule + Anzahl, Ringkerne (Anzahl pro Netzwechselrichter).'
         },
         {
             id: `${nr(1)}-bremse`,
@@ -284,7 +286,7 @@ export const DEFAULT_WIZARD_STEPS = [
         allowedCategories: WIZARD_CAT.power,
         defaultCategory: 'power',
         bauteilTypen: ['ep-modul'],
-        hinweis: 'EP-Modul angeben:\n• EP1018-0001: Stößel (Bremsen, Druckluft, Beka)\n• EP3204-0022: Stößel Temperatur Mutter\n• EP3356-0022: Kraftsensoren\n• EP1957-0022: Safety-Modul Bremsen\n• ZS2020-4308: Powermodul\n• EP3174-0002: Werkzeugsicherung Analog\n• EP1819-0022: Werkzeugsicherung Digital Eingang\n• EP2008-0022: Werkzeugsicherung Digital Ausgang'
+        hinweis: 'EP-Modul angeben:\n• EP1018-0001: Digitale Eingänge M8\n• EP3204-0002: Temperaturmodul\n• EP3356-0022: Kraftsensormodul\n• EP1957-0022: Safety-Modul\n• EP2020-4308: Powermodul\n• EP3174-0002: Werkzeugsicherung Analog\n• EP1819-0022: Werkzeugsicherung Digital Eingang\n• EP2008-0022: Werkzeugsicherung Digital Ausgang'
     },
     {
         id: '302-klemmkasten',

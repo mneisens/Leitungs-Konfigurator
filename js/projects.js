@@ -207,6 +207,9 @@ export function ensureWizardAnswers(projekt) {
     if (!Array.isArray(projekt.bauteile)) {
         projekt.bauteile = [];
     }
+    if (!projekt.gruppenStatus || typeof projekt.gruppenStatus !== 'object') {
+        projekt.gruppenStatus = {};
+    }
 }
 
 
@@ -251,7 +254,8 @@ export function saveProjekt(event) {
         erstellt: isNew ? new Date().toISOString() : undefined,
         leitungen: [],
         bauteile: [],
-        wizardAnswers: {}
+        wizardAnswers: {},
+        gruppenStatus: {}
     };
     
     if (existingIndex >= 0) {
@@ -260,6 +264,7 @@ export function saveProjekt(event) {
         projekt.bauteile = projects[existingIndex].bauteile || [];
         projekt.wizardAnswers = projects[existingIndex].wizardAnswers || {};
         projekt.wizardSkipped = projects[existingIndex].wizardSkipped || {};
+        projekt.gruppenStatus = projects[existingIndex].gruppenStatus || {};
         projekt.ownerId = projects[existingIndex].ownerId;
         projekt.ownerEmail = projects[existingIndex].ownerEmail;
         projekt.members = projects[existingIndex].members;

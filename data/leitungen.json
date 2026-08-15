@@ -6,6 +6,8 @@
         "Weidmüller",
         "Sonepar",
         "Lapp Kabel",
+        "IGUS",
+        "Baumüller",
         "Sick",
         "ifm electronic"
     ],
@@ -29,6 +31,16 @@
             "id": "oelflex",
             "name": "Ölflexleitung",
             "icon": "🔌"
+        },
+        {
+            "id": "motor",
+            "name": "Motorleitungen",
+            "icon": "⚙️"
+        },
+        {
+            "id": "geber",
+            "name": "Geberleitung",
+            "icon": "🎛️"
         },
         {
             "id": "cplink",
@@ -4595,14 +4607,92 @@
             "kategorie": "sonstiges"
         },
         {
+            "hersteller": "Phoenix Contact",
+            "artikelnummer": "PHOENIX-17ADRIG",
+            "beschreibung": "Phoenix Leitung 17-adrig (IPC / Panel)",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "sonstiges",
+            "meterware": true,
+            "placeholder": true
+        },
+        {
             "hersteller": "Lapp Kabel",
-            "artikelnummer": "OELFLEX-SERVO-719CY-4G35",
+            "artikelnummer": "1020025",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G1,5+2x(2x0,75) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020026",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G2,5+2x(2x1) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020028",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G4+(2x1)+(2x1,5) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020030",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G10+(2x1)+(2x1,5) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020031",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G16+2x(2x1,5) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020032",
+            "beschreibung": "ÖLFLEX SERVO 719 CY 4G25+2x(2x1,5) Motorleitung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "1020033",
             "beschreibung": "ÖLFLEX SERVO 719 CY 4G35+2x(2x1,5) Motorleitung",
             "steckerA": "offen",
             "steckerB": "offen",
             "laenge": 0,
-            "kategorie": "power",
-            "meterware": true
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "servo719cy"
         },
         {
             "hersteller": "Beckhoff",

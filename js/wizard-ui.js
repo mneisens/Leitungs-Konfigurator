@@ -9,10 +9,17 @@ import { getArtikelByNummer } from './catalog.js';
 import { persistCurrentProjekt, ensureWizardAnswers } from './projects.js';
 import { assertCanEdit, applyReadOnlyUI } from './project-access.js';
 import { getGruppeDisplay } from './overview.js';
-import { setWizardOelflexMode, findOelflexArtikel } from './oelflex.js';
+import {
+    setWizardOelflexMode,
+    findOelflexArtikel,
+    findMotorleitungArtikel,
+    isWizardMotorleitungMode,
+    isWizardGeberleitungMode
+} from './oelflex.js';
 import {
     stepHasLeitungen,
     stepIsOelflexWizard,
+    stepIsMotorleitungWizard,
     applyWizardStepVisibility,
     renderWizardBauteilForms,
     renderWizardCreatedBauteile,
@@ -24,6 +31,7 @@ import {
     getCurrentWizardStep,
     getWizardDefaultKategorie,
     getWizardKategorie,
+    getWizardArtikelByKategorie,
     getWizardPairMatches,
     getWizardAusrichtung,
     setWizardAusrichtung,
@@ -36,6 +44,16 @@ import {
     onWizardSteckerBChange,
     renderWizardCreatedLeitungen
 } from './wizard-leitungen.js';
+import {
+    canEditWizardConfig,
+    mountWizardStepConfigForm,
+    persistWizardSteps
+} from './admin.js';
+
+let wizardStepEditorOpen = false;
+/** Snapshot der aktuellen Frage beim Öffnen des Editors (für Abbrechen). */
+let wizardStepEditorSnapshot = null;
+let wizardStepEditorSnapshotIndex = -1;
 
 
 /**
@@ -71,7 +89,12 @@ function selectWizardOption(selectId, wunsch) {
 function applyWizardVorauswahl(step) {
     const vorauswahl = step?.vorauswahl;
     if (!vorauswahl) return;
-    if (getWizardKategorie() === 'oelflex' || stepIsOelflexWizard(step)) return;
+    if (
+        getWizardKategorie() === 'oelflex'
+        || getWizardKategorie() === 'geber'
+        || stepIsOelflexWizard(step)
+        || stepIsMotorleitungWizard(step)
+    ) return;
 
     if (vorauswahl.hersteller && selectWizardOption('wizard-hersteller', vorauswahl.hersteller)) {
         onWizardHerstellerChange();
@@ -123,6 +146,33 @@ function pickBestArtikelMatch(matches, laenge) {
 export function resolveWizardArtikelFromForm() {
     const step = getCurrentWizardStep();
     const kategorie = getWizardKategorie();
+
+    if (kategorie === 'motor' || stepIsMotorleitungWizard(step)) {
+        const artikelnummer = document.getElementById('wizard-oelflex-querschnitt')?.value;
+        if (!artikelnummer) {
+            return { artikel: null, artikelnummer: '', error: 'Bitte Motorleitungs-Typ wählen.' };
+        }
+        const artikel = findMotorleitungArtikel(artikelnummer);
+        if (!artikel) {
+            return { artikel: null, artikelnummer: '', error: 'Kein passender Motorleitungs-Artikel gefunden.' };
+        }
+        return { artikel, artikelnummer: artikel.artikelnummer || '' };
+    }
+
+    if (kategorie === 'geber') {
+        const hersteller = document.getElementById('wizard-hersteller')?.value;
+        const artikelnummer = document.getElementById('wizard-artikelnummer')?.value?.trim() || '';
+        if (!hersteller) {
+            return { artikel: null, artikelnummer: '', error: 'Bitte Hersteller wählen.' };
+        }
+        if (!artikelnummer) {
+            return { artikel: null, artikelnummer: '', error: 'Artikelnummer und Länge eingeben (ohne Stecker).' };
+        }
+        const artikel = getArtikelByNummer(artikelnummer)
+            || getWizardArtikelByKategorie().find(a => a.artikelnummer === artikelnummer)
+            || null;
+        return { artikel, artikelnummer };
+    }
 
     if (kategorie === 'oelflex' || stepIsOelflexWizard(step)) {
         const adern = document.getElementById('wizard-oelflex-adern')?.value;
@@ -177,6 +227,22 @@ export function updateWizardAutoArtikel() {
     if (!resultDiv || !artikelInput) return;
 
     const kategorie = getWizardKategorie();
+
+    if (kategorie === 'geber' || isWizardGeberleitungMode()) {
+        const hersteller = document.getElementById('wizard-hersteller')?.value || '';
+        const laengeRaw = document.getElementById('wizard-oelflex-laenge')?.value;
+        const laengeHinweis = laengeRaw ? `${laengeRaw} m` : 'Länge in Metern eingeben';
+        const nr = artikelInput.value.trim();
+        resultDiv.className = hersteller ? 'wizard-auto-result' : 'wizard-auto-result no-match';
+        resultDiv.innerHTML = hersteller
+            ? `
+                <span class="artikel-beschreibung">Geberleitung${nr ? `: ${escapeHtml(nr)}` : ''} (ohne Stecker)</span>
+                <span class="artikel-hinweis">${escapeHtml(hersteller)} · ${escapeHtml(laengeHinweis)}</span>
+            `
+            : '<span class="artikel-label">Hersteller wählen, dann Artikelnummer und Länge eingeben</span>';
+        return;
+    }
+
     const resolved = resolveWizardArtikelFromForm();
 
     if (!resolved.artikel) {
@@ -187,13 +253,17 @@ export function updateWizardAutoArtikel() {
 
     artikelInput.value = resolved.artikelnummer;
 
-    if (kategorie === 'oelflex' || stepIsOelflexWizard(getCurrentWizardStep())) {
+    if (
+        kategorie === 'oelflex'
+        || stepIsOelflexWizard(getCurrentWizardStep())
+        || isWizardMotorleitungMode()
+    ) {
         const laengeRaw = document.getElementById('wizard-oelflex-laenge')?.value;
         const laengeHinweis = laengeRaw ? `${laengeRaw} m (Meterware)` : 'Bitte Länge in Metern eingeben';
         resultDiv.className = 'wizard-auto-result';
         resultDiv.innerHTML = `
             <span class="artikel-nummer">${escapeHtml(resolved.artikel.artikelnummer)}</span>
-            <span class="artikel-beschreibung">${escapeHtml(resolved.artikel.beschreibung)}</span>
+            <span class="artikel-beschreibung">${escapeHtml(resolved.artikel.beschreibung || '')}</span>
             <span class="artikel-hinweis">${escapeHtml(laengeHinweis)}</span>
         `;
         return;
@@ -258,13 +328,29 @@ export function wizardAddLeitungFromStep() {
     const bezeichnung = bezInput.value.trim() || getWizardDefaultBezeichnung(step);
     const kategorie = getWizardKategorie() || artikel?.kategorie || 'sonstiges';
 
+    const meterwareModus = kategorie === 'oelflex'
+        || kategorie === 'motor'
+        || kategorie === 'geber'
+        || artikel?.meterware
+        || isWizardMotorleitungMode()
+        || isWizardGeberleitungMode();
+
     let laenge = artikel?.laenge || 0;
-    if (kategorie === 'oelflex' || artikel?.meterware) {
+    if (meterwareModus) {
         const oelflexLaenge = parseFloat(document.getElementById('wizard-oelflex-laenge')?.value);
         if (!Number.isNaN(oelflexLaenge) && oelflexLaenge > 0) {
             laenge = oelflexLaenge;
+        } else {
+            showModal('Bitte Länge in Metern angeben.', {
+                type: 'warning',
+                title: 'Länge fehlt'
+            });
+            return;
         }
     }
+
+    const herstellerSelect = document.getElementById('wizard-hersteller')?.value || '';
+    const ohneStecker = kategorie === 'oelflex' || kategorie === 'motor' || kategorie === 'geber';
 
     if (!Array.isArray(appState.currentProjekt.leitungen)) {
         appState.currentProjekt.leitungen = [];
@@ -277,12 +363,12 @@ export function wizardAddLeitungFromStep() {
             bezeichnung: bezeichnung,
             kategorie: kategorie,
             gruppe: step.gruppe,
-            hersteller: artikel?.hersteller || '',
+            hersteller: artikel?.hersteller || herstellerSelect || '',
             artikelnummer: artikel ? artikel.artikelnummer : artikelnummerRaw,
-            artikelCustom: '',
+            artikelCustom: artikel ? '' : (kategorie === 'geber' ? artikelnummerRaw : ''),
             laenge: laenge,
-            steckerA: artikel?.steckerA || (kategorie === 'oelflex' ? 'offen' : ''),
-            steckerB: artikel?.steckerB || (kategorie === 'oelflex' ? 'offen' : ''),
+            steckerA: artikel?.steckerA || (ohneStecker ? 'offen' : ''),
+            steckerB: artikel?.steckerB || (ohneStecker ? 'offen' : ''),
             notiz: artikel ? '' : 'Im Schaltplan-Assistent ohne Katalogtreffer angelegt',
             erledigt: false,
             wizardStepId: step.id
@@ -346,6 +432,13 @@ export function renderProjektWizard() {
         hinweisDiv.textContent = step.hinweis || '';
         hinweisDiv.style.display = step.hinweis ? '' : 'none';
     }
+
+    const editBtn = document.getElementById('wizard-edit-step-btn');
+    if (editBtn) {
+        editBtn.hidden = !canEditWizardConfig();
+        editBtn.textContent = wizardStepEditorOpen ? 'Bearbeitung schließen' : 'Frage bearbeiten';
+    }
+    syncWizardStepEditorVisibility();
     document.getElementById('wizard-antwort').value = answer;
     document.getElementById('wizard-stecker-a').innerHTML = '<option value="">-- Bitte wählen --</option>';
     document.getElementById('wizard-stecker-b').innerHTML = '<option value="">-- Bitte wählen --</option>';
@@ -408,9 +501,126 @@ export function renderProjektWizard() {
 }
 
 
+/**
+ * Öffnet/schließt den Inline-Editor für die aktuelle Frage.
+ * @returns {void}
+ */
+export function toggleWizardStepEditor() {
+    if (!canEditWizardConfig()) {
+        showModal('Keine Berechtigung zum Bearbeiten der Assistenten-Fragen.', {
+            type: 'warning',
+            title: 'Kein Zugriff'
+        });
+        return;
+    }
+
+    if (wizardStepEditorOpen) {
+        restoreWizardStepEditorSnapshot();
+        wizardStepEditorOpen = false;
+    } else {
+        captureWizardStepEditorSnapshot();
+        wizardStepEditorOpen = true;
+    }
+
+    syncWizardStepEditorVisibility();
+
+    const editBtn = document.getElementById('wizard-edit-step-btn');
+    if (editBtn) {
+        editBtn.textContent = wizardStepEditorOpen ? 'Bearbeitung schließen' : 'Frage bearbeiten';
+    }
+
+    if (!wizardStepEditorOpen) {
+        renderProjektWizard();
+    }
+}
+
+
+/**
+ * Speichert eine Kopie der aktuellen Frage zum Verwerfen bei Abbrechen.
+ * @returns {void}
+ */
+function captureWizardStepEditorSnapshot() {
+    const index = appState.wizardStepIndex;
+    const step = appState.wizardSteps[index];
+    wizardStepEditorSnapshotIndex = index;
+    wizardStepEditorSnapshot = step ? JSON.parse(JSON.stringify(step)) : null;
+}
+
+
+/**
+ * Stellt den Snapshot der Frage wieder her (falls vorhanden).
+ * @returns {void}
+ */
+function restoreWizardStepEditorSnapshot() {
+    if (
+        wizardStepEditorSnapshot
+        && wizardStepEditorSnapshotIndex >= 0
+        && wizardStepEditorSnapshotIndex < appState.wizardSteps.length
+    ) {
+        appState.wizardSteps[wizardStepEditorSnapshotIndex] = wizardStepEditorSnapshot;
+    }
+    wizardStepEditorSnapshot = null;
+    wizardStepEditorSnapshotIndex = -1;
+}
+
+
+/**
+ * Zeigt oder versteckt den Fragen-Editor und lädt ggf. das Formular.
+ * @returns {void}
+ */
+function syncWizardStepEditorVisibility() {
+    const editor = document.getElementById('wizard-step-editor');
+    if (!editor) return;
+
+    if (!wizardStepEditorOpen || !canEditWizardConfig()) {
+        editor.hidden = true;
+        return;
+    }
+
+    editor.hidden = false;
+    mountWizardStepConfigForm(appState.wizardStepIndex);
+}
+
+
+/**
+ * Verwirft den Editor und lädt die Frage neu.
+ * @returns {void}
+ */
+export function cancelWizardStepEditor() {
+    restoreWizardStepEditorSnapshot();
+    wizardStepEditorOpen = false;
+    renderProjektWizard();
+}
+
+
+/**
+ * Speichert die Assistenten-Fragen und wendet die aktuelle Frage neu an.
+ * @returns {Promise<void>}
+ */
+export async function saveWizardStepFromAssistent() {
+    if (!canEditWizardConfig()) {
+        showModal('Keine Berechtigung zum Speichern der Assistenten-Fragen.', {
+            type: 'warning',
+            title: 'Kein Zugriff'
+        });
+        return;
+    }
+
+    const ok = await persistWizardSteps({ silent: false });
+    if (!ok) return;
+
+    wizardStepEditorSnapshot = null;
+    wizardStepEditorSnapshotIndex = -1;
+    wizardStepEditorOpen = false;
+    renderProjektWizard();
+}
+
+
 export function wizardPrev() {
     if (appState.wizardStepIndex <= 0) return;
     saveCurrentWizardAnswer();
+    if (wizardStepEditorOpen) restoreWizardStepEditorSnapshot();
+    wizardStepEditorOpen = false;
     appState.wizardStepIndex--;
     renderProjektWizard();
 }
@@ -434,6 +644,8 @@ export function wizardNext() {
         return;
     }
 
+    if (wizardStepEditorOpen) restoreWizardStepEditorSnapshot();
+    wizardStepEditorOpen = false;
     appState.wizardStepIndex++;
     renderProjektWizard();
 }
@@ -476,6 +688,8 @@ export function wizardApplyJump() {
     }
 
     saveCurrentWizardAnswer();
+    if (wizardStepEditorOpen) restoreWizardStepEditorSnapshot();
+    wizardStepEditorOpen = false;
     appState.wizardStepIndex = target - 1;
     wizardCancelJump();
     renderProjektWizard();

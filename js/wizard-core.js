@@ -33,6 +33,19 @@ export function stepIsOelflexWizard(step) {
 }
 
 
+/**
+ * Kategorie Motorleitungen (ÖLFLEX SERVO) im Assistenten.
+ * @param {object|null} [step]
+ * @returns {boolean}
+ */
+export function stepIsMotorleitungWizard(step) {
+    const kategorie = getWizardKategorie();
+    if (kategorie === 'motor') return true;
+    // Fallback für Schritte mit Flag, solange noch keine Kategorie gewählt ist
+    return Boolean(step?.motorleitung) && !kategorie;
+}
+
+
 export function applyWizardStepVisibility(step) {
     const leitungenSection = document.getElementById('wizard-leitungen-section');
     const bauteileSection = document.getElementById('wizard-bauteile-section');

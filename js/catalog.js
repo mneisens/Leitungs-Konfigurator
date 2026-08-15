@@ -5,6 +5,9 @@ import { appState } from './state.js';
 
 /** Basis-Artikel aus data/leitungen.json (ohne Nachträge). */
 let baseArtikel = [];
+/** Basis-Bauteile aus data/bauteile.json (ohne Nachträge). */
+let baseBauteileArtikel = [];
+let baseBauteiltypen = [];
 
 
 /**
@@ -27,7 +30,18 @@ export async function loadKatalog() {
 
         const gruppenData = await gruppenResponse.json();
         appState.leitungGruppen = Array.isArray(gruppenData.gruppen) ? gruppenData.gruppen : [];
-        appState.bauteileKatalog = await bauteileResponse.json();
+
+        const bauteileData = await bauteileResponse.json();
+        baseBauteiltypen = Array.isArray(bauteileData.bauteiltypen)
+            ? bauteileData.bauteiltypen.map(t => ({ ...t }))
+            : [];
+        baseBauteileArtikel = Array.isArray(bauteileData.artikel)
+            ? bauteileData.artikel.map(a => ({ ...a }))
+            : [];
+        appState.bauteileKatalog = {
+            bauteiltypen: baseBauteiltypen.map(t => ({ ...t })),
+            artikel: baseBauteileArtikel.map(a => ({ ...a }))
+        };
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         appState.katalog = {
@@ -38,6 +52,8 @@ export async function loadKatalog() {
             standardlaengen: []
         };
         baseArtikel = [];
+        baseBauteileArtikel = [];
+        baseBauteiltypen = [];
         appState.leitungGruppen = [];
         appState.bauteileKatalog = { bauteiltypen: [], artikel: [] };
     }
@@ -99,6 +115,49 @@ export function getArtikelByNummer(artikelnummer) {
     if (!appState.katalog || !Array.isArray(appState.katalog.artikel) || !artikelnummer) return null;
     const gesucht = artikelnummer.trim().toLowerCase();
     return appState.katalog.artikel.find(a => (a.artikelnummer || '').toLowerCase() === gesucht) || null;
+}
+
+
+/**
+ * Mischt Basis-Bauteile mit nachgetragenen Artikeln.
+ * @param {object[]} additions
+ * @returns {void}
+ */
+export function mergeBauteileAdditions(additions) {
+    if (!appState.bauteileKatalog) {
+        appState.bauteileKatalog = { bauteiltypen: [], artikel: [] };
+    }
+
+    const byNr = new Map();
+    baseBauteileArtikel.forEach(a => {
+        const key = (a.artikelnummer || '').toLowerCase();
+        if (key) byNr.set(key, { ...a, custom: false });
+    });
+
+    (additions || []).forEach(a => {
+        const key = (a.artikelnummer || '').toLowerCase();
+        if (!key) return;
+        byNr.set(key, { ...a, custom: true });
+    });
+
+    appState.bauteileKatalog.artikel = Array.from(byNr.values());
+    appState.bauteileKatalog.bauteiltypen = baseBauteiltypen.map(t => ({ ...t }));
+}
+
+
+/**
+ * Stellt sicher, dass ein Bauteiltyp in der Typenliste existiert.
+ * @param {object} article
+ * @returns {void}
+ */
+export function ensureBauteilTyp(article) {
+    if (!appState.bauteileKatalog || !article?.typ) return;
+    const exists = (appState.bauteileKatalog.bauteiltypen || []).some(t => t.id === article.typ);
+    if (!exists) {
+        const entry = { id: article.typ, name: article.typName || article.typ };
+        appState.bauteileKatalog.bauteiltypen = [...(appState.bauteileKatalog.bauteiltypen || []), entry];
+        baseBauteiltypen = [...baseBauteiltypen, entry];
+    }
 }
 
 

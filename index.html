@@ -112,101 +112,194 @@
             </div>
         </section>
 
-        <!-- View: Leitungskatalog -->
+        <!-- View: Katalog (Leitungen / Bauteile) -->
         <section id="view-katalog" class="view">
             <div class="view-header">
                 <button class="btn btn-back" onclick="showView('home')">← Zurück</button>
-                <h2>Leitungskatalog</h2>
+                <h2>Katalog</h2>
             </div>
 
-            <div class="form-card">
-                <p class="text-muted">
-                    Alle verfügbaren Leitungen nach Kategorie. Neue Leitungen hier nachtragen – sie stehen danach in Assistent und Konfigurator zur Verfügung.
-                </p>
+            <div class="katalog-tabs" role="tablist">
+                <button type="button" class="katalog-tab active" id="katalog-tab-leitungen" role="tab" aria-selected="true" onclick="setKatalogTab('leitungen')">Leitungen</button>
+                <button type="button" class="katalog-tab" id="katalog-tab-bauteile" role="tab" aria-selected="false" onclick="setKatalogTab('bauteile')">Bauteile</button>
+            </div>
 
-                <div class="katalog-toolbar">
-                    <div class="form-group">
-                        <label for="katalog-kategorie-filter">Kategorie</label>
-                        <select id="katalog-kategorie-filter" onchange="onKatalogKategorieChange()">
-                            <option value="">Alle Kategorien</option>
-                        </select>
+            <div id="katalog-panel-leitungen" class="katalog-panel">
+                <div class="form-card">
+                    <p class="text-muted">
+                        Alle verfügbaren Leitungen nach Kategorie. Neue Leitungen hier nachtragen – sie stehen danach in Assistent und Konfigurator zur Verfügung.
+                    </p>
+
+                    <div class="katalog-toolbar">
+                        <div class="form-group">
+                            <label for="katalog-kategorie-filter">Kategorie</label>
+                            <select id="katalog-kategorie-filter" onchange="onKatalogKategorieChange()">
+                                <option value="">Alle Kategorien</option>
+                            </select>
+                        </div>
+                        <div class="form-group katalog-search-group">
+                            <label for="katalog-search">Suche</label>
+                            <input type="search" id="katalog-search" placeholder="Artikelnummer, Hersteller, Beschreibung…" oninput="onKatalogSearch()">
+                        </div>
+                        <span class="katalog-count" id="katalog-count"></span>
                     </div>
-                    <div class="form-group katalog-search-group">
-                        <label for="katalog-search">Suche</label>
-                        <input type="search" id="katalog-search" placeholder="Artikelnummer, Hersteller, Beschreibung…" oninput="onKatalogSearch()">
+
+                    <div class="table-container katalog-table-wrap">
+                        <table class="leitung-table katalog-table">
+                            <thead>
+                                <tr>
+                                    <th>Artikelnummer</th>
+                                    <th>Hersteller</th>
+                                    <th>Beschreibung</th>
+                                    <th>Stecker A</th>
+                                    <th>Stecker B</th>
+                                    <th>Länge</th>
+                                    <th>Kategorie</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="katalog-tabelle-body"></tbody>
+                        </table>
                     </div>
-                    <span class="katalog-count" id="katalog-count"></span>
                 </div>
 
-                <div class="table-container katalog-table-wrap">
-                    <table class="leitung-table katalog-table">
-                        <thead>
-                            <tr>
-                                <th>Artikelnummer</th>
-                                <th>Hersteller</th>
-                                <th>Beschreibung</th>
-                                <th>Stecker A</th>
-                                <th>Stecker B</th>
-                                <th>Länge</th>
-                                <th>Kategorie</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="katalog-tabelle-body"></tbody>
-                    </table>
+                <div class="form-card katalog-add-card">
+                    <h3>Leitung nachtragen</h3>
+                    <form id="katalog-add-form" onsubmit="event.preventDefault(); addKatalogArtikel();">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="katalog-form-kategorie">Kategorie *</label>
+                                <select id="katalog-form-kategorie" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-form-hersteller">Hersteller *</label>
+                                <select id="katalog-form-hersteller" onchange="onKatalogHerstellerChange()" required></select>
+                            </div>
+                            <div class="form-group" id="katalog-hersteller-custom-group" hidden>
+                                <label for="katalog-form-hersteller-custom">Neuer Hersteller *</label>
+                                <input type="text" id="katalog-form-hersteller-custom" placeholder="z. B. Harting">
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-form-artikelnummer">Artikelnummer *</label>
+                                <input type="text" id="katalog-form-artikelnummer" placeholder="z. B. ZK1090-…" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-beschreibung">Beschreibung *</label>
+                            <input type="text" id="katalog-form-beschreibung" placeholder="Kurzbeschreibung der Leitung" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="katalog-form-stecker-a">Stecker Seite A *</label>
+                                <input type="text" id="katalog-form-stecker-a" list="katalog-stecker-vorschlaege" placeholder="z. B. M8 4-polig gerade" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-form-stecker-b">Stecker Seite B *</label>
+                                <input type="text" id="katalog-form-stecker-b" list="katalog-stecker-vorschlaege" placeholder="z. B. RJ45" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-form-laenge">Länge (m) *</label>
+                                <input type="number" id="katalog-form-laenge" min="0" step="0.01" placeholder="z. B. 5">
+                            </div>
+                            <div class="form-group katalog-meterware-group">
+                                <label class="admin-check">
+                                    <input type="checkbox" id="katalog-form-meterware">
+                                    Meterware (Länge frei wählbar)
+                                </label>
+                            </div>
+                        </div>
+                        <datalist id="katalog-stecker-vorschlaege"></datalist>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">+ Leitung speichern</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <div class="form-card katalog-add-card">
-                <h3>Leitung nachtragen</h3>
-                <form id="katalog-add-form" onsubmit="event.preventDefault(); addKatalogArtikel();">
-                    <div class="form-row">
+            <div id="katalog-panel-bauteile" class="katalog-panel" hidden>
+                <div class="form-card">
+                    <p class="text-muted">
+                        Bauteile aus der Bauteilliste. Fehlende Artikelnummern sind als Platzhalter markiert und können später ersetzt werden.
+                    </p>
+
+                    <div class="katalog-toolbar">
                         <div class="form-group">
-                            <label for="katalog-form-kategorie">Kategorie *</label>
-                            <select id="katalog-form-kategorie" required></select>
+                            <label for="katalog-bauteil-typ-filter">Typ</label>
+                            <select id="katalog-bauteil-typ-filter" onchange="onKatalogBauteilTypChange()">
+                                <option value="">Alle Typen</option>
+                            </select>
                         </div>
-                        <div class="form-group">
-                            <label for="katalog-form-hersteller">Hersteller *</label>
-                            <select id="katalog-form-hersteller" onchange="onKatalogHerstellerChange()" required></select>
+                        <div class="form-group katalog-search-group">
+                            <label for="katalog-bauteil-search">Suche</label>
+                            <input type="search" id="katalog-bauteil-search" placeholder="Artikelnummer, Hersteller, Beschreibung…" oninput="onKatalogBauteilSearch()">
                         </div>
-                        <div class="form-group" id="katalog-hersteller-custom-group" hidden>
-                            <label for="katalog-form-hersteller-custom">Neuer Hersteller *</label>
-                            <input type="text" id="katalog-form-hersteller-custom" placeholder="z. B. Harting">
-                        </div>
-                        <div class="form-group">
-                            <label for="katalog-form-artikelnummer">Artikelnummer *</label>
-                            <input type="text" id="katalog-form-artikelnummer" placeholder="z. B. ZK1090-…" required>
-                        </div>
+                        <span class="katalog-count" id="katalog-bauteil-count"></span>
                     </div>
-                    <div class="form-group">
-                        <label for="katalog-form-beschreibung">Beschreibung *</label>
-                        <input type="text" id="katalog-form-beschreibung" placeholder="Kurzbeschreibung der Leitung" required>
+
+                    <div class="table-container katalog-table-wrap">
+                        <table class="leitung-table katalog-table">
+                            <thead>
+                                <tr>
+                                    <th>Artikelnummer</th>
+                                    <th>Hersteller</th>
+                                    <th>Beschreibung</th>
+                                    <th>Typ</th>
+                                    <th>Gruppe</th>
+                                    <th>Lieferant</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="katalog-bauteile-tabelle-body"></tbody>
+                        </table>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="katalog-form-stecker-a">Stecker Seite A *</label>
-                            <input type="text" id="katalog-form-stecker-a" list="katalog-stecker-vorschlaege" placeholder="z. B. M8 4-polig gerade" required>
+                </div>
+
+                <div class="form-card katalog-add-card">
+                    <h3>Bauteil nachtragen</h3>
+                    <form id="katalog-bauteil-add-form" onsubmit="event.preventDefault(); addKatalogBauteil();">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="katalog-bauteil-form-typ">Typ *</label>
+                                <select id="katalog-bauteil-form-typ" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-bauteil-form-hersteller">Hersteller *</label>
+                                <select id="katalog-bauteil-form-hersteller" onchange="onKatalogBauteilHerstellerChange()" required></select>
+                            </div>
+                            <div class="form-group" id="katalog-bauteil-hersteller-custom-group" hidden>
+                                <label for="katalog-bauteil-form-hersteller-custom">Neuer Hersteller *</label>
+                                <input type="text" id="katalog-bauteil-form-hersteller-custom" placeholder="z. B. Beka">
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-bauteil-form-artikelnummer">Artikelnummer *</label>
+                                <input type="text" id="katalog-bauteil-form-artikelnummer" placeholder="z. B. EP1018-0001" required>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="katalog-form-stecker-b">Stecker Seite B *</label>
-                            <input type="text" id="katalog-form-stecker-b" list="katalog-stecker-vorschlaege" placeholder="z. B. RJ45" required>
+                            <label for="katalog-bauteil-form-beschreibung">Beschreibung *</label>
+                            <input type="text" id="katalog-bauteil-form-beschreibung" placeholder="Kurzbeschreibung des Bauteils" required>
                         </div>
-                        <div class="form-group">
-                            <label for="katalog-form-laenge">Länge (m) *</label>
-                            <input type="number" id="katalog-form-laenge" min="0" step="0.01" placeholder="z. B. 5">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="katalog-bauteil-form-gruppe">Gruppe</label>
+                                <input type="text" id="katalog-bauteil-form-gruppe" placeholder="z. B. 005 oder 011/021/031/042">
+                            </div>
+                            <div class="form-group">
+                                <label for="katalog-bauteil-form-lieferant">Lieferant</label>
+                                <input type="text" id="katalog-bauteil-form-lieferant" placeholder="z. B. Beckhoff">
+                            </div>
+                            <div class="form-group katalog-meterware-group">
+                                <label class="admin-check">
+                                    <input type="checkbox" id="katalog-bauteil-form-placeholder">
+                                    Platzhalter (Art.-Nr. noch nicht final)
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-group katalog-meterware-group">
-                            <label class="admin-check">
-                                <input type="checkbox" id="katalog-form-meterware">
-                                Meterware (Länge frei wählbar)
-                            </label>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">+ Bauteil speichern</button>
                         </div>
-                    </div>
-                    <datalist id="katalog-stecker-vorschlaege"></datalist>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">+ Leitung speichern</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -309,8 +402,25 @@
                     <span class="wizard-hint" id="wizard-optional-hint">Antwort optional - leer lassen und weiter ist möglich.</span>
                 </div>
 
-                <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
+                <div class="wizard-question-row">
+                    <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
+                    <button type="button" class="btn btn-secondary btn-small" id="wizard-edit-step-btn" onclick="toggleWizardStepEditor()">
+                        Frage bearbeiten
+                    </button>
+                </div>
                 <div class="wizard-hinweis" id="wizard-hinweis" style="display: none;"></div>
+
+                <div id="wizard-step-editor" class="wizard-step-editor" hidden>
+                    <div class="wizard-step-editor-header">
+                        <h3>Frage konfigurieren</h3>
+                        <p class="text-muted">Änderungen gelten für alle Projekte und werden sofort gespeichert.</p>
+                    </div>
+                    <div id="wizard-step-editor-form"></div>
+                    <div class="form-actions wizard-step-editor-actions">
+                        <button type="button" class="btn btn-secondary" onclick="cancelWizardStepEditor()">Abbrechen</button>
+                        <button type="button" class="btn btn-primary" onclick="saveWizardStepFromAssistent()">Übernehmen &amp; speichern</button>
+                    </div>
+                </div>
 
                 <div class="wizard-skip" id="wizard-skip-box">
                     <label class="wizard-skip-label">
@@ -389,14 +499,14 @@
                             </div>
                         </div>
                         <div id="wizard-oelflex-row" class="wizard-grid-pass" style="display: none;">
-                            <div class="form-group">
+                            <div class="form-group" id="wizard-oelflex-adern-group">
                                 <label for="wizard-oelflex-adern">Aderzahl</label>
                                 <select id="wizard-oelflex-adern" onchange="onWizardOelflexChange()">
                                     <option value="">-- Bitte wählen --</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="wizard-oelflex-querschnitt">Querschnitt</label>
+                            <div class="form-group" id="wizard-oelflex-querschnitt-group">
+                                <label for="wizard-oelflex-querschnitt" id="wizard-oelflex-querschnitt-label">Querschnitt</label>
                                 <select id="wizard-oelflex-querschnitt" onchange="onWizardOelflexChange()">
                                     <option value="">-- Bitte wählen --</option>
                                 </select>
@@ -416,7 +526,7 @@
                 <div class="wizard-add-row">
                     <div class="form-group wizard-artikel-group">
                         <label for="wizard-artikelnummer">Artikelnummer</label>
-                        <input type="text" id="wizard-artikelnummer" list="wizard-artikel-vorschlaege" placeholder="z. B. ZK2000-2122-0010">
+                        <input type="text" id="wizard-artikelnummer" list="wizard-artikel-vorschlaege" placeholder="z. B. ZK2000-2122-0010" oninput="updateWizardAutoArtikel()">
                         <datalist id="wizard-artikel-vorschlaege"></datalist>
                     </div>
                     <div class="form-group wizard-anzahl-group">
@@ -447,6 +557,25 @@
                     <button type="button" class="btn btn-primary" id="wizard-next" onclick="wizardNext()">
                         Weiter →
                     </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Gruppen-Konfigurator -->
+        <section id="view-gruppen" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="gruppen-titel">Gruppen-Konfigurator</h2>
+            </div>
+
+            <div class="gruppen-layout">
+                <aside class="form-card gruppen-sidebar">
+                    <input type="search" id="gruppen-suche" class="gruppen-suche" placeholder="🔍 Gruppe suchen…" oninput="filterGruppenListe()">
+                    <div id="gruppen-liste" class="gruppen-liste"></div>
+                </aside>
+
+                <div class="gruppen-main" id="gruppen-main">
+                    <!-- Gruppenpanel wird dynamisch eingefügt -->
                 </div>
             </div>
         </section>
@@ -624,7 +753,10 @@
 
             <div class="uebersicht-actions">
                 <div class="uebersicht-add-row">
-                    <button class="btn btn-primary" onclick="addNewLeitung()">
+                    <button class="btn btn-primary" onclick="showView('gruppen')">
+                        🧩 Gruppen-Konfigurator
+                    </button>
+                    <button class="btn btn-secondary" onclick="addNewLeitung()">
                         + Neue Leitung anlegen
                     </button>
                 </div>
@@ -656,9 +788,9 @@
             <div id="keine-leitungen" class="empty-state" style="display: none;">
                 <div class="empty-icon">🔌</div>
                 <h3>Keine Leitungen konfiguriert</h3>
-                <p>Starten Sie den Konfigurator, um Leitungen hinzuzufügen.</p>
-                <button class="btn btn-primary" onclick="showView('konfigurator')">
-                    Konfigurator starten
+                <p>Im Gruppen-Konfigurator legen Sie Leitungen und Bauteile je Schaltplan-Gruppe an.</p>
+                <button class="btn btn-primary" onclick="showView('gruppen')">
+                    Gruppen-Konfigurator starten
                 </button>
             </div>
         </section>
