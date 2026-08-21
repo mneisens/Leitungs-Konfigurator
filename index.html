@@ -219,7 +219,9 @@
             <div id="katalog-panel-bauteile" class="katalog-panel" hidden>
                 <div class="form-card">
                     <p class="text-muted">
-                        Bauteile aus der Bauteilliste. Fehlende Artikelnummern sind als Platzhalter markiert und können später ersetzt werden.
+                        Bauteile aus der Bauteilliste. Ordne jedem Artikel eine Gruppe zu – im Gruppen-Konfigurator
+                        werden dann nur passende Bauteile angeboten. Mehrere Gruppen mit „/“ trennen
+                        (z.&nbsp;B. <code>011/021/031/042</code>).
                     </p>
 
                     <div class="katalog-toolbar">
@@ -227,6 +229,12 @@
                             <label for="katalog-bauteil-typ-filter">Typ</label>
                             <select id="katalog-bauteil-typ-filter" onchange="onKatalogBauteilTypChange()">
                                 <option value="">Alle Typen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-bauteil-gruppe-filter">Gruppe</label>
+                            <select id="katalog-bauteil-gruppe-filter" onchange="onKatalogBauteilGruppeChange()">
+                                <option value="">Alle Gruppen</option>
                             </select>
                         </div>
                         <div class="form-group katalog-search-group">
@@ -254,8 +262,8 @@
                     </div>
                 </div>
 
-                <div class="form-card katalog-add-card">
-                    <h3>Bauteil nachtragen</h3>
+                <div class="form-card katalog-add-card" id="katalog-bauteil-form-card">
+                    <h3 id="katalog-bauteil-form-title">Bauteil nachtragen</h3>
                     <form id="katalog-bauteil-add-form" onsubmit="event.preventDefault(); addKatalogBauteil();">
                         <div class="form-row">
                             <div class="form-group">
@@ -282,7 +290,9 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="katalog-bauteil-form-gruppe">Gruppe</label>
-                                <input type="text" id="katalog-bauteil-form-gruppe" placeholder="z. B. 005 oder 011/021/031/042">
+                                <input type="text" id="katalog-bauteil-form-gruppe" list="katalog-gruppe-vorschlaege"
+                                    placeholder="z. B. 005 oder 011/021/031/042">
+                                <datalist id="katalog-gruppe-vorschlaege"></datalist>
                             </div>
                             <div class="form-group">
                                 <label for="katalog-bauteil-form-lieferant">Lieferant</label>
@@ -296,7 +306,9 @@
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">+ Bauteil speichern</button>
+                            <button type="button" class="btn btn-secondary" id="katalog-bauteil-form-cancel"
+                                hidden onclick="cancelEditKatalogBauteil()">Abbrechen</button>
+                            <button type="submit" class="btn btn-primary" id="katalog-bauteil-form-submit">+ Bauteil speichern</button>
                         </div>
                     </form>
                 </div>

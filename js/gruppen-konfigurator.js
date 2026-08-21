@@ -8,7 +8,7 @@ import { appState } from './state.js';
 import { escapeHtml, generateId } from './utils.js';
 import { persistCurrentProjekt } from './projects.js';
 import { assertCanEdit, canEditProject } from './project-access.js';
-import { getBauteilTypName, getBauteileByTyp } from './catalog.js';
+import { getBauteilTypName, getBauteileByTypAndGruppe, bauteilPasstZuGruppe } from './catalog.js';
 import { getBaseSteckerTyp, getFullSteckerTyp, hasAusrichtung } from './stecker-utils.js';
 import {
     findArtikel,
@@ -600,8 +600,8 @@ function renderBauteilListe(bauteile) {
 function renderBauteilKarte(bauteil) {
     const gesperrt = istSchreibgeschuetzt();
     const disabled = gesperrt ? ' disabled' : '';
-    const typen = appState.bauteileKatalog?.bauteiltypen || [];
-    const artikelliste = bauteil.typ ? getBauteileByTyp(bauteil.typ) : [];
+    const typen = getTypenFuerGruppe(aktiveGruppe);
+    const artikelliste = bauteil.typ ? getBauteileByTypAndGruppe(bauteil.typ, aktiveGruppe) : [];
 
     const artikelOptionen = [
         { value: '', label: artikelliste.length ? '-- Bitte wählen --' : '-- Kein Katalogartikel --' },
@@ -651,6 +651,27 @@ function renderBauteilKarte(bauteil) {
 
 
 /**
+ * Bauteiltypen, die für eine Gruppe im Katalog hinterlegt sind.
+ * @param {string} gruppeCode
+ * @returns {{ id: string, name: string }[]}
+ */
+function getTypenFuerGruppe(gruppeCode) {
+    const vorgaben = getGruppenVorgaben(getGruppe(gruppeCode));
+    const ids = new Set(vorgaben.bauteilTypen || []);
+    (appState.bauteileKatalog?.artikel || []).forEach(artikel => {
+        if (artikel.typ && bauteilPasstZuGruppe(artikel, gruppeCode)) {
+            ids.add(artikel.typ);
+        }
+    });
+
+    const alleTypen = appState.bauteileKatalog?.bauteiltypen || [];
+    return Array.from(ids)
+        .map(id => alleTypen.find(t => t.id === id) || { id, name: getBauteilTypName(id) })
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+
+/**
  * @param {string} typ
  * @returns {void}
  */
@@ -658,7 +679,7 @@ export function gruppeAddBauteil(typ) {
     if (!assertCanEdit('Bauteile hinzufügen')) return;
     if (!appState.currentProjekt.bauteile) appState.currentProjekt.bauteile = [];
 
-    const artikel = typ ? getBauteileByTyp(typ)[0] : null;
+    const artikel = typ ? getBauteileByTypAndGruppe(typ, aktiveGruppe)[0] : null;
     appState.currentProjekt.bauteile.push({
         id: generateId('btl'),
         gruppe: aktiveGruppe,
@@ -694,12 +715,13 @@ export function gruppeUpdateBauteil(id, feld, wert) {
 
     if (feld === 'typ') {
         bauteil.typ = wert;
-        const artikel = getBauteileByTyp(wert)[0] || null;
+        const artikel = getBauteileByTypAndGruppe(wert, aktiveGruppe)[0] || null;
         bauteil.artikelnummer = artikel?.artikelnummer || '';
         bauteil.hersteller = artikel?.hersteller || '';
         bauteil.bezeichnung = artikel?.beschreibung || '';
     } else if (feld === 'artikelnummer') {
-        const artikel = getBauteileByTyp(bauteil.typ).find(a => a.artikelnummer === wert) || null;
+        const artikel = getBauteileByTypAndGruppe(bauteil.typ, aktiveGruppe)
+            .find(a => a.artikelnummer === wert) || null;
         bauteil.artikelnummer = wert;
         bauteil.hersteller = artikel?.hersteller || bauteil.hersteller;
         bauteil.bezeichnung = artikel?.beschreibung || bauteil.bezeichnung;

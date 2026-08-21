@@ -137,7 +137,17 @@ export function mergeBauteileAdditions(additions) {
     (additions || []).forEach(a => {
         const key = (a.artikelnummer || '').toLowerCase();
         if (!key) return;
-        byNr.set(key, { ...a, custom: true });
+        const existing = byNr.get(key);
+        if (existing) {
+            byNr.set(key, {
+                ...existing,
+                ...a,
+                custom: Boolean(existing.custom || a.custom),
+                modified: Boolean(a.override || existing.modified)
+            });
+        } else {
+            byNr.set(key, { ...a, custom: true });
+        }
     });
 
     appState.bauteileKatalog.artikel = Array.from(byNr.values());
@@ -185,10 +195,54 @@ export function getBauteilTypName(typId) {
 
 
 /**
+ * Normalisiert einen Gruppencode auf die dreistellige Nummer (ohne „=“).
+ * @param {string} code
+ * @returns {string}
+ */
+export function normalizeGruppeNummer(code) {
+    return String(code || '').replace(/^=/, '').trim();
+}
+
+
+/**
+ * Prüft, ob ein Katalog-Bauteil einer Schaltplan-Gruppe zugeordnet ist.
+ * Mehrfachzuordnungen sind mit „/“ möglich (z. B. „011/021/031/042“).
+ * @param {object} artikel
+ * @param {string} gruppeCode
+ * @returns {boolean}
+ */
+export function bauteilPasstZuGruppe(artikel, gruppeCode) {
+    const nummer = normalizeGruppeNummer(gruppeCode);
+    if (!nummer) return true;
+    if (!artikel?.gruppe) return false;
+
+    return String(artikel.gruppe)
+        .split('/')
+        .map(part => normalizeGruppeNummer(part.trim()))
+        .filter(Boolean)
+        .includes(nummer);
+}
+
+
+/**
  * getBauteileByTyp.
  * @param {string} typ
  * @returns {object[]}
  */
 export function getBauteileByTyp(typ) {
     return (appState.bauteileKatalog?.artikel || []).filter(a => a.typ === typ);
+}
+
+
+/**
+ * Liefert Katalog-Bauteile eines Typs, die der angegebenen Gruppe zugeordnet sind.
+ * @param {string} typ
+ * @param {string} [gruppeCode]
+ * @returns {object[]}
+ */
+export function getBauteileByTypAndGruppe(typ, gruppeCode) {
+    if (!typ) return [];
+    const artikel = getBauteileByTyp(typ);
+    if (!gruppeCode) return artikel;
+    return artikel.filter(a => bauteilPasstZuGruppe(a, gruppeCode));
 }

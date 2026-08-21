@@ -9,17 +9,23 @@ import {
     ensureKatalogLists,
     mergeBauteileAdditions,
     ensureBauteilTyp,
-    getBauteilTypName
+    getBauteilTypName,
+    getBauteilByNummer,
+    bauteilPasstZuGruppe,
+    normalizeGruppeNummer
 } from './catalog.js';
 import {
     loadLeitungAdditions as loadAdditions,
     saveLeitungAdditions as saveAdditions,
     loadBauteilAdditions as loadBauteileAdditionsList,
     saveBauteilAdditions as saveBauteileAdditionsList,
-    bauteilnummerVergeben
+    bauteilnummerVergeben,
+    upsertBauteilKatalogEntry
 } from './katalog-additions.js';
+import { getGruppeDisplay } from './overview.js';
 
 let katalogTab = 'leitungen';
+let editingBauteilNr = null;
 
 
 /**
@@ -382,6 +388,44 @@ function populateBauteileFormOptions() {
             herstellerSelect.value = current;
         }
     }
+
+    populateBauteileGruppeFilter();
+    populateBauteileGruppeDatalist();
+}
+
+
+/**
+ * Füllt den Gruppen-Filter und die Vorschlagsliste für Gruppenzuordnungen.
+ * @returns {void}
+ */
+function populateBauteileGruppeFilter() {
+    const gruppeFilter = document.getElementById('katalog-bauteil-gruppe-filter');
+    if (!gruppeFilter) return;
+
+    const current = gruppeFilter.value;
+    const gruppen = appState.leitungGruppen || [];
+    gruppeFilter.innerHTML = '<option value="">Alle Gruppen</option>'
+        + gruppen.map(g => `<option value="${escapeHtml(g.code)}">${escapeHtml(getGruppeDisplay(g.code))}</option>`).join('');
+
+    if (current && [...gruppeFilter.options].some(o => o.value === current)) {
+        gruppeFilter.value = current;
+    }
+}
+
+
+/**
+ * @returns {void}
+ */
+function populateBauteileGruppeDatalist() {
+    const datalist = document.getElementById('katalog-gruppe-vorschlaege');
+    if (!datalist) return;
+
+    datalist.innerHTML = (appState.leitungGruppen || [])
+        .map(g => {
+            const nummer = normalizeGruppeNummer(g.code);
+            return `<option value="${escapeHtml(nummer)}" label="${escapeHtml(getGruppeDisplay(g.code))}"></option>`;
+        })
+        .join('');
 }
 
 
@@ -413,6 +457,14 @@ export function onKatalogBauteilTypChange() {
 /**
  * @returns {void}
  */
+export function onKatalogBauteilGruppeChange() {
+    renderKatalogBauteileListe();
+}
+
+
+/**
+ * @returns {void}
+ */
 export function onKatalogBauteilSearch() {
     renderKatalogBauteileListe();
 }
@@ -424,10 +476,12 @@ export function onKatalogBauteilSearch() {
 function getFilteredBauteile() {
     const artikel = appState.bauteileKatalog?.artikel || [];
     const typ = document.getElementById('katalog-bauteil-typ-filter')?.value || '';
+    const gruppe = document.getElementById('katalog-bauteil-gruppe-filter')?.value || '';
     const search = (document.getElementById('katalog-bauteil-search')?.value || '').trim().toLowerCase();
 
     return artikel
         .filter(a => !typ || a.typ === typ)
+        .filter(a => !gruppe || bauteilPasstZuGruppe(a, gruppe))
         .filter(a => {
             if (!search) return true;
             const hay = [
@@ -477,29 +531,125 @@ export function renderKatalogBauteileListe() {
         const placeholderBadge = a.placeholder
             ? '<span class="katalog-badge-placeholder">Platzhalter</span>'
             : '';
-        const customBadge = a.custom
+        const customBadge = a.custom && !a.modified
             ? '<span class="katalog-badge-custom">Nachgetragen</span>'
             : '';
-        const deleteBtn = a.custom
-            ? `<button type="button" class="btn btn-danger btn-small" onclick='deleteKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Entfernen</button>`
+        const modifiedBadge = a.modified
+            ? '<span class="katalog-badge-modified">Geändert</span>'
             : '';
+        const gruppeLabel = formatBauteilGruppeLabel(a.gruppe);
+        const editBtn = `<button type="button" class="btn btn-secondary btn-small"
+            onclick='editKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Bearbeiten</button>`;
+        const deleteBtn = a.custom
+            ? `<button type="button" class="btn btn-danger btn-small"
+                onclick='deleteKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Entfernen</button>`
+            : (a.modified
+                ? `<button type="button" class="btn btn-secondary btn-small"
+                    onclick='revertKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Zurücksetzen</button>`
+                : '');
 
         return `
-            <tr class="${a.custom ? 'katalog-row-custom' : ''}">
+            <tr class="${a.custom || a.modified ? 'katalog-row-custom' : ''}">
                 <td>
                     <strong>${escapeHtml(a.artikelnummer || '')}</strong>
                     ${placeholderBadge}
                     ${customBadge}
+                    ${modifiedBadge}
                 </td>
                 <td>${escapeHtml(a.hersteller || '')}</td>
                 <td>${escapeHtml(a.beschreibung || '')}</td>
                 <td>${escapeHtml(getBauteilTypName(a.typ) || a.typ || '')}</td>
-                <td>${escapeHtml(a.gruppe || '–')}</td>
+                <td>${escapeHtml(gruppeLabel)}</td>
                 <td>${escapeHtml(a.lieferant || '–')}</td>
-                <td class="table-actions">${deleteBtn}</td>
+                <td class="table-actions">${editBtn}${deleteBtn}</td>
             </tr>
         `;
     }).join('');
+}
+
+
+/**
+ * @param {string} gruppeRaw
+ * @returns {string}
+ */
+function formatBauteilGruppeLabel(gruppeRaw) {
+    if (!gruppeRaw) return '–';
+    return String(gruppeRaw)
+        .split('/')
+        .map(part => {
+            const nummer = normalizeGruppeNummer(part.trim());
+            if (!nummer) return part.trim();
+            const code = `=${nummer}`;
+            const label = getGruppeDisplay(code);
+            return label === code ? nummer : label;
+        })
+        .join(' / ');
+}
+
+
+/**
+ * Schaltet das Bauteil-Formular in den Bearbeitungsmodus.
+ * @param {string} artikelnummer
+ * @returns {void}
+ */
+export function editKatalogBauteil(artikelnummer) {
+    const artikel = getBauteilByNummer(artikelnummer);
+    if (!artikel) return;
+
+    editingBauteilNr = artikelnummer;
+    updateBauteilFormMode();
+
+    document.getElementById('katalog-bauteil-form-typ').value = artikel.typ || '';
+    document.getElementById('katalog-bauteil-form-artikelnummer').value = artikel.artikelnummer || '';
+    document.getElementById('katalog-bauteil-form-beschreibung').value = artikel.beschreibung || '';
+    document.getElementById('katalog-bauteil-form-gruppe').value = artikel.gruppe || '';
+    document.getElementById('katalog-bauteil-form-lieferant').value = artikel.lieferant || '';
+    document.getElementById('katalog-bauteil-form-placeholder').checked = Boolean(artikel.placeholder);
+
+    const herstellerSelect = document.getElementById('katalog-bauteil-form-hersteller');
+    if (herstellerSelect) {
+        const hersteller = artikel.hersteller || '';
+        if (hersteller && ![...herstellerSelect.options].some(o => o.value === hersteller)) {
+            const option = document.createElement('option');
+            option.value = hersteller;
+            option.textContent = hersteller;
+            herstellerSelect.insertBefore(option, herstellerSelect.querySelector('option[value="__custom__"]'));
+        }
+        herstellerSelect.value = hersteller || '';
+    }
+
+    const customGroup = document.getElementById('katalog-bauteil-hersteller-custom-group');
+    if (customGroup) customGroup.hidden = true;
+
+    document.getElementById('katalog-bauteil-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+/**
+ * @returns {void}
+ */
+export function cancelEditKatalogBauteil() {
+    editingBauteilNr = null;
+    resetBauteilForm();
+    updateBauteilFormMode();
+}
+
+
+/**
+ * Passt Titel, Buttons und Felder des Bauteil-Formulars an.
+ * @returns {void}
+ */
+function updateBauteilFormMode() {
+    const title = document.getElementById('katalog-bauteil-form-title');
+    const submitBtn = document.getElementById('katalog-bauteil-form-submit');
+    const cancelBtn = document.getElementById('katalog-bauteil-form-cancel');
+    const artikelInput = document.getElementById('katalog-bauteil-form-artikelnummer');
+    const isEdit = Boolean(editingBauteilNr);
+
+    if (title) title.textContent = isEdit ? 'Bauteil bearbeiten' : 'Bauteil nachtragen';
+    if (submitBtn) submitBtn.textContent = isEdit ? 'Änderungen speichern' : '+ Bauteil speichern';
+    if (cancelBtn) cancelBtn.hidden = !isEdit;
+    if (artikelInput) artikelInput.readOnly = isEdit;
 }
 
 
@@ -515,13 +665,16 @@ function resetBauteilForm() {
     if (formTyp && filterTyp) formTyp.value = filterTyp;
     const customGroup = document.getElementById('katalog-bauteil-hersteller-custom-group');
     if (customGroup) customGroup.hidden = true;
+    const artikelInput = document.getElementById('katalog-bauteil-form-artikelnummer');
+    if (artikelInput) artikelInput.readOnly = false;
 }
 
 
 /**
- * @returns {Promise<void>}
+ * Liest die Formularwerte für ein Bauteil aus.
+ * @returns {object|null}
  */
-export async function addKatalogBauteil() {
+function readBauteilFormValues() {
     const typ = document.getElementById('katalog-bauteil-form-typ')?.value?.trim();
     const herstellerSelect = document.getElementById('katalog-bauteil-form-hersteller')?.value;
     const herstellerCustom = document.getElementById('katalog-bauteil-form-hersteller-custom')?.value?.trim();
@@ -534,15 +687,7 @@ export async function addKatalogBauteil() {
 
     if (!typ || !hersteller || !artikelnummer || !beschreibung) {
         showModal('Bitte alle Pflichtfelder ausfüllen.', { type: 'warning', title: 'Eingabe unvollständig' });
-        return;
-    }
-
-    if (bauteilnummerVergeben(artikelnummer)) {
-        showModal(`Artikelnummer ${artikelnummer} ist bereits im Bauteile-Katalog.`, {
-            type: 'warning',
-            title: 'Bereits vorhanden'
-        });
-        return;
+        return null;
     }
 
     const article = {
@@ -550,21 +695,66 @@ export async function addKatalogBauteil() {
         artikelnummer,
         beschreibung,
         typ,
-        custom: true
+        gruppe
     };
-    if (gruppe) article.gruppe = gruppe;
     if (lieferant) article.lieferant = lieferant;
     if (placeholder) article.placeholder = true;
+    return article;
+}
+
+
+/**
+ * @returns {Promise<void>}
+ */
+export async function addKatalogBauteil() {
+    const article = readBauteilFormValues();
+    if (!article) return;
+
+    if (editingBauteilNr) {
+        await saveKatalogBauteilEdit(article);
+        return;
+    }
+
+    if (bauteilnummerVergeben(article.artikelnummer)) {
+        showModal(`Artikelnummer ${article.artikelnummer} ist bereits im Bauteile-Katalog.`, {
+            type: 'warning',
+            title: 'Bereits vorhanden'
+        });
+        return;
+    }
+
+    article.custom = true;
 
     try {
-        const additions = await loadBauteileAdditionsList();
-        additions.push(article);
-        await saveBauteileAdditionsList(additions);
-        ensureBauteilTyp(article);
+        await upsertBauteilKatalogEntry(article, { isNew: true });
         resetBauteilForm();
         populateBauteileFormOptions();
         renderKatalogBauteileListe();
-        showModal(`Bauteil ${artikelnummer} wurde nachgetragen.`, {
+        showModal(`Bauteil ${article.artikelnummer} wurde nachgetragen.`, {
+            type: 'success',
+            title: 'Gespeichert'
+        });
+    } catch (error) {
+        showModal(`Speichern fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
+}
+
+
+/**
+ * @param {object} article
+ * @returns {Promise<void>}
+ */
+async function saveKatalogBauteilEdit(article) {
+    if (!editingBauteilNr) return;
+
+    try {
+        await upsertBauteilKatalogEntry(article, { isNew: false });
+        editingBauteilNr = null;
+        resetBauteilForm();
+        updateBauteilFormMode();
+        populateBauteileFormOptions();
+        renderKatalogBauteileListe();
+        showModal(`Bauteil ${article.artikelnummer} wurde aktualisiert.`, {
             type: 'success',
             title: 'Gespeichert'
         });
@@ -592,10 +782,43 @@ export async function deleteKatalogBauteil(artikelnummer) {
             a => (a.artikelnummer || '').toLowerCase() !== artikelnummer.toLowerCase()
         );
         await saveBauteileAdditionsList(additions);
+        if (editingBauteilNr?.toLowerCase() === artikelnummer.toLowerCase()) {
+            cancelEditKatalogBauteil();
+        }
         renderKatalogBauteileListe();
         showModal('Bauteil wurde entfernt.', { type: 'success', title: 'Entfernt' });
     } catch (error) {
         showModal(`Entfernen fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+    }
+}
+
+
+/**
+ * Setzt Änderungen an einem Basis-Bauteil zurück.
+ * @param {string} artikelnummer
+ * @returns {Promise<void>}
+ */
+export async function revertKatalogBauteil(artikelnummer) {
+    if (!artikelnummer) return;
+
+    const confirmed = await showModal(
+        `Änderungen an ${artikelnummer} verwerfen und den Standardwert wiederherstellen?`,
+        { type: 'warning', title: 'Zurücksetzen', confirmText: 'Zurücksetzen', cancelText: 'Abbrechen', showCancel: true }
+    );
+    if (!confirmed) return;
+
+    try {
+        const additions = (await loadBauteileAdditionsList()).filter(
+            a => (a.artikelnummer || '').toLowerCase() !== artikelnummer.toLowerCase()
+        );
+        await saveBauteileAdditionsList(additions);
+        if (editingBauteilNr?.toLowerCase() === artikelnummer.toLowerCase()) {
+            cancelEditKatalogBauteil();
+        }
+        renderKatalogBauteileListe();
+        showModal('Bauteil wurde auf den Standard zurückgesetzt.', { type: 'success', title: 'Zurückgesetzt' });
+    } catch (error) {
+        showModal(`Zurücksetzen fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
     }
 }
 
@@ -615,6 +838,7 @@ export async function renderKatalogView() {
 
     populateKatalogFormOptions();
     populateBauteileFormOptions();
+    updateBauteilFormMode();
 
     const additions = await loadAdditions();
     mergeKatalogAdditions(additions);

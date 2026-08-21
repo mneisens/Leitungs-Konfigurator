@@ -5,6 +5,7 @@
  * frei änderbar, die Presets sparen nur die immer gleichen Klicks.
  */
 import { appState } from './state.js';
+import { bauteilPasstZuGruppe } from './catalog.js';
 
 /**
  * Wiederverwendbare Startwerte für Leitungskarten.
@@ -207,13 +208,11 @@ export function getLeitungPreset(presetId) {
  * @returns {string[]}
  */
 function getBauteilTypenAusKatalog(gruppenCode) {
-    const nummer = (gruppenCode || '').replace('=', '').trim();
-    if (!nummer) return [];
-
     const typen = new Set();
     (appState.bauteileKatalog?.artikel || []).forEach(artikel => {
-        const gruppen = String(artikel.gruppe || '').split('/').map(g => g.trim());
-        if (gruppen.includes(nummer) && artikel.typ) typen.add(artikel.typ);
+        if (artikel.typ && bauteilPasstZuGruppe(artikel, gruppenCode)) {
+            typen.add(artikel.typ);
+        }
     });
     return Array.from(typen);
 }

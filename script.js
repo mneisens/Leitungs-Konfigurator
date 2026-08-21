@@ -25,10 +25,14 @@ import {
     deleteKatalogArtikel,
     setKatalogTab,
     onKatalogBauteilTypChange,
+    onKatalogBauteilGruppeChange,
     onKatalogBauteilSearch,
     onKatalogBauteilHerstellerChange,
     addKatalogBauteil,
-    deleteKatalogBauteil
+    deleteKatalogBauteil,
+    editKatalogBauteil,
+    cancelEditKatalogBauteil,
+    revertKatalogBauteil
 } from './js/katalog-view.js';
 import {
     loadProjects,
@@ -225,10 +229,14 @@ Object.assign(window, {
     deleteKatalogArtikel,
     setKatalogTab,
     onKatalogBauteilTypChange,
+    onKatalogBauteilGruppeChange,
     onKatalogBauteilSearch,
     onKatalogBauteilHerstellerChange,
     addKatalogBauteil,
     deleteKatalogBauteil,
+    editKatalogBauteil,
+    cancelEditKatalogBauteil,
+    revertKatalogBauteil,
     wizardJumpToQuestion,
     wizardApplyJump,
     wizardCancelJump,

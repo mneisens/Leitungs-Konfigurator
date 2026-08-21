@@ -111,6 +111,39 @@ export async function addBauteilZumKatalog(artikel) {
 
 
 /**
+ * Speichert ein neues Bauteil oder aktualisiert ein bestehendes (auch Basis-Einträge).
+ * @param {object} artikel
+ * @param {{ isNew?: boolean }} [options]
+ * @returns {Promise<object>}
+ */
+export async function upsertBauteilKatalogEntry(artikel, options = {}) {
+    const artikelnummer = (artikel?.artikelnummer || '').trim();
+    if (!artikelnummer) {
+        throw new Error('Artikelnummer fehlt.');
+    }
+
+    const key = artikelnummer.toLowerCase();
+    const additions = await loadBauteilAdditions();
+    const index = additions.findIndex(a => (a.artikelnummer || '').toLowerCase() === key);
+
+    const payload = { ...artikel, artikelnummer };
+    if (!options.isNew) {
+        payload.override = true;
+    }
+
+    if (index >= 0) {
+        additions[index] = { ...additions[index], ...payload };
+    } else {
+        additions.push(options.isNew ? payload : { ...payload, override: true });
+    }
+
+    await saveBauteilAdditions(additions);
+    ensureBauteilTyp(payload);
+    return payload;
+}
+
+
+/**
  * Baut eine Platzhalter-Artikelnummer, solange die echte Nummer fehlt.
  * @param {string} typ
  * @param {string} beschreibung

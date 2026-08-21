@@ -1681,6 +1681,18 @@ body {
     vertical-align: middle;
 }
 
+.katalog-badge-modified {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    vertical-align: middle;
+}
+
 .katalog-add-card {
     margin-top: 1.25rem;
 }
