@@ -246,3 +246,69 @@ export function getBauteileByTypAndGruppe(typ, gruppeCode) {
     if (!gruppeCode) return artikel;
     return artikel.filter(a => bauteilPasstZuGruppe(a, gruppeCode));
 }
+
+
+/**
+ * Bauteile für die Artikelauswahl im Gruppen-Konfigurator.
+ * Enthält gruppenzugeordnete Katalog-Artikel sowie bereits im Projekt erfasste.
+ * @param {string} typ
+ * @param {string} [gruppeCode]
+ * @param {{ projektBauteile?: object[], aktuelleArtikelnummer?: string }} [options]
+ * @returns {object[]}
+ */
+export function getBauteileFuerGruppenAuswahl(typ, gruppeCode, options = {}) {
+    if (!typ) return [];
+
+    const { projektBauteile = [], aktuelleArtikelnummer = '' } = options;
+    const byNr = new Map();
+
+    const addArtikel = artikel => {
+        const key = (artikel?.artikelnummer || '').trim().toLowerCase();
+        if (!key || artikel.typ !== typ) return;
+        if (!byNr.has(key)) byNr.set(key, artikel);
+    };
+
+    getBauteileByTypAndGruppe(typ, gruppeCode).forEach(addArtikel);
+
+    projektBauteile
+        .filter(b => b.typ === typ && b.artikelnummer)
+        .forEach(b => {
+            const katalog = getBauteilByNummer(b.artikelnummer);
+            if (katalog && katalog.typ === typ) {
+                addArtikel(katalog);
+                return;
+            }
+            addArtikel({
+                artikelnummer: b.artikelnummer,
+                beschreibung: b.bezeichnung || b.artikelnummer,
+                hersteller: b.hersteller || '',
+                typ: b.typ,
+                projektOnly: true
+            });
+        });
+
+    const aktuelleNr = (aktuelleArtikelnummer || '').trim();
+    if (aktuelleNr && !byNr.has(aktuelleNr.toLowerCase())) {
+        const katalog = getBauteilByNummer(aktuelleNr);
+        if (katalog && katalog.typ === typ) {
+            addArtikel(katalog);
+        } else {
+            const projekt = projektBauteile.find(
+                b => b.typ === typ && (b.artikelnummer || '').toLowerCase() === aktuelleNr.toLowerCase()
+            );
+            if (projekt) {
+                addArtikel({
+                    artikelnummer: projekt.artikelnummer,
+                    beschreibung: projekt.bezeichnung || projekt.artikelnummer,
+                    hersteller: projekt.hersteller || '',
+                    typ: projekt.typ,
+                    projektOnly: true
+                });
+            }
+        }
+    }
+
+    return Array.from(byNr.values()).sort((a, b) =>
+        (a.beschreibung || a.artikelnummer || '').localeCompare(b.beschreibung || b.artikelnummer || '', 'de')
+    );
+}
