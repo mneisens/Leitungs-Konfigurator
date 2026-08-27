@@ -222,6 +222,8 @@
                         Bauteile aus der Bauteilliste. Ordne jedem Artikel eine Gruppe zu – im Gruppen-Konfigurator
                         werden dann nur passende Bauteile angeboten. Mehrere Gruppen mit „/“ trennen
                         (z.&nbsp;B. <code>011/021/031/042</code>).
+                        Platzhalter ohne finale Artikelnummer kannst du über <strong>Entfernen</strong> aus dem Katalog
+                        ausblenden oder per <strong>Bearbeiten</strong> durch echte Artikel ersetzen.
                     </p>
 
                     <div class="katalog-toolbar">
@@ -582,8 +584,24 @@
 
             <div class="gruppen-layout">
                 <aside class="form-card gruppen-sidebar">
-                    <input type="search" id="gruppen-suche" class="gruppen-suche" placeholder="🔍 Gruppe suchen…" oninput="filterGruppenListe()">
+                    <div class="form-group gruppen-suche-group">
+                        <label for="gruppen-suche">Suche</label>
+                        <input type="search" id="gruppen-suche" placeholder="Gruppe oder Bezeichnung…" oninput="filterGruppenListe()">
+                    </div>
                     <div id="gruppen-liste" class="gruppen-liste"></div>
+                    <div id="gruppen-neu-form-wrap" class="gruppen-neu-form">
+                        <h4>Zusatzgruppe anlegen</h4>
+                        <p class="text-muted">Für projektspezifische Gruppen wie =050 Ziehkissen.</p>
+                        <div class="form-group">
+                            <label for="gruppen-neu-nummer">Gruppennummer</label>
+                            <input type="text" id="gruppen-neu-nummer" placeholder="z. B. 050">
+                        </div>
+                        <div class="form-group">
+                            <label for="gruppen-neu-bezeichnung">Bezeichnung</label>
+                            <input type="text" id="gruppen-neu-bezeichnung" placeholder="z. B. Ziehkissen">
+                        </div>
+                        <button type="button" class="btn btn-primary btn-small btn-block" onclick="gruppeSaveNeueGruppe()">+ Gruppe hinzufügen</button>
+                    </div>
                 </aside>
 
                 <div class="gruppen-main" id="gruppen-main">

@@ -210,6 +210,9 @@ export function ensureWizardAnswers(projekt) {
     if (!projekt.gruppenStatus || typeof projekt.gruppenStatus !== 'object') {
         projekt.gruppenStatus = {};
     }
+    if (!Array.isArray(projekt.zusaetzlicheGruppen)) {
+        projekt.zusaetzlicheGruppen = [];
+    }
 }
 
 
@@ -255,7 +258,8 @@ export function saveProjekt(event) {
         leitungen: [],
         bauteile: [],
         wizardAnswers: {},
-        gruppenStatus: {}
+        gruppenStatus: {},
+        zusaetzlicheGruppen: []
     };
     
     if (existingIndex >= 0) {
@@ -265,6 +269,7 @@ export function saveProjekt(event) {
         projekt.wizardAnswers = projects[existingIndex].wizardAnswers || {};
         projekt.wizardSkipped = projects[existingIndex].wizardSkipped || {};
         projekt.gruppenStatus = projects[existingIndex].gruppenStatus || {};
+        projekt.zusaetzlicheGruppen = projects[existingIndex].zusaetzlicheGruppen || [];
         projekt.ownerId = projects[existingIndex].ownerId;
         projekt.ownerEmail = projects[existingIndex].ownerEmail;
         projekt.members = projects[existingIndex].members;

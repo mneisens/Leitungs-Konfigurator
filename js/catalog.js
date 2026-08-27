@@ -137,6 +137,10 @@ export function mergeBauteileAdditions(additions) {
     (additions || []).forEach(a => {
         const key = (a.artikelnummer || '').toLowerCase();
         if (!key) return;
+        if (a.hidden) {
+            byNr.delete(key);
+            return;
+        }
         const existing = byNr.get(key);
         if (existing) {
             byNr.set(key, {

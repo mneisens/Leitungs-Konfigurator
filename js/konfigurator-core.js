@@ -59,6 +59,14 @@ export function populateGruppenDropdown() {
         datalist.appendChild(option);
     });
 
+    (appState.currentProjekt?.zusaetzlicheGruppen || []).forEach(gruppe => {
+        if ([...datalist.options].some(o => o.value === gruppe.code)) return;
+        const option = document.createElement('option');
+        option.value = gruppe.code;
+        option.label = gruppe.label || `${gruppe.code} ${gruppe.bezeichnung || ''}`.trim();
+        datalist.appendChild(option);
+    });
+
     if (currentValue) {
         input.value = currentValue;
     }

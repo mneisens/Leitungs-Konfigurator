@@ -390,13 +390,59 @@ export async function deleteLeitung(index) {
 
 
 /**
+ * Normalisiert einen Gruppencode auf das Format „=050“.
+ * @param {string} code
+ * @returns {string}
+ */
+export function normalizeGruppenCode(code) {
+    const raw = String(code || '').trim();
+    if (!raw) return '';
+    const nummer = raw.replace(/^=/, '').trim();
+    if (/^\d+$/.test(nummer)) return `=${nummer}`;
+    return raw.startsWith('=') ? raw : `=${raw}`;
+}
+
+
+/**
+ * @param {string} gruppeCode
+ * @param {object|null} [projekt]
+ * @returns {object|null}
+ */
+export function getGruppeByCode(gruppeCode, projekt = appState.currentProjekt) {
+    if (!gruppeCode) return null;
+    const basis = (appState.leitungGruppen || []).find(g => g.code === gruppeCode);
+    if (basis) return basis;
+    return (projekt?.zusaetzlicheGruppen || []).find(g => g.code === gruppeCode) || null;
+}
+
+
+/**
+ * Standard- und projektspezifische Gruppen, sortiert nach Code.
+ * @param {object|null} [projekt]
+ * @returns {object[]}
+ */
+export function getAlleGruppenFuerProjekt(projekt = appState.currentProjekt) {
+    const byCode = new Map();
+    (appState.leitungGruppen || []).forEach(gruppe => {
+        byCode.set(gruppe.code, { ...gruppe, custom: false });
+    });
+    (projekt?.zusaetzlicheGruppen || []).forEach(gruppe => {
+        if (!byCode.has(gruppe.code)) {
+            byCode.set(gruppe.code, { ...gruppe, custom: true });
+        }
+    });
+    return Array.from(byCode.values()).sort((a, b) => compareGruppenCode(a.code, b.code));
+}
+
+
+/**
  * getGruppeDisplay.
  * @returns {void}
  */
 export function getGruppeDisplay(gruppeCode) {
     if (!gruppeCode) return '-';
-    const gruppe = appState.leitungGruppen.find(g => g.code === gruppeCode);
-    return gruppe ? (gruppe.label || gruppe.code) : gruppeCode;
+    const gruppe = getGruppeByCode(gruppeCode);
+    return gruppe ? (gruppe.label || `${gruppe.code} ${gruppe.bezeichnung || ''}`.trim()) : gruppeCode;
 }
 
 

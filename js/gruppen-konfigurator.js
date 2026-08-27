@@ -23,6 +23,7 @@ import {
 } from './leitung-optionen.js';
 import { getGruppenVorgaben, getLeitungPreset } from './gruppen-config.js';
 import { addBauteilZumKatalog, bauteilnummerVergeben, bildePlatzhalterNummer } from './katalog-additions.js';
+import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } from './overview.js';
 import { showModal } from './modal.js';
 
 /** Code der aktuell geöffneten Gruppe. */
@@ -50,7 +51,7 @@ function istSchreibgeschuetzt() {
  * @returns {object[]}
  */
 function getGruppen() {
-    return appState.leitungGruppen || [];
+    return getAlleGruppenFuerProjekt(appState.currentProjekt);
 }
 
 
@@ -169,6 +170,7 @@ export function renderGruppenKonfigurator() {
     if (!projekt.gruppenStatus) projekt.gruppenStatus = {};
     if (!projekt.leitungen) projekt.leitungen = [];
     if (!projekt.bauteile) projekt.bauteile = [];
+    if (!Array.isArray(projekt.zusaetzlicheGruppen)) projekt.zusaetzlicheGruppen = [];
 
     if (titel) {
         titel.textContent = `Gruppen-Konfigurator – ${projekt.projektnummer || ''} ${projekt.name || ''}`.trim();
@@ -215,6 +217,7 @@ function renderGruppenListe() {
         if (anzLeitungen) badges.push(`<span class="gruppen-badge leitung">${anzLeitungen} Ltg.</span>`);
         if (anzBauteile) badges.push(`<span class="gruppen-badge bauteil">${anzBauteile} Btl.</span>`);
         if (status?.nichtBenoetigt) badges.push('<span class="gruppen-badge entfaellt">entfällt</span>');
+        if (gruppe.custom) badges.push('<span class="gruppen-badge zusaetzlich">Zusatz</span>');
 
         return `
             <button type="button" class="${klassen.join(' ')}" onclick="selectGruppe('${escapeHtml(gruppe.code)}')">
@@ -224,6 +227,146 @@ function renderGruppenListe() {
             </button>
         `;
     }).join('');
+
+    updateGruppenNeuFormular();
+}
+
+
+/**
+ * Blendet das Formular für Zusatzgruppen je nach Schreibrecht ein/aus.
+ * @returns {void}
+ */
+function updateGruppenNeuFormular() {
+    const wrap = document.getElementById('gruppen-neu-form-wrap');
+    if (!wrap) return;
+    wrap.hidden = istSchreibgeschuetzt();
+}
+
+
+/**
+ * Legt eine projektspezifische Zusatzgruppe an.
+ * @returns {void}
+ */
+export function gruppeSaveNeueGruppe() {
+    if (!assertCanEdit('Zusatzgruppen anlegen')) return;
+
+    const projekt = appState.currentProjekt;
+    if (!projekt) return;
+
+    const nummerRaw = document.getElementById('gruppen-neu-nummer')?.value?.trim() || '';
+    const bezeichnung = document.getElementById('gruppen-neu-bezeichnung')?.value?.trim() || '';
+
+    if (!nummerRaw || !bezeichnung) {
+        showModal('Bitte Gruppennummer und Bezeichnung eingeben.', {
+            type: 'warning',
+            title: 'Eingabe unvollständig'
+        });
+        return;
+    }
+
+    const code = normalizeGruppenCode(nummerRaw);
+    if (!/^=\d+$/.test(code)) {
+        showModal('Die Gruppennummer muss numerisch sein (z. B. 050 oder =050).', {
+            type: 'warning',
+            title: 'Ungültige Nummer'
+        });
+        return;
+    }
+
+    if (getGruppe(code)) {
+        showModal(`Gruppe ${code} ist bereits vorhanden.`, {
+            type: 'warning',
+            title: 'Bereits vorhanden'
+        });
+        return;
+    }
+
+    if (!Array.isArray(projekt.zusaetzlicheGruppen)) projekt.zusaetzlicheGruppen = [];
+    projekt.zusaetzlicheGruppen.push({
+        code,
+        bezeichnung,
+        label: `${code} ${bezeichnung}`,
+        custom: true
+    });
+    projekt.zusaetzlicheGruppen.sort((a, b) => compareGruppenCode(a.code, b.code));
+
+    persistCurrentProjekt();
+    aktiveGruppe = code;
+
+    document.getElementById('gruppen-neu-nummer').value = '';
+    document.getElementById('gruppen-neu-bezeichnung').value = '';
+
+    renderGruppenListe();
+    renderGruppenPanel();
+    showModal(`Gruppe ${code} ${bezeichnung} wurde angelegt.`, {
+        type: 'success',
+        title: 'Gruppe erstellt'
+    });
+}
+
+
+/**
+ * Entfernt eine projektspezifische Zusatzgruppe inkl. zugehöriger Bauteile und Leitungen.
+ * @returns {Promise<void>}
+ */
+export async function gruppeDeleteZusaetzlicheGruppe() {
+    if (!assertCanEdit('Zusatzgruppen entfernen')) return;
+
+    const projekt = appState.currentProjekt;
+    const gruppe = getGruppe(aktiveGruppe);
+    if (!projekt || !gruppe?.custom) return;
+
+    const leitungen = getLeitungenDerGruppe(gruppe.code);
+    const bauteile = getBauteileDerGruppe(gruppe.code);
+    const teile = [];
+    if (bauteile.length) {
+        teile.push(`${bauteile.length} Bauteil${bauteile.length === 1 ? '' : 'e'}`);
+    }
+    if (leitungen.length) {
+        teile.push(`${leitungen.length} Leitung${leitungen.length === 1 ? '' : 'en'}`);
+    }
+
+    let message = `Zusatzgruppe ${gruppe.code} ${gruppe.bezeichnung} wirklich entfernen?`;
+    if (teile.length) {
+        message += `\n\nDabei werden auch ${teile.join(' und ')} aus dem Projekt gelöscht.`;
+    }
+
+    const confirmed = await showModal(message, {
+        type: 'warning',
+        title: 'Gruppe entfernen',
+        confirmText: 'Entfernen',
+        cancelText: 'Abbrechen',
+        showCancel: true
+    });
+    if (!confirmed) return;
+
+    if (bauteile.length) {
+        const bauteilIds = new Set(bauteile.map(b => b.id));
+        projekt.bauteile = (projekt.bauteile || []).filter(b => !bauteilIds.has(b.id));
+    }
+
+    if (leitungen.length) {
+        const leitungIds = new Set(leitungen.map(l => l.id));
+        projekt.leitungen = (projekt.leitungen || []).filter(l => !leitungIds.has(l.id));
+        leitungen.forEach(l => freieLaengeIds.delete(l.id));
+        renumberLeitungen();
+    }
+
+    projekt.zusaetzlicheGruppen = (projekt.zusaetzlicheGruppen || [])
+        .filter(g => g.code !== gruppe.code);
+    delete projekt.gruppenStatus?.[gruppe.code];
+
+    const verbleibend = getGruppen();
+    aktiveGruppe = verbleibend[0]?.code || '';
+
+    persistCurrentProjekt();
+    renderGruppenListe();
+    renderGruppenPanel();
+
+    const hinweis = teile.length
+        ? `Zusatzgruppe und ${teile.join(' sowie ')} wurden entfernt.`
+        : 'Zusatzgruppe wurde entfernt.';
+    showModal(hinweis, { type: 'success', title: 'Entfernt' });
 }
 
 
@@ -290,9 +433,12 @@ function renderGruppenPanel() {
             <div class="gruppen-panel-kopf">
                 <div>
                     <span class="gruppen-panel-code">${escapeHtml(gruppe.code)}</span>
-                    <h3>${escapeHtml(gruppe.bezeichnung)}</h3>
+                    <h3>${escapeHtml(gruppe.bezeichnung)}${gruppe.custom ? ' <span class="gruppen-badge zusaetzlich">Zusatzgruppe</span>' : ''}</h3>
                 </div>
-                <span class="gruppen-panel-position">Gruppe ${index + 1} von ${gruppen.length}</span>
+                <div class="gruppen-panel-meta">
+                    <span class="gruppen-panel-position">Gruppe ${index + 1} von ${gruppen.length}</span>
+                    ${!gesperrt && gruppe.custom ? `<button type="button" class="btn btn-danger btn-small" onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
+                </div>
             </div>
 
             ${vorgaben.hinweis ? `<p class="gruppen-hinweis">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
@@ -316,6 +462,7 @@ function renderGruppenPanel() {
                     ${gesperrt ? '' : renderBauteilButtons(vorgaben.bauteilTypen)}
                 </div>
                 ${gesperrt ? '' : renderNeuesBauteilFormular()}
+                ${renderBauteilChipListe(bauteile)}
                 <div id="gruppen-bauteile">${renderBauteilListe(bauteile)}</div>
             </div>
 
@@ -582,6 +729,55 @@ export async function gruppeSaveNeuesBauteil() {
 
 
 /**
+ * Kurzbezeichnung eines Bauteils für Listen und Dialoge.
+ * @param {object} bauteil
+ * @returns {string}
+ */
+function getBauteilLabel(bauteil) {
+    return bauteil.bezeichnung
+        || bauteil.artikelnummer
+        || getBauteilTypName(bauteil.typ)
+        || 'Bauteil';
+}
+
+
+/**
+ * Kompakte Übersicht der hinzugefügten Bauteile mit Entfernen-Button.
+ * @param {object[]} bauteile
+ * @returns {string}
+ */
+function renderBauteilChipListe(bauteile) {
+    if (!bauteile.length) return '';
+
+    const gesperrt = istSchreibgeschuetzt();
+    const chips = bauteile.map(b => {
+        const label = getBauteilLabel(b);
+        const typName = getBauteilTypName(b.typ);
+        const subtitle = label !== typName && typName ? typName : '';
+        const anzahl = (b.anzahl || 1) > 1 ? ` · ${b.anzahl}×` : '';
+        const removeBtn = gesperrt ? '' : `
+            <button type="button" class="gruppen-chip-remove" title="Aus Gruppe entfernen"
+                    aria-label="${escapeHtml(label)} entfernen"
+                    onclick="gruppeDeleteBauteil('${escapeHtml(b.id)}')">×</button>`;
+
+        return `
+            <span class="gruppen-bauteil-chip" title="${escapeHtml(subtitle || label)}">
+                <span class="gruppen-bauteil-chip-text">${escapeHtml(label)}${anzahl}</span>
+                ${removeBtn}
+            </span>
+        `;
+    }).join('');
+
+    return `
+        <div class="gruppen-bauteil-chips">
+            <span class="gruppen-bauteil-chips-label">Erfasst:</span>
+            ${chips}
+        </div>
+    `;
+}
+
+
+/**
  * @param {object[]} bauteile
  * @returns {string}
  */
@@ -616,6 +812,11 @@ function renderBauteilKarte(bauteil) {
 
     return `
         <div class="gruppen-karte bauteil-karte" id="bauteil-karte-${escapeHtml(bauteil.id)}">
+            <div class="gruppen-karte-kopf">
+                <strong class="gruppen-karte-titel">${escapeHtml(getBauteilLabel(bauteil))}</strong>
+                ${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small"
+                    onclick="gruppeDeleteBauteil('${escapeHtml(bauteil.id)}')">Entfernen</button>`}
+            </div>
             <div class="gruppen-karte-grid">
                 <div class="form-group">
                     <label>Bauteiltyp</label>
@@ -634,10 +835,6 @@ function renderBauteilKarte(bauteil) {
                     <label>Anzahl</label>
                     <input type="number" min="1" step="1" value="${bauteil.anzahl || 1}"${disabled}
                            onchange="gruppeUpdateBauteil('${escapeHtml(bauteil.id)}', 'anzahl', this.value)">
-                </div>
-                <div class="gruppen-karte-aktion">
-                    ${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small"
-                        onclick="gruppeDeleteBauteil('${escapeHtml(bauteil.id)}')">Löschen</button>`}
                 </div>
             </div>
             <div class="form-group">
@@ -776,11 +973,21 @@ export function gruppeUpdateBauteilText(id, feld, wert) {
 
 /**
  * @param {string} id
- * @returns {void}
+ * @returns {Promise<void>}
  */
-export function gruppeDeleteBauteil(id) {
+export async function gruppeDeleteBauteil(id) {
     if (!assertCanEdit('Bauteile löschen')) return;
     const liste = appState.currentProjekt?.bauteile || [];
+    const bauteil = liste.find(b => b.id === id);
+    if (!bauteil) return;
+
+    const label = getBauteilLabel(bauteil);
+    const confirmed = await showModal(
+        `${label} wirklich aus der Gruppe entfernen?`,
+        { type: 'warning', title: 'Bauteil entfernen', confirmText: 'Entfernen', cancelText: 'Abbrechen', showCancel: true }
+    );
+    if (!confirmed) return;
+
     const index = liste.findIndex(b => b.id === id);
     if (index === -1) return;
 

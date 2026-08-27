@@ -540,7 +540,7 @@ export function renderKatalogBauteileListe() {
         const gruppeLabel = formatBauteilGruppeLabel(a.gruppe);
         const editBtn = `<button type="button" class="btn btn-secondary btn-small"
             onclick='editKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Bearbeiten</button>`;
-        const deleteBtn = a.custom
+        const deleteBtn = (a.custom && !a.modified) || a.placeholder
             ? `<button type="button" class="btn btn-danger btn-small"
                 onclick='deleteKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Entfernen</button>`
             : (a.modified
@@ -771,22 +771,55 @@ async function saveKatalogBauteilEdit(article) {
 export async function deleteKatalogBauteil(artikelnummer) {
     if (!artikelnummer) return;
 
-    const confirmed = await showModal(
-        `Nachgetragenes Bauteil ${artikelnummer} wirklich entfernen?`,
-        { type: 'warning', title: 'Entfernen', confirmText: 'Entfernen', cancelText: 'Abbrechen', showCancel: true }
-    );
+    const artikel = getBauteilByNummer(artikelnummer);
+    const istNachgetragen = Boolean(artikel?.custom && !artikel?.modified);
+    const label = artikel?.beschreibung || artikelnummer;
+
+    let message;
+    if (istNachgetragen) {
+        message = `Nachgetragenes Bauteil ${artikelnummer} wirklich entfernen?`;
+    } else if (artikel?.placeholder) {
+        message = `Platzhalter „${label}“ aus dem Katalog entfernen?\n\nEr erscheint danach nicht mehr in Auswahllisten. Bereits erfasste Projekt-Einträge bleiben erhalten.`;
+    } else {
+        message = `Bauteil „${label}“ aus dem Katalog ausblenden?\n\nBereits erfasste Projekt-Einträge bleiben erhalten.`;
+    }
+
+    const confirmed = await showModal(message, {
+        type: 'warning',
+        title: 'Entfernen',
+        confirmText: 'Entfernen',
+        cancelText: 'Abbrechen',
+        showCancel: true
+    });
     if (!confirmed) return;
 
     try {
-        const additions = (await loadBauteileAdditionsList()).filter(
-            a => (a.artikelnummer || '').toLowerCase() !== artikelnummer.toLowerCase()
-        );
+        const key = artikelnummer.toLowerCase();
+        let additions = await loadBauteileAdditionsList();
+
+        if (istNachgetragen) {
+            additions = additions.filter(
+                a => (a.artikelnummer || '').toLowerCase() !== key
+            );
+        } else {
+            const idx = additions.findIndex(a => (a.artikelnummer || '').toLowerCase() === key);
+            const entry = { artikelnummer, hidden: true, override: true };
+            if (idx >= 0) {
+                additions[idx] = { ...additions[idx], ...entry };
+            } else {
+                additions.push(entry);
+            }
+        }
+
         await saveBauteileAdditionsList(additions);
-        if (editingBauteilNr?.toLowerCase() === artikelnummer.toLowerCase()) {
+        if (editingBauteilNr?.toLowerCase() === key) {
             cancelEditKatalogBauteil();
         }
         renderKatalogBauteileListe();
-        showModal('Bauteil wurde entfernt.', { type: 'success', title: 'Entfernt' });
+        showModal(
+            istNachgetragen ? 'Bauteil wurde entfernt.' : 'Bauteil wurde aus dem Katalog entfernt.',
+            { type: 'success', title: 'Entfernt' }
+        );
     } catch (error) {
         showModal(`Entfernen fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
     }
