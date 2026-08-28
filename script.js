@@ -125,7 +125,8 @@ import {
     gruppeOnNeuBauteilTypChange,
     gruppeSaveNeuesBauteil,
     gruppeSaveNeueGruppe,
-    gruppeDeleteZusaetzlicheGruppe
+    gruppeDeleteZusaetzlicheGruppe,
+    toggleBauteilTypSchnellwahl
 } from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
@@ -305,6 +306,7 @@ Object.assign(window, {
     gruppeSaveNeuesBauteil,
     gruppeSaveNeueGruppe,
     gruppeDeleteZusaetzlicheGruppe,
+    toggleBauteilTypSchnellwahl,
     exportCSV,
     exportPDF,
     closeModal,

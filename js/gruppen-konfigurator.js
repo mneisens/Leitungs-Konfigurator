@@ -82,7 +82,12 @@ function getGruppenStatus(code) {
     const projekt = appState.currentProjekt;
     if (!projekt) return {};
     if (!projekt.gruppenStatus) projekt.gruppenStatus = {};
-    if (!projekt.gruppenStatus[code]) projekt.gruppenStatus[code] = { nichtBenoetigt: false, notiz: '' };
+    if (!projekt.gruppenStatus[code]) {
+        projekt.gruppenStatus[code] = { nichtBenoetigt: false, notiz: '', ausgeblendeteBauteilTypen: [] };
+    }
+    if (!Array.isArray(projekt.gruppenStatus[code].ausgeblendeteBauteilTypen)) {
+        projekt.gruppenStatus[code].ausgeblendeteBauteilTypen = [];
+    }
     return projekt.gruppenStatus[code];
 }
 
@@ -474,7 +479,8 @@ function renderGruppenPanel() {
                     <h4>Bauteile <span class="gruppen-anzahl">${bauteile.length}</span></h4>
                 </div>
                 <div id="gruppen-bauteile-tabelle">${renderBauteilTabelle(bauteile)}</div>
-                ${gesperrt ? '' : renderBauteilButtons(vorgaben.bauteilTypen)}
+                ${gesperrt ? '' : renderBauteilButtons(getSichtbareBauteilTypen(vorgaben.bauteilTypen))}
+                ${gesperrt ? '' : renderBauteilSchnellwahlEinstellungen(vorgaben.bauteilTypen)}
                 ${gesperrt ? '' : renderNeuesBauteilFormular()}
                 <div id="gruppen-bauteil-editor">${renderBauteilEditor()}</div>
             </div>
@@ -532,6 +538,74 @@ export function updateGruppeNotiz(wert) {
 /* -------------------------------------------------------------------------- */
 /* Bauteile                                                                    */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Bauteiltypen, die in der Schnellwahl dieser Gruppe sichtbar sind.
+ * @param {string[]} alleTypen
+ * @returns {string[]}
+ */
+function getSichtbareBauteilTypen(alleTypen) {
+    const ausgeblendet = new Set(getGruppenStatus(aktiveGruppe).ausgeblendeteBauteilTypen || []);
+    return (alleTypen || []).filter(typ => !ausgeblendet.has(typ));
+}
+
+
+/**
+ * Einstellungen zum Ein-/Ausblenden von Schnellwahl-Buttons je Gruppe.
+ * @param {string[]} alleTypen
+ * @returns {string}
+ */
+function renderBauteilSchnellwahlEinstellungen(alleTypen) {
+    if (!alleTypen.length) return '';
+
+    const ausgeblendet = new Set(getGruppenStatus(aktiveGruppe).ausgeblendeteBauteilTypen || []);
+    const checks = alleTypen.map(typ => {
+        const name = getBauteilTypName(typ);
+        return `
+            <label class="admin-check gruppen-schnellwahl-check">
+                <input type="checkbox"${ausgeblendet.has(typ) ? '' : ' checked'}
+                       onchange="toggleBauteilTypSchnellwahl('${escapeHtml(typ)}', this.checked)">
+                ${escapeHtml(name)}
+            </label>
+        `;
+    }).join('');
+
+    return `
+        <details class="gruppen-schnellwahl-details">
+            <summary>Schnellwahl anpassen (${ausgeblendet.size} ausgeblendet)</summary>
+            <p class="text-muted">
+                Abgewählte Typen erscheinen nicht mehr als +‑Button in dieser Gruppe.
+                Über „+ Anderes Bauteil" sind sie weiterhin verfügbar. Gilt nur für dieses Projekt.
+            </p>
+            <div class="gruppen-schnellwahl-checks">${checks}</div>
+        </details>
+    `;
+}
+
+
+/**
+ * Blendet einen Bauteiltyp in der Schnellwahl ein oder aus.
+ * @param {string} typ
+ * @param {boolean} sichtbar
+ * @returns {void}
+ */
+export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
+    if (!assertCanEdit('Schnellwahl anpassen')) return;
+
+    const status = getGruppenStatus(aktiveGruppe);
+    let ausgeblendet = [...(status.ausgeblendeteBauteilTypen || [])];
+
+    if (sichtbar) {
+        ausgeblendet = ausgeblendet.filter(id => id !== typ);
+    } else if (!ausgeblendet.includes(typ)) {
+        ausgeblendet.push(typ);
+    }
+
+    status.ausgeblendeteBauteilTypen = ausgeblendet;
+    persistCurrentProjekt();
+    renderGruppenPanel();
+}
+
 
 /**
  * @param {string[]} typen
