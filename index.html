@@ -809,6 +809,16 @@
                 </div>
             </div>
             
+            <div class="uebersicht-leitungen-toolbar" id="uebersicht-leitungen-toolbar" hidden>
+                <span class="uebersicht-sort-label">Ansicht gruppiert nach:</span>
+                <div class="uebersicht-sort-toggle" role="group" aria-label="Sortierung der Projektübersicht">
+                    <button type="button" class="btn btn-secondary btn-small active" id="uebersicht-sort-typ"
+                            aria-pressed="true" onclick="setUebersichtLeitungenSortierung('typ')">Leitungstyp</button>
+                    <button type="button" class="btn btn-secondary btn-small" id="uebersicht-sort-gruppe"
+                            aria-pressed="false" onclick="setUebersichtLeitungenSortierung('gruppe')">Gruppe</button>
+                </div>
+            </div>
+
             <div id="kategorien-container">
                 <!-- Kategorien werden hier dynamisch eingefügt -->
             </div>

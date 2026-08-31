@@ -128,7 +128,7 @@ import {
     gruppeDeleteZusaetzlicheGruppe,
     toggleBauteilTypSchnellwahl
 } from './js/gruppen-konfigurator.js';
-import { editLeitung, deleteLeitung, deleteBauteil } from './js/overview.js';
+import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 document.addEventListener('keydown', e => {
     const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
@@ -313,6 +313,7 @@ Object.assign(window, {
     editLeitung,
     deleteLeitung,
     deleteBauteil,
+    setUebersichtLeitungenSortierung,
     openBauteilEdit,
     closeBauteilEdit,
     saveBauteilEdit,

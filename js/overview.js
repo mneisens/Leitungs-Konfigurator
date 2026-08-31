@@ -18,6 +18,24 @@ import {
     applyReadOnlyUI
 } from './project-access.js';
 
+const UEBERSICHT_SORT_KEY = 'leitungskonfigurator_uebersicht_sort';
+let uebersichtLeitungenSortierung = 'typ';
+
+/**
+ * Liest die gespeicherte Sortieroption für die Leitungsübersicht.
+ * @returns {'typ'|'gruppe'}
+ */
+function getUebersichtLeitungenSortierung() {
+    try {
+        const stored = localStorage.getItem(UEBERSICHT_SORT_KEY);
+        return stored === 'gruppe' ? 'gruppe' : 'typ';
+    } catch {
+        return 'typ';
+    }
+}
+
+uebersichtLeitungenSortierung = getUebersichtLeitungenSortierung();
+
 /**
  * renderUebersicht.
  * @returns {void}
@@ -73,8 +91,7 @@ export function renderUebersicht() {
     updateReadOnlyBanner();
     updateSharingButton();
     applyReadOnlyUI();
-    renderLeitungTable();
-    renderBauteileTable();
+    renderOverviewLists();
 
     const empty = document.getElementById('keine-leitungen');
     const hasLeitungen = appState.currentProjekt.leitungen && appState.currentProjekt.leitungen.length > 0;
@@ -86,25 +103,17 @@ export function renderUebersicht() {
 
 
 /**
- * renderBauteileTable.
- * @returns {void}
+ * Aggregiert Bauteile für die Übersichtstabelle.
+ * @param {object[]} bauteile
+ * @returns {object[]}
  */
-export function renderBauteileTable() {
-    const container = document.getElementById('bauteile-container');
-    if (!container) return;
-
-    const bauteile = appState.currentProjekt.bauteile || [];
-    if (bauteile.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-
+function buildAggregatedBauteile(bauteile) {
     const grouped = new Map();
     bauteile.forEach(b => {
         const key = `${b.gruppe || ''}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
         if (!grouped.has(key)) {
             grouped.set(key, {
-                gruppe: b.gruppe || '-',
+                gruppe: b.gruppe || '',
                 typ: b.typ,
                 hersteller: b.hersteller || '-',
                 artikelnummer: b.artikelnummer || '-',
@@ -117,56 +126,69 @@ export function renderBauteileTable() {
         g.count += b.anzahl || 1;
         if (b.id) g.ids.push(b.id);
     });
+    return Array.from(grouped.values());
+}
 
+
+/**
+ * @param {object} item
+ * @returns {string}
+ */
+function renderBauteilTableRow(item, { hideGruppe = false } = {}) {
     const canEdit = canEditProject(appState.currentProjekt);
-    const rows = Array.from(grouped.values())
-        .sort((a, b) => a.gruppe.localeCompare(b.gruppe, 'de') || a.artikelnummer.localeCompare(b.artikelnummer, 'de'))
-        .map(item => `
-            <tr>
-                <td>${escapeHtml(getGruppeDisplay(item.gruppe))}</td>
-                <td>${escapeHtml(getBauteilTypName(item.typ))}</td>
-                <td>${escapeHtml(item.hersteller)}</td>
-                <td>${escapeHtml(item.artikelnummer)}</td>
-                <td>${escapeHtml(item.bezeichnung)}</td>
-                <td>${item.count}</td>
-                <td class="table-actions">
-                    ${canEdit ? `
-                    <button type="button" class="btn btn-secondary btn-small btn-icon" data-action="edit-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Bearbeiten">
-                        ✏️
-                    </button>
-                    <button type="button" class="btn btn-danger btn-small btn-icon" data-action="delete-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Eine entfernen">
-                        🗑️
-                    </button>` : ''}
-                </td>
-            </tr>
-        `).join('');
+    return `
+        <tr>
+            ${hideGruppe ? '' : `<td>${escapeHtml(getGruppeSectionTitle(item.gruppe))}</td>`}
+            <td>${escapeHtml(getBauteilTypName(item.typ))}</td>
+            <td>${escapeHtml(item.hersteller)}</td>
+            <td>${escapeHtml(item.artikelnummer)}</td>
+            <td>${escapeHtml(item.bezeichnung)}</td>
+            <td>${item.count}</td>
+            <td class="table-actions">
+                ${canEdit ? `
+                <button type="button" class="btn btn-secondary btn-small btn-icon" data-action="edit-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Bearbeiten">
+                    ✏️
+                </button>
+                <button type="button" class="btn btn-danger btn-small btn-icon" data-action="delete-bauteil" data-bauteil-id="${escapeHtml(item.ids[0] || '')}" title="Eine entfernen">
+                    🗑️
+                </button>` : ''}
+            </td>
+        </tr>
+    `;
+}
 
-    container.innerHTML = `
-        <div class="kategorie-section">
-            <div class="kategorie-header sonstiges">
-                <span class="kategorie-icon">⚙️</span>
-                <span>Bauteile</span>
-                <span class="kategorie-count">${bauteile.reduce((s, b) => s + (b.anzahl || 1), 0)} Stück</span>
-            </div>
-            <div class="table-container">
-                <table class="leitung-table">
-                    <thead>
-                        <tr>
-                            <th>Gruppe</th>
-                            <th>Typ</th>
-                            <th>Hersteller</th>
-                            <th>Artikelnr.</th>
-                            <th>Bezeichnung</th>
-                            <th>Anzahl</th>
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            </div>
+
+/**
+ * @param {object[]} items
+ * @returns {string}
+ */
+function renderBauteilTableBlock(items, { hideGruppe = false } = {}) {
+    return `
+        <div class="table-container${hideGruppe ? ' table-container--nested' : ''}">
+            <table class="leitung-table">
+                <thead>
+                    <tr>
+                        ${hideGruppe ? '' : '<th>Gruppe</th>'}
+                        <th>Typ</th>
+                        <th>Hersteller</th>
+                        <th>Artikelnr.</th>
+                        <th>Bezeichnung</th>
+                        <th>Anzahl</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>${items.map(item => renderBauteilTableRow(item, { hideGruppe })).join('')}</tbody>
+            </table>
         </div>
     `;
+}
 
+
+/**
+ * @param {HTMLElement} container
+ * @returns {void}
+ */
+function attachBauteilTableEvents(container) {
     container.querySelectorAll('[data-action="edit-bauteil"]').forEach(btn => {
         btn.addEventListener('click', e => {
             e.preventDefault();
@@ -186,26 +208,239 @@ export function renderBauteileTable() {
 
 
 /**
- * renderLeitungTable.
+ * Rendert Leitungen und Bauteile je nach Sortiermodus.
  * @returns {void}
  */
-export function renderLeitungTable() {
-    const container = document.getElementById('kategorien-container');
+function renderOverviewLists() {
+    const kategorienContainer = document.getElementById('kategorien-container');
+    const bauteileContainer = document.getElementById('bauteile-container');
     const empty = document.getElementById('keine-leitungen');
-    
-    if (!appState.currentProjekt.leitungen || appState.currentProjekt.leitungen.length === 0) {
-        container.innerHTML = '';
-        if (!appState.currentProjekt.bauteile || appState.currentProjekt.bauteile.length === 0) {
-            empty.style.display = 'block';
-        } else {
-            empty.style.display = 'none';
-        }
+    if (!kategorienContainer || !bauteileContainer) return;
+
+    const leitungen = appState.currentProjekt?.leitungen || [];
+    const bauteile = appState.currentProjekt?.bauteile || [];
+    const hasLeitungen = leitungen.length > 0;
+    const hasBauteile = bauteile.length > 0;
+
+    updateUebersichtSortToolbar();
+
+    if (!hasLeitungen && !hasBauteile) {
+        kategorienContainer.innerHTML = '';
+        bauteileContainer.innerHTML = '';
+        if (empty) empty.style.display = 'block';
         return;
     }
-    
-    empty.style.display = 'none';
-    
-    const kategorienDef = appState.katalog && appState.katalog.kategorien ? appState.katalog.kategorien : [
+    if (empty) empty.style.display = 'none';
+
+    if (uebersichtLeitungenSortierung === 'gruppe') {
+        const leitungenMitIndex = leitungen.map((l, idx) => ({ ...l, originalIndex: idx }));
+        const bauteilItems = buildAggregatedBauteile(bauteile);
+        const totalBauteilStueck = bauteile.reduce((s, b) => s + (b.anzahl || 1), 0);
+        kategorienContainer.innerHTML = renderCombinedOverviewByGruppe(
+            leitungenMitIndex,
+            bauteilItems,
+            totalBauteilStueck
+        );
+        bauteileContainer.innerHTML = '';
+        attachBauteilTableEvents(kategorienContainer);
+        return;
+    }
+
+    if (hasLeitungen) {
+        const leitungenMitIndex = leitungen.map((l, idx) => ({ ...l, originalIndex: idx }));
+        kategorienContainer.innerHTML = renderLeitungTableByTyp(leitungenMitIndex);
+    } else {
+        kategorienContainer.innerHTML = '';
+    }
+
+    if (hasBauteile) {
+        const items = buildAggregatedBauteile(bauteile);
+        const totalStueck = bauteile.reduce((s, b) => s + (b.anzahl || 1), 0);
+        bauteileContainer.innerHTML = renderBauteileOverviewByTyp(items, totalStueck);
+        attachBauteilTableEvents(bauteileContainer);
+    } else {
+        bauteileContainer.innerHTML = '';
+    }
+}
+
+
+/**
+ * renderBauteileTable.
+ * @returns {void}
+ */
+export function renderBauteileTable() {
+    renderOverviewLists();
+}
+
+
+/**
+ * @param {object[]} items
+ * @param {number} totalStueck
+ * @returns {string}
+ */
+function renderBauteileOverviewByTyp(items, totalStueck) {
+    const byTyp = new Map();
+    items.forEach(item => {
+        const typ = item.typ || '';
+        if (!byTyp.has(typ)) byTyp.set(typ, []);
+        byTyp.get(typ).push(item);
+    });
+
+    const typen = Array.from(byTyp.keys()).sort((a, b) =>
+        getBauteilTypName(a).localeCompare(getBauteilTypName(b), 'de')
+    );
+
+    const zusammenfassungItems = typen.map(typ => `
+        <div class="zusammenfassung-item">
+            <span class="icon">⚙️</span>
+            <span>${escapeHtml(getBauteilTypName(typ) || 'Ohne Typ')}:</span>
+            <span class="count">${byTyp.get(typ).reduce((s, i) => s + i.count, 0)}</span>
+        </div>
+    `).join('');
+
+    let html = `
+        <div class="kategorie-zusammenfassung">
+            ${zusammenfassungItems}
+            <div class="zusammenfassung-item">
+                <span class="icon">📋</span>
+                <span>Bauteile gesamt:</span>
+                <span class="count">${totalStueck}</span>
+            </div>
+        </div>
+    `;
+
+    typen.forEach(typ => {
+        const rows = byTyp.get(typ).sort((a, b) =>
+            compareGruppenCode(a.gruppe, b.gruppe)
+            || a.artikelnummer.localeCompare(b.artikelnummer, 'de', { numeric: true })
+        );
+        const stueck = rows.reduce((s, i) => s + i.count, 0);
+
+        html += `
+            <div class="kategorie-section">
+                <div class="kategorie-header sonstiges">
+                    <span class="kategorie-icon">⚙️</span>
+                    <span>${escapeHtml(getBauteilTypName(typ) || 'Ohne Typ')}</span>
+                    <span class="kategorie-count">${stueck} Stück</span>
+                </div>
+                ${renderBauteilTableBlock(rows)}
+            </div>
+        `;
+    });
+
+    return html;
+}
+
+
+/**
+ * @param {object[]} leitungenMitIndex
+ * @param {object[]} bauteilItems
+ * @param {number} totalBauteilStueck
+ * @returns {string}
+ */
+function renderCombinedOverviewByGruppe(leitungenMitIndex, bauteilItems, totalBauteilStueck) {
+    const leitungenByGruppe = new Map();
+    leitungenMitIndex.forEach(l => {
+        const code = l.gruppe || '';
+        if (!leitungenByGruppe.has(code)) leitungenByGruppe.set(code, []);
+        leitungenByGruppe.get(code).push(l);
+    });
+
+    const bauteileByGruppe = new Map();
+    bauteilItems.forEach(item => {
+        const code = item.gruppe || '';
+        if (!bauteileByGruppe.has(code)) bauteileByGruppe.set(code, []);
+        bauteileByGruppe.get(code).push(item);
+    });
+
+    const allCodes = new Set([
+        ...leitungenByGruppe.keys(),
+        ...bauteileByGruppe.keys()
+    ]);
+    const gruppenCodes = Array.from(allCodes).sort(compareGruppenCode);
+
+    const formatLeitungenCount = count =>
+        `${count} Leitung${count !== 1 ? 'en' : ''}`;
+    const formatBauteileCount = count =>
+        `${count} Bauteil${count !== 1 ? 'e' : ''}`;
+
+    const zusammenfassungItems = gruppenCodes.map(code => {
+        const leitCount = (leitungenByGruppe.get(code) || []).length;
+        const bauteilCount = (bauteileByGruppe.get(code) || []).reduce((s, i) => s + i.count, 0);
+        const parts = [];
+        if (leitCount) parts.push(formatLeitungenCount(leitCount));
+        if (bauteilCount) parts.push(formatBauteileCount(bauteilCount));
+        return `
+        <div class="zusammenfassung-item">
+            <span class="icon">🧩</span>
+            <span>${escapeHtml(getGruppeSectionTitle(code))}:</span>
+            <span class="count">${parts.join(' · ')}</span>
+        </div>
+    `;
+    }).join('');
+
+    const gesamtParts = [];
+    if (leitungenMitIndex.length) gesamtParts.push(formatLeitungenCount(leitungenMitIndex.length));
+    if (totalBauteilStueck) gesamtParts.push(formatBauteileCount(totalBauteilStueck));
+
+    let html = `
+        <div class="kategorie-zusammenfassung">
+            ${zusammenfassungItems}
+            <div class="zusammenfassung-item">
+                <span class="icon">📋</span>
+                <span>Gesamt:</span>
+                <span class="count">${gesamtParts.join(' · ')}</span>
+            </div>
+        </div>
+    `;
+
+    gruppenCodes.forEach(code => {
+        const leitungen = leitungenByGruppe.get(code) || [];
+        const bauteile = (bauteileByGruppe.get(code) || []).sort((a, b) =>
+            getBauteilTypName(a.typ).localeCompare(getBauteilTypName(b.typ), 'de')
+            || a.artikelnummer.localeCompare(b.artikelnummer, 'de', { numeric: true })
+        );
+        const bauteilStueck = bauteile.reduce((s, i) => s + i.count, 0);
+
+        const headerParts = [];
+        if (leitungen.length) headerParts.push(formatLeitungenCount(leitungen.length));
+        if (bauteilStueck) headerParts.push(formatBauteileCount(bauteilStueck));
+
+        let sectionContent = '';
+        if (leitungen.length) {
+            sectionContent += `
+                <h4 class="uebersicht-gruppe-subtitle">Leitungen</h4>
+                ${renderLeitungTableBlock(leitungen, { hideGruppe: true })}
+            `;
+        }
+        if (bauteile.length) {
+            sectionContent += `
+                <h4 class="uebersicht-gruppe-subtitle${leitungen.length ? ' uebersicht-gruppe-subtitle--spaced' : ''}">Bauteile</h4>
+                ${renderBauteilTableBlock(bauteile, { hideGruppe: true })}
+            `;
+        }
+
+        html += `
+            <div class="kategorie-section">
+                <div class="kategorie-header gruppe">
+                    <span class="kategorie-icon">🧩</span>
+                    <span>${escapeHtml(getGruppeSectionTitle(code))}</span>
+                    <span class="kategorie-count">${headerParts.join(' · ')}</span>
+                </div>
+                ${sectionContent}
+            </div>
+        `;
+    });
+
+    return html;
+}
+
+
+/**
+ * @returns {object[]}
+ */
+function getKategorienDef() {
+    return appState.katalog?.kategorien || [
         { id: 'ethercat', name: 'EtherCAT Leitung', icon: '🔗' },
         { id: 'power', name: 'Power Leitung', icon: '⚡' },
         { id: 'sensor', name: 'Sensorleitung', icon: '📡' },
@@ -215,22 +450,137 @@ export function renderLeitungTable() {
         { id: 'cplink', name: 'CP-Link Leitung', icon: '🖥️' },
         { id: 'sonstiges', name: 'Sonstiges', icon: '📦' }
     ];
-    
+}
+
+
+/**
+ * @param {object} l
+ * @returns {string}
+ */
+function renderLeitungTableRow(l, { hideGruppe = false } = {}) {
+    const canEdit = canEditProject(appState.currentProjekt);
+    return `
+        <tr onclick="editLeitung(${l.originalIndex})" title="${canEdit ? 'Leitung bearbeiten' : 'Leitung ansehen'}">
+            <td>${l.position || l.originalIndex + 1}</td>
+            <td>${escapeHtml(l.bezeichnung || '-')}</td>
+            ${hideGruppe ? '' : `<td>${escapeHtml(getGruppeDisplay(l.gruppe))}</td>`}
+            <td>${escapeHtml(l.hersteller || '-')}</td>
+            <td>${escapeHtml(l.artikelnummer || l.artikelCustom || '-')}</td>
+            <td>${l.laenge ? l.laenge + ' m' : '-'}</td>
+            <td>${escapeHtml(l.steckerA || '-')}</td>
+            <td>${escapeHtml(l.steckerB || '-')}</td>
+            <td>${l.anzahl || 1}</td>
+            <td class="table-actions">
+                <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="${canEdit ? 'Bearbeiten' : 'Ansehen'}">
+                    ${canEdit ? '✏️' : '👁️'}
+                </button>
+                ${canEdit ? `
+                <button class="btn btn-danger btn-small btn-icon" onclick="event.stopPropagation(); deleteLeitung(${l.originalIndex})" title="Löschen">
+                    🗑️
+                </button>` : ''}
+            </td>
+        </tr>
+    `;
+}
+
+
+/**
+ * @param {object[]} leitungen
+ * @returns {string}
+ */
+function renderLeitungTableBlock(leitungen, { hideGruppe = false } = {}) {
+    return `
+        <div class="table-container${hideGruppe ? ' table-container--nested' : ''}">
+            <table class="leitung-table">
+                <thead>
+                    <tr>
+                        <th>Pos.</th>
+                        <th>Bezeichnung</th>
+                        ${hideGruppe ? '' : '<th>Gruppe</th>'}
+                        <th>Hersteller</th>
+                        <th>Artikelnr.</th>
+                        <th>Länge</th>
+                        <th>Stecker A</th>
+                        <th>Stecker B</th>
+                        <th>Anzahl</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${leitungen.map(l => renderLeitungTableRow(l, { hideGruppe })).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+
+/**
+ * Aktualisiert die Sortier-Umschaltung über der Leitungsliste.
+ * @returns {void}
+ */
+function updateUebersichtSortToolbar() {
+    const toolbar = document.getElementById('uebersicht-leitungen-toolbar');
+    const btnTyp = document.getElementById('uebersicht-sort-typ');
+    const btnGruppe = document.getElementById('uebersicht-sort-gruppe');
+    if (!toolbar || !btnTyp || !btnGruppe) return;
+
+    const hasLeitungen = (appState.currentProjekt?.leitungen || []).length > 0;
+    const hasBauteile = (appState.currentProjekt?.bauteile || []).length > 0;
+    toolbar.hidden = !hasLeitungen && !hasBauteile;
+
+    const isGruppe = uebersichtLeitungenSortierung === 'gruppe';
+    btnTyp.classList.toggle('active', !isGruppe);
+    btnGruppe.classList.toggle('active', isGruppe);
+    btnTyp.setAttribute('aria-pressed', String(!isGruppe));
+    btnGruppe.setAttribute('aria-pressed', String(isGruppe));
+}
+
+
+/**
+ * Schaltet die Sortierung der Leitungsübersicht um.
+ * @param {'typ'|'gruppe'} modus
+ * @returns {void}
+ */
+export function setUebersichtLeitungenSortierung(modus) {
+    uebersichtLeitungenSortierung = modus === 'gruppe' ? 'gruppe' : 'typ';
+    try {
+        localStorage.setItem(UEBERSICHT_SORT_KEY, uebersichtLeitungenSortierung);
+    } catch {
+        // localStorage nicht verfügbar
+    }
+    renderOverviewLists();
+}
+
+
+/**
+ * renderLeitungTable.
+ * @returns {void}
+ */
+export function renderLeitungTable() {
+    renderOverviewLists();
+}
+
+
+/**
+ * @param {object[]} leitungenMitIndex
+ * @returns {string}
+ */
+function renderLeitungTableByTyp(leitungenMitIndex) {
+    const kategorienDef = getKategorienDef();
     const grouped = {};
     kategorienDef.forEach(k => {
         grouped[k.id] = [];
     });
-    
-    appState.currentProjekt.leitungen.forEach((l, idx) => {
+
+    leitungenMitIndex.forEach(l => {
         const kat = l.kategorie || 'sonstiges';
-        if (!grouped[kat]) {
-            grouped[kat] = [];
-        }
-        grouped[kat].push({ ...l, originalIndex: idx });
+        if (!grouped[kat]) grouped[kat] = [];
+        grouped[kat].push(l);
     });
-    
+
     const zusammenfassungItems = kategorienDef
-        .filter(k => grouped[k.id] && grouped[k.id].length > 0)
+        .filter(k => grouped[k.id]?.length)
         .map(k => `
             <div class="zusammenfassung-item">
                 <span class="icon">${k.icon}</span>
@@ -238,22 +588,22 @@ export function renderLeitungTable() {
                 <span class="count">${grouped[k.id].length}</span>
             </div>
         `).join('');
-    
+
     let html = `
         <div class="kategorie-zusammenfassung">
             ${zusammenfassungItems}
             <div class="zusammenfassung-item">
                 <span class="icon">📋</span>
                 <span>Gesamt:</span>
-                <span class="count">${appState.currentProjekt.leitungen.length}</span>
+                <span class="count">${leitungenMitIndex.length}</span>
             </div>
         </div>
     `;
-    
+
     kategorienDef.forEach(kat => {
         const leitungen = grouped[kat.id];
-        if (!leitungen || leitungen.length === 0) return;
-        
+        if (!leitungen?.length) return;
+
         html += `
             <div class="kategorie-section">
                 <div class="kategorie-header ${kat.id}">
@@ -261,53 +611,23 @@ export function renderLeitungTable() {
                     <span>${kat.name}</span>
                     <span class="kategorie-count">${leitungen.length} Leitung${leitungen.length !== 1 ? 'en' : ''}</span>
                 </div>
-                <div class="table-container">
-                    <table class="leitung-table">
-                        <thead>
-                            <tr>
-                                <th>Pos.</th>
-                                <th>Bezeichnung</th>
-                                <th>Gruppe</th>
-                                <th>Hersteller</th>
-                                <th>Artikelnr.</th>
-                                <th>Länge</th>
-                                <th>Stecker A</th>
-                                <th>Stecker B</th>
-                                <th>Anzahl</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${leitungen.map(l => `
-                                <tr onclick="editLeitung(${l.originalIndex})" title="${canEditProject(appState.currentProjekt) ? 'Leitung bearbeiten' : 'Leitung ansehen'}">
-                                    <td>${l.position || l.originalIndex + 1}</td>
-                                    <td>${escapeHtml(l.bezeichnung || '-')}</td>
-                                    <td>${escapeHtml(getGruppeDisplay(l.gruppe))}</td>
-                                    <td>${escapeHtml(l.hersteller || '-')}</td>
-                                    <td>${escapeHtml(l.artikelnummer || l.artikelCustom || '-')}</td>
-                                    <td>${l.laenge ? l.laenge + ' m' : '-'}</td>
-                                    <td>${escapeHtml(l.steckerA || '-')}</td>
-                                    <td>${escapeHtml(l.steckerB || '-')}</td>
-                                    <td>${l.anzahl || 1}</td>
-                                    <td class="table-actions">
-                                        <button class="btn btn-secondary btn-small btn-icon" onclick="event.stopPropagation(); editLeitung(${l.originalIndex})" title="${canEditProject(appState.currentProjekt) ? 'Bearbeiten' : 'Ansehen'}">
-                                            ${canEditProject(appState.currentProjekt) ? '✏️' : '👁️'}
-                                        </button>
-                                        ${canEditProject(appState.currentProjekt) ? `
-                                        <button class="btn btn-danger btn-small btn-icon" onclick="event.stopPropagation(); deleteLeitung(${l.originalIndex})" title="Löschen">
-                                            🗑️
-                                        </button>` : ''}
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                ${renderLeitungTableBlock(leitungen)}
             </div>
         `;
     });
-    
-    container.innerHTML = html;
+
+    return html;
+}
+
+
+/**
+ * @param {string} code
+ * @returns {string}
+ */
+function getGruppeSectionTitle(code) {
+    if (!code) return 'Ohne Gruppe';
+    const label = getGruppeDisplay(code);
+    return label === '-' ? code : label;
 }
 
 
@@ -385,7 +705,7 @@ export async function deleteLeitung(index) {
         saveProjects(projects);
     }
     
-    renderLeitungTable();
+    renderOverviewLists();
 }
 
 
