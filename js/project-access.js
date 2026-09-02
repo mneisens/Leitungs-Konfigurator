@@ -386,9 +386,7 @@ export function applyReadOnlyUI() {
     const selector = [
         '.uebersicht-actions button:not([data-allow-readonly])',
         '#view-konfigurator .btn-success',
-        '#view-konfigurator .btn-danger',
-        '#view-projekt-wizard .btn-success',
-        '#view-projekt-wizard .btn-primary:not(.wizard-progress-btn)'
+        '#view-konfigurator .btn-danger'
     ].join(',');
 
     document.querySelectorAll(selector).forEach(el => {

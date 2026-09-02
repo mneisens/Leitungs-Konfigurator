@@ -6,7 +6,7 @@
  * denselben Bestand pflegen.
  */
 import { appState } from './state.js';
-import { mergeKatalogAdditions, mergeBauteileAdditions, ensureBauteilTyp } from './catalog.js';
+import { mergeKatalogAdditions, mergeBauteileAdditions, ensureBauteilTyp, ensureKatalogLists } from './catalog.js';
 import {
     getKatalogAdditions,
     persistKatalogAdditions,
@@ -59,6 +59,32 @@ export async function saveLeitungAdditions(additions) {
         localStorage.setItem(LOCAL_LEITUNGEN_KEY, JSON.stringify(additions));
     }
     mergeKatalogAdditions(additions);
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @returns {boolean}
+ */
+export function leitungsnummerVergeben(artikelnummer) {
+    const gesucht = (artikelnummer || '').trim().toLowerCase();
+    if (!gesucht) return false;
+    return (appState.katalog?.artikel || [])
+        .some(a => (a.artikelnummer || '').toLowerCase() === gesucht);
+}
+
+
+/**
+ * Trägt eine Leitung dauerhaft in den Katalog ein.
+ * @param {object} artikel
+ * @returns {Promise<object>}
+ */
+export async function addLeitungZumKatalog(artikel) {
+    const additions = await loadLeitungAdditions();
+    additions.push(artikel);
+    await saveLeitungAdditions(additions);
+    ensureKatalogLists(artikel);
+    return artikel;
 }
 
 

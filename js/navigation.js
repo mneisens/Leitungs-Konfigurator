@@ -35,10 +35,8 @@ function runViewHandler(viewName) {
     const handlers = {
         auth: () => import('./firebase.js').then(m => m.showAuthMode('login')),
         home: () => import('./projects.js').then(m => m.loadProjects()),
-        admin: () => import('./admin.js').then(m => m.renderAdminView()),
         katalog: () => import('./katalog-view.js').then(m => m.renderKatalogView()),
         'projekt-form': () => {},
-        'projekt-wizard': () => import('./wizard-ui.js').then(m => m.renderProjektWizard()),
         gruppen: () => import('./gruppen-konfigurator.js').then(m => m.renderGruppenKonfigurator()),
         konfigurator: () => import('./konfigurator-core.js').then(m => m.initKonfigurator()),
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),

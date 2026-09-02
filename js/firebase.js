@@ -1,7 +1,5 @@
 import { appState } from './state.js';
 import { showModal } from './modal.js';
-import { DEFAULT_WIZARD_STEPS } from './config.js';
-import { normalizeWizardStep } from './wizard-config.js';
 import { showView } from './navigation.js';
 
 /**
@@ -86,16 +84,6 @@ export async function loadRegisteredUsers() {
         }))
         .filter(u => u.email)
         .sort((a, b) => a.email.localeCompare(b.email, 'de'));
-}
-
-
-/**
- * getWizardConfigDoc.
- * @returns {void}
- */
-export function getWizardConfigDoc() {
-    if (!appState.firebaseReady || !appState.firebaseDb) return null;
-    return appState.firebaseDb.collection('config').doc('wizardQuestions');
 }
 
 
@@ -232,85 +220,23 @@ export async function ensureUserProfile(user) {
 
 
 /**
- * loadWizardQuestions.
- * @returns {void}
- */
-export async function loadWizardQuestions() {
-    appState.wizardSteps = [...DEFAULT_WIZARD_STEPS];
-    if (!appState.firebaseReady) return;
-
-    try {
-        const ref = getWizardConfigDoc();
-        if (!ref) return;
-        const snap = await ref.get();
-        if (!snap.exists) return;
-        const data = snap.data() || {};
-        if (!Array.isArray(data.steps) || data.steps.length === 0) return;
-
-        const valid = data.steps.filter(step =>
-            step && step.id && step.gruppe && step.frage
-        );
-        if (valid.length > 0) {
-            const defaultsById = new Map(DEFAULT_WIZARD_STEPS.map(s => [s.id, s]));
-            appState.wizardSteps = valid.map((s, i) => {
-                const normalized = normalizeWizardStep(s, i);
-                const fallback = defaultsById.get(normalized.id);
-                // Fehlende Vorauswahl/Standard-Kategorie aus den Code-Defaults ergänzen
-                if (fallback) {
-                    if (!normalized.defaultCategory && fallback.defaultCategory) {
-                        normalized.defaultCategory = fallback.defaultCategory;
-                    }
-                    if (!normalized.vorauswahl && fallback.vorauswahl) {
-                        normalized.vorauswahl = { ...fallback.vorauswahl };
-                    }
-                    if (normalized.motorleitung !== true && fallback.motorleitung === true) {
-                        normalized.motorleitung = true;
-                    }
-                    if (fallback.motorleitung === true && fallback.defaultCategory === 'motor') {
-                        normalized.defaultCategory = 'motor';
-                        const allowed = new Set(normalized.allowedCategories || []);
-                        allowed.add('motor');
-                        allowed.add('geber');
-                        normalized.allowedCategories = Array.from(allowed);
-                    }
-                    if (!normalized.hinweis && fallback.hinweis) {
-                        normalized.hinweis = fallback.hinweis;
-                    }
-                }
-                return normalized;
-            });
-        }
-    } catch (error) {
-        console.error('Fehler beim Laden der Wizard-Fragen:', error);
-    }
-}
-
-
-/**
  * updateAuthUI.
  * @returns {void}
  */
 export function updateAuthUI() {
     const navLogout = document.getElementById('nav-logout');
     const navUser = document.getElementById('nav-user');
-    const navAdmin = document.getElementById('nav-admin');
     const navKatalog = document.getElementById('nav-katalog');
-    if (!navLogout || !navUser || !navAdmin) return;
+    if (!navLogout || !navUser) return;
 
     if (appState.currentUser) {
         navLogout.classList.remove('hidden');
         navUser.classList.remove('hidden');
         navUser.textContent = appState.currentUser.email || '';
         navKatalog?.classList.remove('hidden');
-        if (appState.currentUserRole === 'admin') {
-            navAdmin.classList.remove('hidden');
-        } else {
-            navAdmin.classList.add('hidden');
-        }
     } else {
         navLogout.classList.add('hidden');
         navUser.classList.add('hidden');
-        navAdmin.classList.add('hidden');
         navUser.textContent = '';
         // Ohne Firebase (lokaler Modus) Katalog trotzdem zugänglich
         if (!appState.firebaseReady) {

@@ -28,7 +28,7 @@ import {
     istMeterwareKategorie
 } from './leitung-optionen.js';
 import { getGruppenVorgaben, getLeitungPreset } from './gruppen-config.js';
-import { addBauteilZumKatalog, bauteilnummerVergeben, bildePlatzhalterNummer } from './katalog-additions.js';
+import { addBauteilZumKatalog, addLeitungZumKatalog, bauteilnummerVergeben, leitungsnummerVergeben, bildePlatzhalterNummer } from './katalog-additions.js';
 import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } from './overview.js';
 import { showModal } from './modal.js';
 
@@ -47,6 +47,11 @@ let aktivesBauteilId = '';
  * @type {{bauteilId: string, typ: string}|null}
  */
 let neuesBauteilFormular = null;
+/**
+ * Offenes Formular für eine noch nicht katalogisierte Leitung.
+ * @type {{leitungId: string, kategorie: string, hersteller: string, artikelnummer: string, beschreibung: string, steckerA: string, steckerB: string, laenge: string|number, meterware: boolean}|null}
+ */
+let neuesLeitungFormular = null;
 
 
 /**
@@ -403,6 +408,7 @@ export function selectGruppe(code) {
     aktiveLeitungId = '';
     aktivesBauteilId = '';
     neuesBauteilFormular = null;
+    neuesLeitungFormular = null;
     renderGruppenListe();
     renderGruppenPanel();
     document.getElementById('gruppen-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -445,6 +451,8 @@ function renderGruppenPanel() {
 
     const gruppen = getGruppen();
     const index = gruppen.findIndex(g => g.code === gruppe.code);
+    const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
+    const zeigeLeitungen = !vorgaben.nurBauteile || leitungen.length > 0;
 
     main.innerHTML = `
         <div class="form-card gruppen-panel">
@@ -474,6 +482,7 @@ function renderGruppenPanel() {
                           oninput="updateGruppeNotiz(this.value)">${escapeHtml(status.notiz || '')}</textarea>
             </div>
 
+            ${zeigeBauteile ? `
             <div class="gruppen-abschnitt">
                 <div class="gruppen-abschnitt-kopf">
                     <h4>Bauteile <span class="gruppen-anzahl">${bauteile.length}</span></h4>
@@ -484,15 +493,19 @@ function renderGruppenPanel() {
                 ${gesperrt ? '' : renderNeuesBauteilFormular()}
                 <div id="gruppen-bauteil-editor">${renderBauteilEditor()}</div>
             </div>
+            ` : ''}
 
+            ${zeigeLeitungen ? `
             <div class="gruppen-abschnitt">
                 <div class="gruppen-abschnitt-kopf">
                     <h4>Leitungen <span class="gruppen-anzahl">${leitungen.length}</span></h4>
                 </div>
                 <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen)}</div>
                 ${gesperrt ? '' : renderLeitungButtons(vorgaben.leitungPresets)}
+                ${gesperrt ? '' : renderNeuesLeitungFormular()}
                 <div id="gruppen-leitung-editor">${renderLeitungEditor()}</div>
             </div>
+            ` : ''}
 
             <div class="form-actions gruppen-nav">
                 <button type="button" class="btn btn-secondary" onclick="gruppeWechseln(-1)"${index <= 0 ? ' disabled' : ''}>
@@ -639,6 +652,7 @@ function renderNeuesBauteilFormular() {
         (appState.bauteileKatalog?.artikel || []).map(a => a.hersteller).filter(Boolean)
     )).sort((x, y) => x.localeCompare(y, 'de'));
     const zielBauteil = neuesBauteilFormular.bauteilId ? findBauteil(neuesBauteilFormular.bauteilId) : null;
+    const vorauswahlTyp = neuesBauteilFormular.typ || '';
 
     return `
         <div class="gruppen-karte bauteil-neu-formular">
@@ -646,6 +660,7 @@ function renderNeuesBauteilFormular() {
             <p class="text-muted">
                 Das Bauteil wird in den Katalog übernommen und steht danach in jedem Projekt zur Verfügung.
                 ${zielBauteil ? 'Es wird direkt der bearbeiteten Position zugeordnet.' : ''}
+                ${vorauswahlTyp && !zielBauteil ? ` Typ „${escapeHtml(getBauteilTypName(vorauswahlTyp))}" ist noch nicht im Katalog – bitte Artikeldaten ergänzen.` : ''}
             </p>
 
             <div class="gruppen-karte-grid">
@@ -702,6 +717,7 @@ function renderNeuesBauteilFormular() {
 export function gruppeOpenBauteilFormular(bauteilId, typ) {
     if (!assertCanEdit('Bauteile anlegen')) return;
     neuesBauteilFormular = { bauteilId: bauteilId || '', typ: typ || '' };
+    neuesLeitungFormular = null;
     renderGruppenPanel();
 
     const select = document.getElementById('neu-bauteil-typ');
@@ -863,13 +879,15 @@ function renderBauteilTabelle(bauteile) {
                 </td>
                 <td class="leitung-tabelle-artikel">${escapeHtml(bauteil.artikelnummer || 'offen')}</td>
                 <td class="leitung-tabelle-anzahl">${bauteil.anzahl || 1}×</td>
-                <td class="table-actions leitung-tabelle-aktionen">
+                <td class="leitung-tabelle-aktionen">
+                    <div class="table-actions">
                     <button type="button" class="btn btn-secondary btn-small btn-icon" title="Bauteil bearbeiten"
                             onclick="gruppeEditBauteil('${id}')">✏️</button>
                     ${gesperrt ? '' : `
                         <button type="button" class="btn btn-danger btn-small btn-icon" title="Bauteil entfernen"
                                 onclick="gruppeDeleteBauteil('${id}')">🗑️</button>
                     `}
+                    </div>
                 </td>
             </tr>
         `;
@@ -886,7 +904,7 @@ function renderBauteilTabelle(bauteile) {
                         <th>Bauteil / Verwendung</th>
                         <th>Artikelnr.</th>
                         <th>Anz.</th>
-                        <th class="leitung-tabelle-aktionen"></th>
+                        <th class="leitung-tabelle-aktionen">Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>${zeilen}</tbody>
@@ -1077,6 +1095,26 @@ export function gruppeAddBauteil(typ) {
     if (!assertCanEdit('Bauteile hinzufügen')) return;
     if (!appState.currentProjekt.bauteile) appState.currentProjekt.bauteile = [];
 
+    if (typ) {
+        const artikelListe = getArtikelAuswahlFuerGruppe(typ);
+        if (!artikelListe.length) {
+            const bauteil = {
+                id: generateId('btl'),
+                gruppe: aktiveGruppe,
+                typ,
+                hersteller: '',
+                artikelnummer: '',
+                bezeichnung: '',
+                notiz: '',
+                anzahl: 1
+            };
+            appState.currentProjekt.bauteile.push(bauteil);
+            persistCurrentProjekt();
+            gruppeOpenBauteilFormular(bauteil.id, typ);
+            return;
+        }
+    }
+
     const artikel = typ ? getArtikelAuswahlFuerGruppe(typ)[0] : null;
     const bauteil = {
         id: generateId('btl'),
@@ -1116,7 +1154,13 @@ export function gruppeUpdateBauteil(id, feld, wert) {
 
     if (feld === 'typ') {
         bauteil.typ = wert;
-        const artikel = getArtikelAuswahlFuerGruppe(wert)[0] || null;
+        const artikelListe = getArtikelAuswahlFuerGruppe(wert);
+        if (wert && !artikelListe.length) {
+            persistCurrentProjekt();
+            gruppeOpenBauteilFormular(id, wert);
+            return;
+        }
+        const artikel = artikelListe[0] || null;
         bauteil.artikelnummer = artikel?.artikelnummer || '';
         bauteil.hersteller = artikel?.hersteller || '';
         bauteil.bezeichnung = artikel?.beschreibung || '';
@@ -1201,7 +1245,276 @@ function renderLeitungButtons(presets) {
         <span class="gruppen-add-hinweis">Leitung hinzufügen:</span>
         ${buttons}
         <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddLeitung('')">+ Leere Leitung</button>
+        <button type="button" class="btn btn-primary btn-small" onclick="gruppeOpenLeitungFormular('', '')">➕ Leitung neu anlegen</button>
     </div>`;
+}
+
+
+/**
+ * Formular für eine Leitung, die es noch nicht im Katalog gibt.
+ * @returns {string}
+ */
+function renderNeuesLeitungFormular() {
+    if (!neuesLeitungFormular) return '';
+
+    const zielLeitung = neuesLeitungFormular.leitungId ? findLeitung(neuesLeitungFormular.leitungId) : null;
+    const kategorien = getKategorien();
+    const hersteller = Array.from(new Set(appState.katalog?.hersteller || [])).sort((a, b) => a.localeCompare(b, 'de'));
+    const stecker = appState.katalog?.steckertypen || [];
+    const form = neuesLeitungFormular;
+
+    return `
+        <div class="gruppen-karte leitung-neu-formular">
+            <h5>Neue Leitung im Katalog anlegen</h5>
+            <p class="text-muted">
+                Die Leitung wird in den Katalog übernommen und steht danach in jedem Projekt zur Verfügung.
+                ${zielLeitung ? 'Sie wird direkt der bearbeiteten Position zugeordnet.' : ''}
+            </p>
+
+            <div class="gruppen-karte-grid">
+                <div class="form-group">
+                    <label for="neu-leitung-kategorie">Leitungstyp *</label>
+                    <select id="neu-leitung-kategorie" onchange="gruppeOnNeuLeitungKategorieChange(this.value)">
+                        ${optionen([
+                            { value: '', label: '-- Bitte wählen --' },
+                            ...kategorien.map(k => ({ value: k.id, label: `${k.icon} ${k.name}` }))
+                        ], form.kategorie)}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="neu-leitung-hersteller">Hersteller *</label>
+                    <input type="text" id="neu-leitung-hersteller" list="neu-leitung-hersteller-liste"
+                           value="${escapeHtml(form.hersteller || '')}" placeholder="z. B. Beckhoff">
+                    <datalist id="neu-leitung-hersteller-liste">
+                        ${hersteller.map(h => `<option value="${escapeHtml(h)}"></option>`).join('')}
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label for="neu-leitung-artikelnummer">Artikelnummer *</label>
+                    <input type="text" id="neu-leitung-artikelnummer" value="${escapeHtml(form.artikelnummer || '')}"
+                           placeholder="z. B. ZK1090-3131-0050">
+                </div>
+                <div class="form-group gruppen-karte-breit">
+                    <label for="neu-leitung-beschreibung">Bezeichnung *</label>
+                    <input type="text" id="neu-leitung-beschreibung" value="${escapeHtml(form.beschreibung || '')}"
+                           placeholder="z. B. EtherCAT Kabel M8-M8 5,00 m">
+                </div>
+                <div class="form-group">
+                    <label for="neu-leitung-stecker-a">Stecker A *</label>
+                    <input type="text" id="neu-leitung-stecker-a" list="neu-leitung-stecker-liste"
+                           value="${escapeHtml(form.steckerA || '')}" placeholder="z. B. M8 4-polig gerade">
+                </div>
+                <div class="form-group">
+                    <label for="neu-leitung-stecker-b">Stecker B *</label>
+                    <input type="text" id="neu-leitung-stecker-b" list="neu-leitung-stecker-liste"
+                           value="${escapeHtml(form.steckerB || '')}" placeholder="z. B. offen">
+                </div>
+                <datalist id="neu-leitung-stecker-liste">
+                    ${stecker.map(s => `<option value="${escapeHtml(s)}"></option>`).join('')}
+                </datalist>
+                <div class="form-group">
+                    <label for="neu-leitung-laenge">Länge (m)</label>
+                    <input type="number" min="0" step="0.01" id="neu-leitung-laenge"
+                           value="${form.laenge !== undefined && form.laenge !== '' ? escapeHtml(String(form.laenge)) : ''}"
+                           placeholder="z. B. 5"${form.meterware ? ' disabled' : ''}>
+                </div>
+                <div class="form-group">
+                    <label class="wizard-skip-label">
+                        <input type="checkbox" id="neu-leitung-meterware"${form.meterware ? ' checked' : ''}
+                               onchange="gruppeOnNeuLeitungMeterwareChange(this.checked)">
+                        Meterware (Länge wird im Projekt festgelegt)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="gruppeCancelLeitungFormular()">Abbrechen</button>
+                <button type="button" class="btn btn-primary" onclick="gruppeSaveNeuesLeitung()">In Katalog speichern &amp; übernehmen</button>
+            </div>
+        </div>
+    `;
+}
+
+
+/**
+ * Öffnet das Anlageformular für eine neue Katalog-Leitung.
+ * @param {string} leitungId
+ * @param {string} presetId
+ * @returns {void}
+ */
+export function gruppeOpenLeitungFormular(leitungId, presetId) {
+    if (!assertCanEdit('Leitungen anlegen')) return;
+
+    const preset = getLeitungPreset(presetId) || {};
+    const leitung = leitungId ? findLeitung(leitungId) : null;
+    const kategorie = leitung?.kategorie || preset.kategorie || '';
+
+    neuesLeitungFormular = {
+        leitungId: leitungId || '',
+        kategorie,
+        hersteller: leitung?.hersteller || preset.hersteller || '',
+        artikelnummer: leitung?.artikelnummer || leitung?.artikelCustom || preset.artikelnummer || '',
+        beschreibung: '',
+        steckerA: leitung?.steckerA || getFullSteckerTyp(preset.steckerA || '', preset.ausrichtungA) || '',
+        steckerB: leitung?.steckerB || getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB) || '',
+        laenge: leitung?.laenge || preset.laenge || '',
+        meterware: istMeterwareKategorie(kategorie)
+    };
+
+    neuesBauteilFormular = null;
+    renderGruppenPanel();
+    document.getElementById('neu-leitung-beschreibung')?.focus();
+}
+
+
+/**
+ * Öffnet das Katalogformular mit den Werten der aktuellen Leitung.
+ * @param {string} leitungId
+ * @returns {void}
+ */
+export function gruppeOpenLeitungFormularAusLeitung(leitungId) {
+    gruppeOpenLeitungFormular(leitungId, '');
+}
+
+
+/**
+ * @returns {void}
+ */
+export function gruppeCancelLeitungFormular() {
+    neuesLeitungFormular = null;
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} kategorie
+ * @returns {void}
+ */
+export function gruppeOnNeuLeitungKategorieChange(kategorie) {
+    if (!neuesLeitungFormular) return;
+    neuesLeitungFormular.kategorie = kategorie;
+    neuesLeitungFormular.meterware = istMeterwareKategorie(kategorie);
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {boolean} meterware
+ * @returns {void}
+ */
+export function gruppeOnNeuLeitungMeterwareChange(meterware) {
+    const laengeInput = document.getElementById('neu-leitung-laenge');
+    if (laengeInput) laengeInput.disabled = meterware;
+    if (neuesLeitungFormular) neuesLeitungFormular.meterware = meterware;
+}
+
+
+/**
+ * Legt die Leitung im Katalog an und übernimmt sie in die aktuelle Gruppe.
+ * @returns {Promise<void>}
+ */
+export async function gruppeSaveNeuesLeitung() {
+    if (!neuesLeitungFormular || !assertCanEdit('Leitungen anlegen')) return;
+
+    const kategorie = document.getElementById('neu-leitung-kategorie')?.value?.trim() || '';
+    const hersteller = document.getElementById('neu-leitung-hersteller')?.value?.trim() || '';
+    const artikelnummer = document.getElementById('neu-leitung-artikelnummer')?.value?.trim() || '';
+    const beschreibung = document.getElementById('neu-leitung-beschreibung')?.value?.trim() || '';
+    const steckerA = document.getElementById('neu-leitung-stecker-a')?.value?.trim() || '';
+    const steckerB = document.getElementById('neu-leitung-stecker-b')?.value?.trim() || '';
+    const meterware = document.getElementById('neu-leitung-meterware')?.checked === true;
+    const laengeRaw = document.getElementById('neu-leitung-laenge')?.value;
+
+    if (!kategorie || !hersteller || !artikelnummer || !beschreibung || !steckerA || !steckerB) {
+        showModal('Bitte Leitungstyp, Hersteller, Artikelnummer, Bezeichnung und beide Stecker ausfüllen.', {
+            type: 'warning',
+            title: 'Eingabe unvollständig'
+        });
+        return;
+    }
+
+    let laenge = parseFloat(String(laengeRaw).replace(',', '.'));
+    if (meterware) {
+        laenge = 0;
+    } else if (Number.isNaN(laenge) || laenge < 0) {
+        showModal('Bitte eine gültige Länge eingeben (oder Meterware markieren).', {
+            type: 'warning',
+            title: 'Länge fehlt'
+        });
+        return;
+    }
+
+    if (leitungsnummerVergeben(artikelnummer)) {
+        showModal(`Artikelnummer ${artikelnummer} ist bereits im Katalog.`, {
+            type: 'warning',
+            title: 'Bereits vorhanden'
+        });
+        return;
+    }
+
+    const artikel = {
+        hersteller,
+        artikelnummer,
+        beschreibung,
+        steckerA,
+        steckerB,
+        laenge,
+        kategorie,
+        custom: true
+    };
+    if (meterware) artikel.meterware = true;
+
+    try {
+        await addLeitungZumKatalog(artikel);
+    } catch (error) {
+        showModal(`Speichern im Katalog fehlgeschlagen: ${error.message}`, { type: 'danger', title: 'Fehler' });
+        return;
+    }
+
+    const zielLeitung = neuesLeitungFormular.leitungId ? findLeitung(neuesLeitungFormular.leitungId) : null;
+    if (zielLeitung) {
+        zielLeitung.kategorie = kategorie;
+        zielLeitung.hersteller = hersteller;
+        zielLeitung.steckerA = steckerA;
+        zielLeitung.steckerB = steckerB;
+        zielLeitung.laenge = laenge;
+        zielLeitung.artikelnummer = artikelnummer;
+        zielLeitung.artikelCustom = '';
+        zielLeitung.bezeichnung = zielLeitung.bezeichnung || beschreibung;
+        aktiveLeitungId = zielLeitung.id;
+    } else {
+        const leitung = {
+            id: generateId('ltg'),
+            position: (appState.currentProjekt.leitungen || []).length + 1,
+            bezeichnung: '',
+            kategorie,
+            gruppe: aktiveGruppe,
+            hersteller,
+            artikelnummer,
+            artikelCustom: '',
+            laenge,
+            steckerA,
+            steckerB,
+            notiz: '',
+            anzahl: 1,
+            erledigt: false
+        };
+        if (!appState.currentProjekt.leitungen) appState.currentProjekt.leitungen = [];
+        appState.currentProjekt.leitungen.push(leitung);
+        aktiveLeitungId = leitung.id;
+        renumberLeitungen();
+    }
+
+    neuesLeitungFormular = null;
+    persistCurrentProjekt();
+    renderGruppenListe();
+    renderGruppenPanel();
+    fokussiereLeitungEditor();
+
+    showModal(`${beschreibung} (${artikelnummer}) wurde im Katalog angelegt.`, {
+        type: 'success',
+        title: 'Leitung gespeichert'
+    });
 }
 
 
@@ -1249,7 +1562,8 @@ function renderLeitungTabelle(leitungen) {
                 <td class="leitung-tabelle-laenge">${leitung.laenge ? `${formatLaenge(leitung.laenge)} m` : '–'}</td>
                 <td class="leitung-tabelle-artikel">${escapeHtml(artikelnummer || 'offen')}</td>
                 <td class="leitung-tabelle-anzahl">${leitung.anzahl || 1}×</td>
-                <td class="table-actions leitung-tabelle-aktionen">
+                <td class="leitung-tabelle-aktionen">
+                    <div class="table-actions">
                     <button type="button" class="btn btn-secondary btn-small btn-icon" title="Leitung bearbeiten"
                             onclick="gruppeEditLeitung('${id}')">✏️</button>
                     ${gesperrt ? '' : `
@@ -1258,6 +1572,7 @@ function renderLeitungTabelle(leitungen) {
                         <button type="button" class="btn btn-danger btn-small btn-icon" title="Leitung löschen"
                                 onclick="gruppeDeleteLeitung('${id}')">🗑️</button>
                     `}
+                    </div>
                 </td>
             </tr>
         `;
@@ -1275,7 +1590,7 @@ function renderLeitungTabelle(leitungen) {
                         <th>Länge</th>
                         <th>Artikelnr.</th>
                         <th>Anz.</th>
-                        <th class="leitung-tabelle-aktionen"></th>
+                        <th class="leitung-tabelle-aktionen">Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>${zeilen}</tbody>
@@ -1435,6 +1750,12 @@ function renderLeitungKarte(leitung) {
 
             <div class="artikel-vorschlag gruppen-karte-artikel-box ${artikelInfo.klasse}">
                 <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
+                ${!gesperrt && artikelInfo.klasse === 'no-match' ? `
+                    <button type="button" class="btn btn-secondary btn-small"
+                            onclick="gruppeOpenLeitungFormularAusLeitung('${id}')">
+                        Im Katalog anlegen…
+                    </button>
+                ` : ''}
             </div>
 
             <details class="gruppen-karte-details"${zusatzOffen}>
@@ -1659,9 +1980,16 @@ export function gruppeAddLeitung(presetId) {
     };
 
     appState.currentProjekt.leitungen.push(leitung);
-    aktualisiereArtikel(leitung);
+    const artikelInfo = aktualisiereArtikel(leitung);
     renumberLeitungen();
     persistCurrentProjekt();
+
+    if (artikelInfo.klasse === 'no-match' && (preset.kategorie || preset.artikelnummer || presetId)) {
+        aktiveLeitungId = leitung.id;
+        renderGruppenListe();
+        gruppeOpenLeitungFormular(leitung.id, presetId);
+        return;
+    }
 
     aktiveLeitungId = leitung.id;
     renderGruppenListe();

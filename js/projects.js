@@ -285,10 +285,9 @@ export function saveProjekt(event) {
     appState.currentProjekt = projekt;
     appState.currentLeitungIndex = 0;
     ensureWizardAnswers(appState.currentProjekt);
-    appState.wizardStepIndex = 0;
 
     if (isNew) {
-        showView('projekt-wizard');
+        showView('gruppen');
     } else {
         showView('uebersicht');
     }
@@ -543,11 +542,6 @@ export function openProjectSharing() {
 
 
 /**
- * startProjektWizard.
- * @returns {void}
- */
-
-/**
  * Lädt Projekte und rendert die Projektliste.
  * @returns {Promise<void>}
  */
@@ -643,27 +637,4 @@ export function openNewProjektForm() {
     resetProjektForm();
     appState.currentProjekt = null;
     showView('projekt-form');
-}
-
-export function startProjektWizard() {
-    if (!appState.currentProjekt) return;
-    if (!assertCanEdit('den Schaltplan-Assistenten')) return;
-    ensureWizardAnswers(appState.currentProjekt);
-    if (!appState.wizardSteps.length) {
-        showModal('Keine Assistent-Fragen vorhanden. Bitte als Admin Fragen konfigurieren.', {
-            type: 'warning',
-            title: 'Assistent leer'
-        });
-        return;
-    }
-
-    const firstOpen = appState.wizardSteps.findIndex(step => {
-        const hasLeitung = (appState.currentProjekt.leitungen || []).some(l => l.wizardStepId === step.id);
-        const hasBauteil = (appState.currentProjekt.bauteile || []).some(b => b.wizardStepId === step.id);
-        const skipped = appState.currentProjekt.wizardSkipped?.[step.id] === true;
-        const note = appState.currentProjekt.wizardAnswers[step.id];
-        return !(hasLeitung || hasBauteil || skipped || (note && String(note).trim()));
-    });
-    appState.wizardStepIndex = firstOpen >= 0 ? firstOpen : 0;
-    showView('projekt-wizard');
 }

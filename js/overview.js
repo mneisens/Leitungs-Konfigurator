@@ -290,24 +290,7 @@ function renderBauteileOverviewByTyp(items, totalStueck) {
         getBauteilTypName(a).localeCompare(getBauteilTypName(b), 'de')
     );
 
-    const zusammenfassungItems = typen.map(typ => `
-        <div class="zusammenfassung-item">
-            <span class="icon">⚙️</span>
-            <span>${escapeHtml(getBauteilTypName(typ) || 'Ohne Typ')}:</span>
-            <span class="count">${byTyp.get(typ).reduce((s, i) => s + i.count, 0)}</span>
-        </div>
-    `).join('');
-
-    let html = `
-        <div class="kategorie-zusammenfassung">
-            ${zusammenfassungItems}
-            <div class="zusammenfassung-item">
-                <span class="icon">📋</span>
-                <span>Bauteile gesamt:</span>
-                <span class="count">${totalStueck}</span>
-            </div>
-        </div>
-    `;
+    let html = '';
 
     typen.forEach(typ => {
         const rows = byTyp.get(typ).sort((a, b) =>
@@ -364,35 +347,7 @@ function renderCombinedOverviewByGruppe(leitungenMitIndex, bauteilItems, totalBa
     const formatBauteileCount = count =>
         `${count} Bauteil${count !== 1 ? 'e' : ''}`;
 
-    const zusammenfassungItems = gruppenCodes.map(code => {
-        const leitCount = (leitungenByGruppe.get(code) || []).length;
-        const bauteilCount = (bauteileByGruppe.get(code) || []).reduce((s, i) => s + i.count, 0);
-        const parts = [];
-        if (leitCount) parts.push(formatLeitungenCount(leitCount));
-        if (bauteilCount) parts.push(formatBauteileCount(bauteilCount));
-        return `
-        <div class="zusammenfassung-item">
-            <span class="icon">🧩</span>
-            <span>${escapeHtml(getGruppeSectionTitle(code))}:</span>
-            <span class="count">${parts.join(' · ')}</span>
-        </div>
-    `;
-    }).join('');
-
-    const gesamtParts = [];
-    if (leitungenMitIndex.length) gesamtParts.push(formatLeitungenCount(leitungenMitIndex.length));
-    if (totalBauteilStueck) gesamtParts.push(formatBauteileCount(totalBauteilStueck));
-
-    let html = `
-        <div class="kategorie-zusammenfassung">
-            ${zusammenfassungItems}
-            <div class="zusammenfassung-item">
-                <span class="icon">📋</span>
-                <span>Gesamt:</span>
-                <span class="count">${gesamtParts.join(' · ')}</span>
-            </div>
-        </div>
-    `;
+    let html = '';
 
     gruppenCodes.forEach(code => {
         const leitungen = leitungenByGruppe.get(code) || [];
@@ -579,26 +534,7 @@ function renderLeitungTableByTyp(leitungenMitIndex) {
         grouped[kat].push(l);
     });
 
-    const zusammenfassungItems = kategorienDef
-        .filter(k => grouped[k.id]?.length)
-        .map(k => `
-            <div class="zusammenfassung-item">
-                <span class="icon">${k.icon}</span>
-                <span>${k.name}:</span>
-                <span class="count">${grouped[k.id].length}</span>
-            </div>
-        `).join('');
-
-    let html = `
-        <div class="kategorie-zusammenfassung">
-            ${zusammenfassungItems}
-            <div class="zusammenfassung-item">
-                <span class="icon">📋</span>
-                <span>Gesamt:</span>
-                <span class="count">${leitungenMitIndex.length}</span>
-            </div>
-        </div>
-    `;
+    let html = '';
 
     kategorienDef.forEach(kat => {
         const leitungen = grouped[kat.id];

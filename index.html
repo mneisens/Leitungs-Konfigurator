@@ -13,7 +13,6 @@
             <nav class="main-nav">
                 <button class="nav-btn" onclick="showView('home')">Projekte</button>
                 <button class="nav-btn hidden" id="nav-katalog" onclick="showView('katalog')">Katalog</button>
-                <button class="nav-btn hidden" id="nav-admin" onclick="showView('admin')">Admin</button>
                 <span class="nav-user hidden" id="nav-user"></span>
                 <button class="nav-btn hidden" id="nav-logout" onclick="logoutUser()">Logout</button>
             </nav>
@@ -317,40 +316,6 @@
             </div>
         </section>
 
-        <!-- View: Admin -->
-        <section id="view-admin" class="view">
-            <div class="view-header">
-                <button class="btn btn-back" onclick="showView('home')">← Zurück</button>
-                <h2>Admin - Schaltplan-Assistent Fragen</h2>
-            </div>
-            <div class="form-card">
-                <p class="text-muted">Frage anklicken, um sie zu bearbeiten. Änderungen werden erst mit „Fragen speichern" übernommen.</p>
-                <div class="admin-toolbar">
-                    <input type="search" id="admin-search" placeholder="🔍 Frage durchsuchen…" oninput="adminFilterSteps()">
-                    <select id="admin-gruppe-filter" onchange="adminFilterSteps()">
-                        <option value="">Alle Gruppen</option>
-                    </select>
-                    <span class="admin-step-count" id="admin-step-count"></span>
-                    <div class="admin-toolbar-actions">
-                        <button type="button" class="btn btn-secondary btn-small" onclick="adminAddWizardStep()">+ Frage</button>
-                        <button type="button" class="btn btn-primary btn-small" onclick="saveAdminWizardConfig()">Fragen speichern</button>
-                    </div>
-                </div>
-                <div id="admin-steps-editor" class="admin-steps-editor"></div>
-                <div class="form-actions admin-editor-actions">
-                    <button type="button" class="btn btn-secondary" onclick="adminAddWizardStep()">+ Frage hinzufügen</button>
-                    <button type="button" class="btn btn-primary" onclick="saveAdminWizardConfig()">Fragen speichern</button>
-                </div>
-                <details class="admin-json-fallback">
-                    <summary>JSON (Profi-Ansicht)</summary>
-                    <div class="form-group">
-                        <textarea id="admin-wizard-json" rows="12" style="font-family: monospace;"></textarea>
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="adminLoadFromJson()">Aus JSON laden</button>
-                </details>
-            </div>
-        </section>
-
         <!-- View: Projekt anlegen/bearbeiten -->
         <section id="view-projekt-form" class="view">
             <div class="view-header">
@@ -389,190 +354,9 @@
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="showView('home')">Abbrechen</button>
-                    <button type="submit" class="btn btn-primary">Speichern & Übersicht öffnen</button>
+                    <button type="submit" class="btn btn-primary">Speichern & Gruppen-Konfigurator öffnen</button>
                 </div>
             </form>
-        </section>
-
-        <!-- View: Schaltplan-Assistent -->
-        <section id="view-projekt-wizard" class="view">
-            <div class="view-header">
-                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
-                <h2 id="wizard-titel">Schaltplan-Assistent</h2>
-            </div>
-
-            <div class="form-card wizard-card">
-                <button type="button" class="wizard-progress wizard-progress-btn" id="wizard-progress" onclick="wizardJumpToQuestion()">
-                    Frage 1 von 1
-                </button>
-                <div class="wizard-jump-box" id="wizard-jump-box" style="display: none;">
-                    <label for="wizard-jump-input">Zu Frage springen</label>
-                    <input type="number" id="wizard-jump-input" min="1" step="1" placeholder="z. B. 35">
-                    <button type="button" class="btn btn-primary btn-small" onclick="wizardApplyJump()">Springen</button>
-                    <button type="button" class="btn btn-secondary btn-small" onclick="wizardCancelJump()">Abbrechen</button>
-                </div>
-                <div class="wizard-meta">
-                    <span class="wizard-group" id="wizard-gruppe">=000</span>
-                    <span class="wizard-hint" id="wizard-optional-hint">Antwort optional - leer lassen und weiter ist möglich.</span>
-                </div>
-
-                <div class="wizard-question-row">
-                    <div class="wizard-question" id="wizard-frage">Zuleitung?</div>
-                    <button type="button" class="btn btn-secondary btn-small" id="wizard-edit-step-btn" onclick="toggleWizardStepEditor()">
-                        Frage bearbeiten
-                    </button>
-                </div>
-                <div class="wizard-hinweis" id="wizard-hinweis" style="display: none;"></div>
-
-                <div id="wizard-step-editor" class="wizard-step-editor" hidden>
-                    <div class="wizard-step-editor-header">
-                        <h3>Frage konfigurieren</h3>
-                        <p class="text-muted">Änderungen gelten für alle Projekte und werden sofort gespeichert.</p>
-                    </div>
-                    <div id="wizard-step-editor-form"></div>
-                    <div class="form-actions wizard-step-editor-actions">
-                        <button type="button" class="btn btn-secondary" onclick="cancelWizardStepEditor()">Abbrechen</button>
-                        <button type="button" class="btn btn-primary" onclick="saveWizardStepFromAssistent()">Übernehmen &amp; speichern</button>
-                    </div>
-                </div>
-
-                <div class="wizard-skip" id="wizard-skip-box">
-                    <label class="wizard-skip-label">
-                        <input type="checkbox" id="wizard-nicht-vorhanden" onchange="onWizardNichtVorhandenChange()">
-                        Nicht vorhanden / nicht benötigt – diese Frage überspringen
-                    </label>
-                </div>
-
-                <div class="form-group">
-                    <label for="wizard-antwort">Notiz / Freitext</label>
-                    <textarea id="wizard-antwort" rows="3" placeholder="Optionale Notizen zu dieser Frage..."></textarea>
-                </div>
-
-                <div id="wizard-mengenfeld-section" class="wizard-section" style="display: none;">
-                    <div class="form-group">
-                        <label for="wizard-menge" id="wizard-menge-label">Anzahl</label>
-                        <input type="number" id="wizard-menge" min="1" step="1" value="1">
-                    </div>
-                </div>
-
-                <div id="wizard-bauteile-section" class="wizard-section" style="display: none;">
-                    <div class="wizard-divider"></div>
-                    <h3>Bauteile auswählen</h3>
-                    <div id="wizard-bauteil-forms"></div>
-                    <div id="wizard-created-bauteile-list" class="wizard-created-list"></div>
-                </div>
-
-                <div id="wizard-leitungen-section" class="wizard-section">
-                <div class="wizard-divider"></div>
-
-                <h3>Leitungen direkt anlegen</h3>
-                <div class="wizard-connector-box">
-                    <div class="wizard-select-grid">
-                        <div class="form-group">
-                            <label for="wizard-kategorie">Leitungstyp</label>
-                            <select id="wizard-kategorie" onchange="onWizardKategorieChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="wizard-hersteller">Hersteller</label>
-                            <select id="wizard-hersteller" onchange="onWizardHerstellerChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="wizard-stecker-a-group">
-                            <label for="wizard-stecker-a">Stecker Seite A</label>
-                            <select id="wizard-stecker-a" onchange="onWizardSteckerAChange()">
-                                <option value="">-- Bitte wählen --</option>
-                            </select>
-                            <div class="ausrichtung-toggle" id="wizard-ausrichtung-a-wrap">
-                                <button type="button" id="wizard-ausrichtung-a" class="toggle-btn" onclick="toggleWizardAusrichtung('a')">
-                                    <span class="toggle-icon">↑</span>
-                                    <span class="toggle-text">gerade</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="wizard-stecker-row" class="wizard-grid-pass">
-                            <div class="form-group">
-                                <label for="wizard-stecker-b">Stecker Seite B</label>
-                                <select id="wizard-stecker-b" onchange="onWizardSteckerBChange()">
-                                    <option value="">-- Bitte wählen --</option>
-                                </select>
-                                <div class="ausrichtung-toggle" id="wizard-ausrichtung-b-wrap">
-                                    <button type="button" id="wizard-ausrichtung-b" class="toggle-btn" onclick="toggleWizardAusrichtung('b')">
-                                        <span class="toggle-icon">↑</span>
-                                        <span class="toggle-text">gerade</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="form-group" id="wizard-laenge-group">
-                                <label for="wizard-laenge">Länge</label>
-                                <select id="wizard-laenge" onchange="onWizardLaengeChange()">
-                                    <option value="">-- Bitte wählen --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="wizard-oelflex-row" class="wizard-grid-pass" style="display: none;">
-                            <div class="form-group" id="wizard-oelflex-adern-group">
-                                <label for="wizard-oelflex-adern">Aderzahl</label>
-                                <select id="wizard-oelflex-adern" onchange="onWizardOelflexChange()">
-                                    <option value="">-- Bitte wählen --</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="wizard-oelflex-querschnitt-group">
-                                <label for="wizard-oelflex-querschnitt" id="wizard-oelflex-querschnitt-label">Querschnitt</label>
-                                <select id="wizard-oelflex-querschnitt" onchange="onWizardOelflexChange()">
-                                    <option value="">-- Bitte wählen --</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="wizard-oelflex-laenge">Länge (Meter)</label>
-                                <input type="number" id="wizard-oelflex-laenge" min="0.1" step="0.1" placeholder="z. B. 5.0" onchange="onWizardOelflexChange()">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="wizard-auto-result" id="wizard-auto-artikel">
-                        <span class="artikel-label">Bitte Hersteller, Stecker A/B und Länge wählen</span>
-                    </div>
-                </div>
-
-                <div class="wizard-add-row">
-                    <div class="form-group wizard-artikel-group">
-                        <label for="wizard-artikelnummer">Artikelnummer</label>
-                        <input type="text" id="wizard-artikelnummer" list="wizard-artikel-vorschlaege" placeholder="z. B. ZK2000-2122-0010" oninput="updateWizardAutoArtikel()">
-                        <datalist id="wizard-artikel-vorschlaege"></datalist>
-                    </div>
-                    <div class="form-group wizard-anzahl-group">
-                        <label for="wizard-anzahl">Anzahl</label>
-                        <input type="number" id="wizard-anzahl" min="1" step="1" value="1">
-                    </div>
-                    <div class="form-group wizard-bezeichnung-group">
-                        <label for="wizard-leitungsbezeichnung">Bezeichnung (optional)</label>
-                        <input type="text" id="wizard-leitungsbezeichnung" placeholder="Wenn leer, wird die Frage als Bezeichnung verwendet">
-                    </div>
-                    <div class="form-group wizard-add-action">
-                        <button type="button" class="btn btn-success" onclick="wizardAddLeitungFromStep()">
-                            + Leitung anlegen
-                        </button>
-                    </div>
-                </div>
-
-                <div id="wizard-created-list" class="wizard-created-list"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="wizard-prev" onclick="wizardPrev()">
-                        ← Vorherige Frage
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">
-                        Zur Übersicht
-                    </button>
-                    <button type="button" class="btn btn-primary" id="wizard-next" onclick="wizardNext()">
-                        Weiter →
-                    </button>
-                </div>
-            </div>
         </section>
 
         <!-- View: Gruppen-Konfigurator -->
@@ -791,9 +575,6 @@
                     </button>
                 </div>
                 <div class="export-buttons">
-                    <button class="btn btn-secondary" onclick="startProjektWizard()">
-                        📝 Schaltplan-Assistent
-                    </button>
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
                         📦 Stückliste
                     </button>

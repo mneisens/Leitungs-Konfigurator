@@ -156,6 +156,7 @@ export function mergeBauteileAdditions(additions) {
 
     appState.bauteileKatalog.artikel = Array.from(byNr.values());
     appState.bauteileKatalog.bauteiltypen = baseBauteiltypen.map(t => ({ ...t }));
+    (additions || []).forEach(a => ensureBauteilTyp(a));
 }
 
 

@@ -1,14 +1,12 @@
 /**
  * @file script.js – Einstiegspunkt der Anwendung.
  */
-import { DEFAULT_WIZARD_STEPS } from './js/config.js';
 import { appState } from './js/state.js';
 import { loadTemplates } from './js/templates.js';
 import { loadKatalog } from './js/catalog.js';
 import {
     initFirebase,
     ensureUserProfile,
-    loadWizardQuestions,
     loadKatalogAdditions,
     updateAuthUI,
     loginUser,
@@ -38,7 +36,6 @@ import {
     loadProjects,
     openNewProjektForm,
     saveProjekt,
-    startProjektWizard,
     shareProjectWithUser,
     removeProjectShare,
     openProjectSharing,
@@ -47,45 +44,7 @@ import {
 import { showView } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
 import { exportAllProjects, importProjects, exportCSV, exportPDF } from './js/export.js';
-import {
-    adminAddWizardStep,
-    saveAdminWizardConfig,
-    adminLoadFromJson,
-    adminMoveWizardStep,
-    adminRemoveWizardStep,
-    adminSetWizardStepPosition,
-    adminFilterSteps,
-    adminToggleStep
-} from './js/admin.js';
-import {
-    wizardJumpToQuestion,
-    wizardApplyJump,
-    wizardCancelJump,
-    wizardAddLeitungFromStep,
-    wizardPrev,
-    wizardNext,
-    onWizardLaengeChange,
-    toggleWizardStepEditor,
-    cancelWizardStepEditor,
-    saveWizardStepFromAssistent,
-    updateWizardAutoArtikel
-} from './js/wizard-ui.js';
-import {
-    filterWizardBauteilSelect,
-    wizardAddBauteilFromStep,
-    wizardDeleteBauteil,
-    wizardDeleteLeitungenGroup,
-    wizardDeleteLeitungFromStep,
-    onWizardNichtVorhandenChange
-} from './js/wizard-core.js';
-import {
-    onWizardKategorieChange,
-    onWizardHerstellerChange,
-    onWizardSteckerAChange,
-    onWizardSteckerBChange,
-    toggleWizardAusrichtung
-} from './js/wizard-leitungen.js';
-import { onWizardOelflexChange, onOelflexChange } from './js/oelflex.js';
+import { onOelflexChange } from './js/oelflex.js';
 import {
     backToOverview,
     saveLeitungAndNotify,
@@ -124,6 +83,12 @@ import {
     gruppeCancelBauteilFormular,
     gruppeOnNeuBauteilTypChange,
     gruppeSaveNeuesBauteil,
+    gruppeOpenLeitungFormular,
+    gruppeOpenLeitungFormularAusLeitung,
+    gruppeCancelLeitungFormular,
+    gruppeOnNeuLeitungKategorieChange,
+    gruppeOnNeuLeitungMeterwareChange,
+    gruppeSaveNeuesLeitung,
     gruppeSaveNeueGruppe,
     gruppeDeleteZusaetzlicheGruppe,
     toggleBauteilTypSchnellwahl
@@ -161,7 +126,6 @@ document.addEventListener('keydown', e => {
 document.addEventListener('DOMContentLoaded', async () => {
     await loadTemplates();
     await loadKatalog();
-    appState.wizardSteps = [...DEFAULT_WIZARD_STEPS];
     initFirebase();
 
     if (appState.firebaseReady) {
@@ -178,7 +142,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             appState.currentUser = user;
             await ensureUserProfile(user);
-            await loadWizardQuestions();
             await loadKatalogAdditions();
             await loadProjects();
             updateAuthUI();
@@ -221,14 +184,6 @@ Object.assign(window, {
     removeProjectShare,
     openProjectSharing,
     toggleProjectVisibility,
-    adminAddWizardStep,
-    saveAdminWizardConfig,
-    adminLoadFromJson,
-    adminMoveWizardStep,
-    adminRemoveWizardStep,
-    adminSetWizardStepPosition,
-    adminFilterSteps,
-    adminToggleStep,
     onKatalogKategorieChange,
     onKatalogSearch,
     onKatalogHerstellerChange,
@@ -244,29 +199,6 @@ Object.assign(window, {
     editKatalogBauteil,
     cancelEditKatalogBauteil,
     revertKatalogBauteil,
-    wizardJumpToQuestion,
-    wizardApplyJump,
-    wizardCancelJump,
-    onWizardKategorieChange,
-    onWizardHerstellerChange,
-    onWizardSteckerAChange,
-    onWizardSteckerBChange,
-    toggleWizardAusrichtung,
-    onWizardLaengeChange,
-    onWizardOelflexChange,
-    updateWizardAutoArtikel,
-    wizardAddLeitungFromStep,
-    wizardPrev,
-    wizardNext,
-    toggleWizardStepEditor,
-    cancelWizardStepEditor,
-    saveWizardStepFromAssistent,
-    filterWizardBauteilSelect,
-    wizardAddBauteilFromStep,
-    wizardDeleteBauteil,
-    wizardDeleteLeitungenGroup,
-    wizardDeleteLeitungFromStep,
-    onWizardNichtVorhandenChange,
     backToOverview,
     onKategorieFilterChange,
     onHerstellerChange,
@@ -279,7 +211,6 @@ Object.assign(window, {
     saveLeitungAndNotify,
     addNewLeitung,
     saveLeitung,
-    startProjektWizard,
     filterGruppenListe,
     selectGruppe,
     gruppeWechseln,
@@ -304,6 +235,12 @@ Object.assign(window, {
     gruppeCancelBauteilFormular,
     gruppeOnNeuBauteilTypChange,
     gruppeSaveNeuesBauteil,
+    gruppeOpenLeitungFormular,
+    gruppeOpenLeitungFormularAusLeitung,
+    gruppeCancelLeitungFormular,
+    gruppeOnNeuLeitungKategorieChange,
+    gruppeOnNeuLeitungMeterwareChange,
+    gruppeSaveNeuesLeitung,
     gruppeSaveNeueGruppe,
     gruppeDeleteZusaetzlicheGruppe,
     toggleBauteilTypSchnellwahl,

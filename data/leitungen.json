@@ -9,7 +9,8 @@
         "IGUS",
         "Baumüller",
         "Sick",
-        "ifm electronic"
+        "ifm electronic",
+        "Schaeffler"
     ],
     "kategorien": [
         {
@@ -4900,6 +4901,16 @@
             "steckerB": "RJ45 IP65",
             "laenge": 100,
             "kategorie": "cplink"
+        },
+        {
+            "hersteller": "Schaeffler",
+            "artikelnummer": "4521005",
+            "beschreibung": "Erdungsleitung 1x95 mm²",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "meterware": true,
+            "kategorie": "oelflex"
         }
     ],
     "steckertypen": [

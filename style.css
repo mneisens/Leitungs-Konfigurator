@@ -1342,17 +1342,6 @@ body {
     background: #f8fafc;
 }
 
-.kategorie-zusammenfassung {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
 .uebersicht-leitungen-toolbar {
     display: flex;
     align-items: center;
@@ -1418,25 +1407,6 @@ body {
 .kategorie-section .table-container--nested + .uebersicht-gruppe-subtitle,
 .kategorie-section .uebersicht-gruppe-subtitle + .table-container--nested {
     border-top: none;
-}
-
-.zusammenfassung-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--bg-color);
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-}
-
-.zusammenfassung-item .icon {
-    font-size: 1.1rem;
-}
-
-.zusammenfassung-item .count {
-    font-weight: 600;
-    color: var(--primary-color);
 }
 
 /* ===== Modal Dialog ===== */
@@ -2304,6 +2274,14 @@ body {
     margin-top: 0.75rem;
     min-height: 0;
     padding: 0.55rem 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.gruppen-karte-artikel-box .artikel-label {
+    flex: 1 1 12rem;
 }
 
 .gruppen-karte-artikel-box.match {
@@ -2502,10 +2480,19 @@ body {
 }
 
 /* ===== Gruppen-Konfigurator: Leitungsübersicht ===== */
-/* Der Standardcontainer schneidet Überhang ab – im schmalen Panel wäre sonst
-   die Aktionsspalte unerreichbar. */
+/* Der Standardcontainer schneidet Überhang ab – im schmalen Panel horizontal scrollen. */
+.table-container.gruppen-tabelle-container {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
 .gruppen-tabelle-container {
     overflow-x: auto;
+}
+
+.gruppen-tabelle-container .leitung-tabelle {
+    width: 100%;
+    table-layout: auto;
 }
 
 .leitung-tabelle {
@@ -2551,8 +2538,12 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-/* Platzhalter-Nummern sind lang und dürfen umbrechen, statt die Tabelle
-   ins horizontale Scrollen zu zwingen. */
+.leitung-tabelle-anzahl {
+    width: 3.5rem;
+    min-width: 3.5rem;
+    text-align: center;
+}
+
 .leitung-tabelle-artikel {
     font-family: monospace;
     overflow-wrap: anywhere;
@@ -2563,33 +2554,27 @@ body {
     border-top: 2px solid var(--border-color);
 }
 
-/* Aktionsspalte bleibt beim horizontalen Scrollen stehen. */
 .leitung-tabelle-aktionen {
-    position: sticky;
-    right: 0;
-    width: 1%;
-    padding-left: 1rem;
-    white-space: nowrap;
-    background: var(--card-bg);
-    box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.25);
+    width: 7.5rem;
+    min-width: 7.5rem;
+    max-width: 7.5rem;
+    padding: 0.45rem 0.6rem;
+    text-align: right;
+    vertical-align: middle;
 }
 
 .leitung-tabelle thead .leitung-tabelle-aktionen {
-    background: var(--bg-color);
-}
-
-.leitung-tabelle tbody tr:hover .leitung-tabelle-aktionen {
-    background: #f9fafb;
-}
-
-.leitung-tabelle tbody tr.aktiv .leitung-tabelle-aktionen {
-    background: #fff1e4;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    text-align: right;
 }
 
 .leitung-tabelle .table-actions {
     display: flex;
-    gap: 0.25rem;
+    gap: 0.35rem;
     justify-content: flex-end;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
 #gruppen-leitung-editor:empty {

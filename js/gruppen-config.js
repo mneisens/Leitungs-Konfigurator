@@ -105,6 +105,12 @@ const LEITUNG_PRESETS = {
         kategorie: 'sonstiges', hersteller: 'Phoenix Contact',
         steckerA: 'offen', steckerB: 'offen',
         artikelnummer: 'PHOENIX-17ADRIG'
+    },
+    'erdungsleitung': {
+        label: 'Erdungsleitung 1×95 mm²',
+        kategorie: 'oelflex', hersteller: 'Schaeffler',
+        steckerA: 'offen', steckerB: 'offen',
+        artikelnummer: '4521005'
     }
 };
 
@@ -117,8 +123,10 @@ const UNIVERSAL_PRESETS = ['oelflex'];
  */
 const GRUPPEN = {
     '=000': {
-        hinweis: 'Einspeisung – meist nur Zuleitung und Querschnitt festhalten.',
-        leitungen: ['oelflex']
+        hinweis: 'Einspeisung – hier wird nur die Erdungsleitung erfasst (z. B. Schaeffler 4521005, 1×95 mm²).',
+        leitungen: ['erdungsleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
     },
     '=001': {
         hinweis: 'Hier ist in der Regel nichts anzugeben. Nur ausfüllen, wenn es Abweichungen gibt.',
@@ -133,25 +141,32 @@ const GRUPPEN = {
             'ethercat-m12-m12',
             'ethercat-m8-rj45',
             'ethercat-rj45-rj45'
-        ]
+        ],
+        ohneUniversal: true,
+        nurLeitungen: true
     },
     '=005': {
-        hinweis: 'IPC und Panel als Bauteile erfassen, dazu CP-Link- und Phoenix-Leitung.',
-        leitungen: ['cplink', 'phoenix-17', 'ethercat-m8-rj45'],
-        bauteile: ['ipc', 'panel']
+        hinweis: 'IPC und Panel als Bauteile erfassen, dazu CP-Link-Leitung und Phoenix-Leitung 17-adrig.',
+        leitungen: ['cplink', 'phoenix-17'],
+        bauteile: ['ipc', 'panel'],
+        ohneUniversal: true,
+        nurFestgelegteBauteile: true
     },
     '=006': {
         hinweis: 'SPS-Aufbau im Schaltschrank.',
         leitungen: ['ethercat-m8-m8', 'ethercat-m8-rj45', 'power-m8-m8']
     },
     '=007': {
-        hinweis: 'Sicherheitstechnik: Türschalter, Zweihandpult, Fußtaster, Lichtschranke und weitere Bauteile. Als Leitungen kommen Sensor- und Ölflexleitungen zum Einsatz.',
+        hinweis: 'Sicherheitstechnik: Türschalter, Zweihandpult, Fußtaster und Lichtschranke. Fehlt ein Typ im Katalog, direkt beim Anlegen neu erstellen.',
         leitungen: ['sensor-m8-m8', 'sensor-m8-offen', 'sensor-m12-m12', 'sensor-m12-offen', 'oelflex'],
-        bauteile: ['tuerschalter', 'zweihand', 'fusstaster', 'lichtschranke', 'nothalt-taster']
+        bauteile: ['tuerschalter', 'zweihand', 'fusstaster', 'lichtschranke'],
+        nurFestgelegteBauteile: true
     },
     '=009': {
-        hinweis: 'Regleraufbau inklusive Netzteil, Drosseln und Filter.',
-        leitungen: ['motorleitung', 'geberleitung', 'oelflex']
+        hinweis: 'Regleraufbau – nur Bauteile: Netzwechselrichter, Kapazitätsmodul, Drossel, Filter, Ringkerne und SAF-Modul.',
+        bauteile: ['netzwechselrichter', 'kapazitaetsmodul', 'drossel', 'filter', 'ringkern', 'saf-modul'],
+        nurBauteile: true,
+        nurFestgelegteBauteile: true
     },
     '=110': {
         hinweis: 'Schnittstelle zur externen Peripherie.',
@@ -229,20 +244,31 @@ export function getGruppenVorgaben(gruppe) {
     const fest = GRUPPEN[code] || {};
 
     let presetIds = fest.leitungen;
-    if (!presetIds) {
+    if (!presetIds && !fest.nurBauteile) {
         const regel = BEZEICHNUNG_REGELN.find(r => r.test.test(bezeichnung));
         presetIds = regel ? regel.leitungen : FALLBACK_LEITUNGEN;
     }
+    if (fest.nurBauteile) presetIds = [];
 
-    const alleIds = Array.from(new Set([...presetIds, ...UNIVERSAL_PRESETS]));
-    const bauteilTypen = Array.from(new Set([
-        ...(fest.bauteile || []),
-        ...getBauteilTypenAusKatalog(code)
-    ]));
+    const alleIds = fest.ohneUniversal || fest.nurFestgelegteLeitungen
+        ? (presetIds || [])
+        : Array.from(new Set([...(presetIds || []), ...UNIVERSAL_PRESETS]));
+
+    let bauteilTypen;
+    if (fest.nurFestgelegteBauteile || fest.nurBauteile || fest.nurLeitungen) {
+        bauteilTypen = fest.bauteile || [];
+    } else {
+        bauteilTypen = Array.from(new Set([
+            ...(fest.bauteile || []),
+            ...getBauteilTypenAusKatalog(code)
+        ]));
+    }
 
     return {
         hinweis: fest.hinweis || '',
         leitungPresets: alleIds.map(getLeitungPreset).filter(Boolean),
-        bauteilTypen
+        bauteilTypen,
+        nurLeitungen: Boolean(fest.nurLeitungen),
+        nurBauteile: Boolean(fest.nurBauteile)
     };
 }
