@@ -6,7 +6,7 @@
  * denselben Bestand pflegen.
  */
 import { appState } from './state.js';
-import { mergeKatalogAdditions, mergeBauteileAdditions, ensureBauteilTyp, ensureKatalogLists } from './catalog.js';
+import { mergeKatalogAdditions, mergeBauteileAdditions, ensureBauteilTyp, ensureKatalogLists, getBauteilByNummer } from './catalog.js';
 import {
     getKatalogAdditions,
     persistKatalogAdditions,
@@ -164,6 +164,51 @@ export async function upsertBauteilKatalogEntry(artikel, options = {}) {
     }
 
     await saveBauteilAdditions(additions);
+    ensureBauteilTyp(payload);
+    return payload;
+}
+
+
+/**
+ * Benennt ein Platzhalter-Bauteil auf eine echte Artikelnummer um.
+ * @param {string} alteArtikelnummer
+ * @param {object} artikel
+ * @returns {Promise<object>}
+ */
+export async function renameBauteilKatalogEntry(alteArtikelnummer, artikel) {
+    const alt = (alteArtikelnummer || '').trim();
+    const neu = (artikel?.artikelnummer || '').trim();
+    if (!alt || !neu) {
+        throw new Error('Alte oder neue Artikelnummer fehlt.');
+    }
+    if (alt.toLowerCase() === neu.toLowerCase()) {
+        return upsertBauteilKatalogEntry(artikel, { isNew: false });
+    }
+
+    const altKey = alt.toLowerCase();
+    const neuKey = neu.toLowerCase();
+    const bestehend = getBauteilByNummer(alt);
+    const additions = await loadBauteilAdditions();
+    const altAddition = additions.find(a => (a.artikelnummer || '').toLowerCase() === altKey);
+    const nurNachgetragen = Boolean(altAddition?.custom && !altAddition?.override && !bestehend?.modified);
+
+    let next = additions.filter(a => (a.artikelnummer || '').toLowerCase() !== altKey);
+    next = next.filter(a => (a.artikelnummer || '').toLowerCase() !== neuKey);
+
+    if (!nurNachgetragen) {
+        next.push({ artikelnummer: alt, hidden: true, override: true });
+    }
+
+    const payload = { ...artikel, artikelnummer: neu, override: true };
+    if (nurNachgetragen) {
+        payload.custom = true;
+    }
+    if (!payload.placeholder || !neu.toUpperCase().startsWith('PLACEHOLDER-')) {
+        delete payload.placeholder;
+    }
+
+    next.push(payload);
+    await saveBauteilAdditions(next);
     ensureBauteilTyp(payload);
     return payload;
 }

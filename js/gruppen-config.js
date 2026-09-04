@@ -6,6 +6,10 @@
  */
 import { appState } from './state.js';
 import { bauteilPasstZuGruppe } from './catalog.js';
+import {
+    getCustomLeitungPreset,
+    getCustomPresetIdsForGruppe
+} from './gruppen-preset-store.js';
 
 /**
  * Wiederverwendbare Startwerte für Leitungskarten.
@@ -91,6 +95,21 @@ const LEITUNG_PRESETS = {
         label: 'Motorleitung',
         kategorie: 'motor', hersteller: 'Lapp Kabel'
     },
+    'beckhoff-motorleitung': {
+        label: 'Beckhoff Motorleitung',
+        bezeichnung: 'Beckhoff Motorleitung',
+        kategorie: 'motor',
+        hersteller: 'Beckhoff',
+        festLeitungstyp: true
+    },
+    'zuleitung': {
+        label: 'Zuleitung',
+        bezeichnung: 'Zuleitung',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['OELFLEX110-5G25', 'OELFLEX110-4G25', '0021810']
+    },
     'geberleitung': {
         label: 'Geberleitung',
         kategorie: 'geber', hersteller: 'IGUS'
@@ -111,6 +130,96 @@ const LEITUNG_PRESETS = {
         kategorie: 'oelflex', hersteller: 'Schaeffler',
         steckerA: 'offen', steckerB: 'offen',
         artikelnummer: '4521005'
+    },
+    'bremse-geoeffnet': {
+        label: 'Bremse geöffnet',
+        bezeichnung: 'Bremse geöffnet',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M8 3-polig Stecker', ausrichtungA: 'gerade',
+        steckerB: 'M8 3-polig Buchse', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK2000-2122',
+        artikelnummer: 'ZK2000-2122-0015',
+        laenge: 1.5
+    },
+    'sensorleitung-ventil': {
+        label: 'Sensorleitung Ventil',
+        bezeichnung: 'Sensorleitung Ventil',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 5-polig Stecker', ausrichtungA: 'gerade',
+        steckerB: 'M8 3-polig Buchse', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK2000-7122',
+        artikelnummer: 'ZK2000-7122-0010',
+        laenge: 1
+    },
+    'ventilstecker-bremse': {
+        label: 'Ventilstecker Bremse',
+        bezeichnung: 'Ventilstecker Bremse',
+        kategorie: 'sensor', hersteller: 'Murr Elektronik',
+        steckerA: 'M12 4-polig Stecker', ausrichtungA: 'gerade',
+        steckerB: 'Ventilstecker DIN C',
+        artikelPrefix: '7000-41081-636',
+        artikelnummer: '7000-41081-6360100',
+        laenge: 1
+    },
+    'powerleitung-mts': {
+        label: 'Powerleitung MTS',
+        bezeichnung: 'Powerleitung MTS',
+        kategorie: 'power', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2020-3200',
+        artikelnummer: 'ZK2020-3200-0100',
+        laenge: 10
+    },
+    'sensorleitung-eaton-taster': {
+        label: 'Sensorleitung Eaton Taster',
+        bezeichnung: 'Sensorleitung Eaton Taster',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Buchse', ausrichtungA: 'gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2000-6200',
+        artikelnummer: 'ZK2000-6200-0100',
+        laenge: 10
+    },
+    'sensorleitung-not-halt-taster': {
+        label: 'Sensorleitung Not-Halt Taster',
+        bezeichnung: 'Sensorleitung Not-Halt Taster',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Buchse', ausrichtungA: 'gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2000-6200',
+        artikelnummer: 'ZK2000-6200-0100',
+        laenge: 10
+    },
+    'sensorleitung-lampe': {
+        label: 'Sensorleitung Lampe',
+        bezeichnung: 'Sensorleitung Lampe',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Buchse', ausrichtungA: 'gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2000-6200',
+        artikelnummer: 'ZK2000-6200-0100',
+        laenge: 10
+    },
+    'sensorleitung-stoessel': {
+        label: 'Sensorleitung Stößel',
+        bezeichnung: 'Sensorleitung Stößel',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Stecker', ausrichtungA: 'gerade',
+        steckerB: 'M12 4-polig Buchse', ausrichtungB: 'gewinkelt',
+        artikelPrefix: 'ZK2000-6164',
+        artikelnummer: 'ZK2000-6164-0020',
+        laenge: 2
+    },
+    'sensorleitung-tisch': {
+        label: 'Sensorleitung Tisch',
+        bezeichnung: 'Sensorleitung Tisch',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Buchse', ausrichtungA: 'gewinkelt',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2000-6400',
+        artikelnummer: 'ZK2000-6400-0100',
+        laenge: 10
     }
 };
 
@@ -162,6 +271,170 @@ const GRUPPEN = {
         bauteile: ['tuerschalter', 'zweihand', 'fusstaster', 'lichtschranke'],
         nurFestgelegteBauteile: true
     },
+    '=011': {
+        hinweis: 'Spindel 1 Bremse: drei Leitungen erfassen – Bremse geöffnet, Sensorleitung Ventil und Ventilstecker Bremse. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['bremse-geoeffnet', 'sensorleitung-ventil', 'ventilstecker-bremse'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=021': {
+        hinweis: 'Spindel 2 Bremse: drei Leitungen erfassen – Bremse geöffnet, Sensorleitung Ventil und Ventilstecker Bremse. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['bremse-geoeffnet', 'sensorleitung-ventil', 'ventilstecker-bremse'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=031': {
+        hinweis: 'Spindel 3 Bremse: drei Leitungen erfassen – Bremse geöffnet, Sensorleitung Ventil und Ventilstecker Bremse. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['bremse-geoeffnet', 'sensorleitung-ventil', 'ventilstecker-bremse'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=041': {
+        hinweis: 'Spindel 4 Bremse: drei Leitungen erfassen – Bremse geöffnet, Sensorleitung Ventil und Ventilstecker Bremse. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['bremse-geoeffnet', 'sensorleitung-ventil', 'ventilstecker-bremse'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=012': {
+        hinweis: 'Spindel 1 Linearmaßstab: Powerleitung MTS erfassen (ZK2020-3200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['powerleitung-mts'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=022': {
+        hinweis: 'Spindel 2 Linearmaßstab: Powerleitung MTS erfassen (ZK2020-3200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['powerleitung-mts'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=032': {
+        hinweis: 'Spindel 3 Linearmaßstab: Powerleitung MTS erfassen (ZK2020-3200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['powerleitung-mts'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=042': {
+        hinweis: 'Spindel 4 Linearmaßstab: Powerleitung MTS erfassen (ZK2020-3200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['powerleitung-mts'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=013': {
+        hinweis: 'Spindel 1 Drucksensoren: DMS-Sensor (Typ DZ1) erfassen – Länge 2 m, 4 m oder 6 m wählen.',
+        bauteile: ['dms'],
+        nurBauteile: true,
+        nurFestgelegteBauteile: true,
+        bauteilLaengen: [2, 4, 6],
+        bauteilStandardLaenge: 2
+    },
+    '=023': {
+        hinweis: 'Spindel 2 Drucksensoren: DMS-Sensor (Typ DZ1) erfassen – Länge 2 m, 4 m oder 6 m wählen.',
+        bauteile: ['dms'],
+        nurBauteile: true,
+        nurFestgelegteBauteile: true,
+        bauteilLaengen: [2, 4, 6],
+        bauteilStandardLaenge: 2
+    },
+    '=033': {
+        hinweis: 'Spindel 3 Drucksensoren: DMS-Sensor (Typ DZ1) erfassen – Länge 2 m, 4 m oder 6 m wählen.',
+        bauteile: ['dms'],
+        nurBauteile: true,
+        nurFestgelegteBauteile: true,
+        bauteilLaengen: [2, 4, 6],
+        bauteilStandardLaenge: 2
+    },
+    '=043': {
+        hinweis: 'Spindel 4 Drucksensoren: DMS-Sensor (Typ DZ1) erfassen – Länge 2 m, 4 m oder 6 m wählen.',
+        bauteile: ['dms'],
+        nurBauteile: true,
+        nurFestgelegteBauteile: true,
+        bauteilLaengen: [2, 4, 6],
+        bauteilStandardLaenge: 2
+    },
+    '=014': {
+        hinweis: 'Spindel 1 Temperatursensoren: Sensorleitung Stößel und Sensorleitung Tisch erfassen. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-stoessel', 'sensorleitung-tisch'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=015': {
+        hinweis: 'Spindel 1 Zusatzbedienung: Sensorleitung Eaton Taster und Sensorleitung Not-Halt Taster erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-eaton-taster', 'sensorleitung-not-halt-taster'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=024': {
+        hinweis: 'Spindel 2 Temperatursensoren: Sensorleitung Stößel und Sensorleitung Tisch erfassen. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-stoessel', 'sensorleitung-tisch'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=025': {
+        hinweis: 'Spindel 2 Zusatzbedienung: Sensorleitung Eaton Taster und Sensorleitung Not-Halt Taster erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-eaton-taster', 'sensorleitung-not-halt-taster'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=034': {
+        hinweis: 'Spindel 3 Temperatursensoren: Sensorleitung Stößel und Sensorleitung Tisch erfassen. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-stoessel', 'sensorleitung-tisch'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=035': {
+        hinweis: 'Spindel 3 Zusatzbedienung: Sensorleitung Eaton Taster und Sensorleitung Not-Halt Taster erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-eaton-taster', 'sensorleitung-not-halt-taster'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=044': {
+        hinweis: 'Spindel 4 Temperatursensoren: Sensorleitung Stößel und Sensorleitung Tisch erfassen. Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-stoessel', 'sensorleitung-tisch'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=045': {
+        hinweis: 'Spindel 4 Zusatzbedienung: Sensorleitung Eaton Taster und Sensorleitung Not-Halt Taster erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-eaton-taster', 'sensorleitung-not-halt-taster'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=016': {
+        hinweis: 'Spindel 1 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-lampe'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=026': {
+        hinweis: 'Spindel 2 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-lampe'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=036': {
+        hinweis: 'Spindel 3 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-lampe'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=046': {
+        hinweis: 'Spindel 4 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        leitungen: ['sensorleitung-lampe'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=100': {
+        hinweis: 'Vorschub: Beckhoff Motorleitung erfassen. Typ und Länge wählen.',
+        leitungen: ['beckhoff-motorleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=200': {
+        hinweis: 'Kühlung: Zuleitung erfassen – Ölflex 5G2,5, 4G2,5 oder 4G1,5 wählen und Länge eingeben.',
+        leitungen: ['zuleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
     '=009': {
         hinweis: 'Regleraufbau – nur Bauteile: Netzwechselrichter, Kapazitätsmodul, Drossel, Filter, Ringkerne und SAF-Modul.',
         bauteile: ['netzwechselrichter', 'kapazitaetsmodul', 'drossel', 'filter', 'ringkern', 'saf-modul'],
@@ -212,6 +485,8 @@ const FALLBACK_LEITUNGEN = ['ethercat-m8-m8', 'sensor-m8-offen', 'power-m8-offen
  * @returns {object|null}
  */
 export function getLeitungPreset(presetId) {
+    const custom = getCustomLeitungPreset(presetId);
+    if (custom) return custom;
     const preset = LEITUNG_PRESETS[presetId];
     return preset ? { id: presetId, ...preset } : null;
 }
@@ -264,11 +539,21 @@ export function getGruppenVorgaben(gruppe) {
         ]));
     }
 
+    const customIds = getCustomPresetIdsForGruppe(code);
+    const presetMap = new Map();
+    [...alleIds, ...customIds].forEach(id => {
+        const preset = getLeitungPreset(id);
+        if (preset) presetMap.set(preset.id, preset);
+    });
+
     return {
         hinweis: fest.hinweis || '',
-        leitungPresets: alleIds.map(getLeitungPreset).filter(Boolean),
+        leitungPresets: Array.from(presetMap.values()),
         bauteilTypen,
+        bauteilLaengen: fest.bauteilLaengen || [],
+        bauteilStandardLaenge: fest.bauteilStandardLaenge,
         nurLeitungen: Boolean(fest.nurLeitungen),
-        nurBauteile: Boolean(fest.nurBauteile)
+        nurBauteile: Boolean(fest.nurBauteile),
+        nurFestgelegteBauteile: Boolean(fest.nurFestgelegteBauteile)
     };
 }

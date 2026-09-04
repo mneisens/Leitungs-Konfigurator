@@ -91,6 +91,19 @@ import {
     gruppeSaveNeuesLeitung,
     gruppeSaveNeueGruppe,
     gruppeDeleteZusaetzlicheGruppe,
+    gruppeOpenEigenerButtonFormular,
+    gruppeCancelEigenerButtonFormular,
+    gruppeOnEigenerButtonField,
+    gruppeOnEigenerButtonKategorieChange,
+    gruppeOnEigenerButtonHerstellerChange,
+    gruppeOnEigenerButtonKatalogSuche,
+    gruppeOnEigenerButtonKatalogArtikel,
+    gruppeOnEigenerButtonVorgabeTypChange,
+    gruppeOnEigenerButtonAlleTypen,
+    gruppeOnEigenerButtonWhitelistToggle,
+    gruppeSaveEigenerButton,
+    gruppeDeleteEigenerButton,
+    gruppeSaveLeitungAlsButton,
     toggleBauteilTypSchnellwahl
 } from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
@@ -150,13 +163,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         await loadProjects();
         updateAuthUI();
-        // Lokal: Katalog-Nachträge aus localStorage laden
         const { mergeKatalogAdditions } = await import('./js/catalog.js');
+        const { loadGruppenPresets } = await import('./js/gruppen-preset-store.js');
         try {
             const raw = localStorage.getItem('leitungskonfigurator_katalog_additions');
             const additions = raw ? JSON.parse(raw) : [];
             if (Array.isArray(additions)) mergeKatalogAdditions(additions);
         } catch { /* ignore */ }
+        await loadGruppenPresets();
         showView('home');
         if (window.firebaseConfig?.apiKey) {
             const { showModal } = await import('./js/modal.js');
@@ -243,6 +257,19 @@ Object.assign(window, {
     gruppeSaveNeuesLeitung,
     gruppeSaveNeueGruppe,
     gruppeDeleteZusaetzlicheGruppe,
+    gruppeOpenEigenerButtonFormular,
+    gruppeCancelEigenerButtonFormular,
+    gruppeOnEigenerButtonField,
+    gruppeOnEigenerButtonKategorieChange,
+    gruppeOnEigenerButtonHerstellerChange,
+    gruppeOnEigenerButtonKatalogSuche,
+    gruppeOnEigenerButtonKatalogArtikel,
+    gruppeOnEigenerButtonVorgabeTypChange,
+    gruppeOnEigenerButtonAlleTypen,
+    gruppeOnEigenerButtonWhitelistToggle,
+    gruppeSaveEigenerButton,
+    gruppeDeleteEigenerButton,
+    gruppeSaveLeitungAlsButton,
     toggleBauteilTypSchnellwahl,
     exportCSV,
     exportPDF,

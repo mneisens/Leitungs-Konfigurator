@@ -17,17 +17,27 @@ import {
 import { getBaseSteckerTyp, getFullSteckerTyp, hasAusrichtung } from './stecker-utils.js';
 import {
     findArtikel,
+    deriveArtikelPrefix,
+    formatSteckerKurz,
     getHerstellerFuerKategorie,
     getKategorieName,
     getKategorien,
+    getKonfektionierteKatalogArtikel,
     getLaengenOptionen,
     getMeterwareArtikel,
     getPassendeArtikel,
     getSteckerAOptionen,
     getSteckerBOptionen,
-    istMeterwareKategorie
+    istMeterwareKategorie,
+    splitSteckerAngabe
 } from './leitung-optionen.js';
 import { getGruppenVorgaben, getLeitungPreset } from './gruppen-config.js';
+import {
+    addCustomGruppenPreset,
+    deleteCustomGruppenPreset,
+    getCustomPresetIdsForGruppe,
+    presetFromLeitung
+} from './gruppen-preset-store.js';
 import { addBauteilZumKatalog, addLeitungZumKatalog, bauteilnummerVergeben, leitungsnummerVergeben, bildePlatzhalterNummer } from './katalog-additions.js';
 import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } from './overview.js';
 import { showModal } from './modal.js';
@@ -52,6 +62,11 @@ let neuesBauteilFormular = null;
  * @type {{leitungId: string, kategorie: string, hersteller: string, artikelnummer: string, beschreibung: string, steckerA: string, steckerB: string, laenge: string|number, meterware: boolean}|null}
  */
 let neuesLeitungFormular = null;
+/**
+ * Offenes Formular für einen eigenen Leitungs-Button.
+ * @type {object|null}
+ */
+let eigenerButtonFormular = null;
 
 
 /**
@@ -162,7 +177,10 @@ function optionen(werte, selected) {
     return werte.map(eintrag => {
         const value = typeof eintrag === 'object' ? eintrag.value : eintrag;
         const label = typeof eintrag === 'object' ? eintrag.label : eintrag;
-        const istAktiv = String(value) === aktuell ? ' selected' : '';
+        const istAktiv = String(value) === aktuell
+            || (Number(value) === Number(selected) && !Number.isNaN(Number(value)))
+            ? ' selected'
+            : '';
         return `<option value="${escapeHtml(String(value))}"${istAktiv}>${escapeHtml(String(label))}</option>`;
     }).join('');
 }
@@ -502,6 +520,7 @@ function renderGruppenPanel() {
                 </div>
                 <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen)}</div>
                 ${gesperrt ? '' : renderLeitungButtons(vorgaben.leitungPresets)}
+                ${gesperrt ? '' : renderEigeneButtonVerwaltung(gruppe.code)}
                 ${gesperrt ? '' : renderNeuesLeitungFormular()}
                 <div id="gruppen-leitung-editor">${renderLeitungEditor()}</div>
             </div>
@@ -571,6 +590,9 @@ function getSichtbareBauteilTypen(alleTypen) {
 function renderBauteilSchnellwahlEinstellungen(alleTypen) {
     if (!alleTypen.length) return '';
 
+    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
+    if (vorgaben.nurFestgelegteBauteile && vorgaben.nurBauteile) return '';
+
     const ausgeblendet = new Set(getGruppenStatus(aktiveGruppe).ausgeblendeteBauteilTypen || []);
     const checks = alleTypen.map(typ => {
         const name = getBauteilTypName(typ);
@@ -625,8 +647,11 @@ export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
  * @returns {string}
  */
 function renderBauteilButtons(typen) {
+    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
+    const nurFest = vorgaben.nurFestgelegteBauteile && vorgaben.nurBauteile;
+
     const schnellwahl = typen.map(typ => `
-        <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddBauteil('${escapeHtml(typ)}')">
+        <button type="button" class="btn btn-success btn-small" onclick="gruppeAddBauteil('${escapeHtml(typ)}')">
             + ${escapeHtml(getBauteilTypName(typ))}
         </button>
     `).join('');
@@ -634,8 +659,10 @@ function renderBauteilButtons(typen) {
     return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
         <span class="gruppen-add-hinweis">Bauteil hinzufügen:</span>
         ${schnellwahl}
+        ${nurFest ? '' : `
         <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddBauteil('')">+ Anderes Bauteil</button>
         <button type="button" class="btn btn-primary btn-small" onclick="gruppeOpenBauteilFormular('', '')">➕ Bauteil neu anlegen</button>
+        `}
     </div>`;
 }
 
@@ -843,10 +870,14 @@ export async function gruppeSaveNeuesBauteil() {
  * @returns {string}
  */
 function getBauteilLabel(bauteil) {
-    return bauteil.bezeichnung
+    const basis = bauteil.bezeichnung
         || bauteil.artikelnummer
         || getBauteilTypName(bauteil.typ)
         || 'Bauteil';
+    if (bauteil.laenge) {
+        return `${basis} (${formatLaenge(bauteil.laenge)} m)`;
+    }
+    return basis;
 }
 
 
@@ -985,6 +1016,13 @@ export function gruppeCloseBauteilEditor() {
 function renderBauteilKarte(bauteil) {
     const gesperrt = istSchreibgeschuetzt();
     const disabled = gesperrt ? ' disabled' : '';
+    const vorgaben = getGruppenVorgaben(getGruppe(bauteil.gruppe));
+    const laengen = vorgaben.bauteilLaengen || [];
+
+    if (laengen.length) {
+        return renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt);
+    }
+
     const typen = getTypenFuerGruppe(aktiveGruppe);
     const artikelliste = bauteil.typ
         ? getArtikelAuswahlFuerGruppe(bauteil.typ, bauteil.artikelnummer)
@@ -1039,6 +1077,60 @@ function renderBauteilKarte(bauteil) {
             </div>
             ${bauteil.artikelnummer ? `<p class="gruppen-karte-artikel">${escapeHtml(bauteil.bezeichnung || '')}
                 <strong>${escapeHtml(bauteil.artikelnummer)}</strong></p>` : ''}
+        </div>
+    `;
+}
+
+
+/**
+ * Vereinfachte Bauteil-Karte mit fester Artikelwahl und Längenauswahl (z. B. DMS).
+ * @param {object} bauteil
+ * @param {number[]} laengen
+ * @param {string} disabled
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt) {
+    const id = escapeHtml(bauteil.id);
+    const nummer = getBauteileDerGruppe(bauteil.gruppe).findIndex(b => b.id === bauteil.id) + 1;
+    const typName = getBauteilTypName(bauteil.typ);
+    const artikelLabel = bauteil.bezeichnung
+        ? `${bauteil.bezeichnung} (${bauteil.artikelnummer || ''})`
+        : (bauteil.artikelnummer || typName);
+
+    return `
+        <div class="gruppen-karte bauteil-karte" id="bauteil-karte-${id}">
+            <div class="gruppen-karte-kopf">
+                <strong class="gruppen-karte-titel">Bauteil ${nummer} bearbeiten</strong>
+                <div class="leitung-karte-aktionen">
+                    ${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small"
+                        onclick="gruppeDeleteBauteil('${id}')">Entfernen</button>`}
+                    <button type="button" class="btn btn-primary btn-small" title="Bearbeitung beenden"
+                            onclick="gruppeCloseBauteilEditor()">Fertig</button>
+                </div>
+            </div>
+            <div class="gruppen-karte-grid">
+                <div class="form-group gruppen-karte-breit">
+                    <label>Bauteil</label>
+                    <p class="gruppen-preset-info text-muted">${escapeHtml(typName)} · ${escapeHtml(artikelLabel)}</p>
+                </div>
+                <div class="form-group">
+                    <label>Länge</label>
+                    <select${disabled} onchange="gruppeUpdateBauteil('${id}', 'laenge', this.value)">
+                        ${optionen(laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` })), bauteil.laenge || '')}
+                    </select>
+                </div>
+                <div class="form-group gruppen-karte-anzahl">
+                    <label>Anzahl</label>
+                    <input type="number" min="1" step="1" value="${bauteil.anzahl || 1}"${disabled}
+                           onchange="gruppeUpdateBauteil('${id}', 'anzahl', this.value)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Verwendung / Kommentar</label>
+                <input type="text" value="${escapeHtml(bauteil.notiz || '')}" placeholder="z. B. Kraftsensor Stößel"${disabled}
+                       oninput="gruppeUpdateBauteilText('${id}', 'notiz', this.value)">
+            </div>
         </div>
     `;
 }
@@ -1116,6 +1208,11 @@ export function gruppeAddBauteil(typ) {
     }
 
     const artikel = typ ? getArtikelAuswahlFuerGruppe(typ)[0] : null;
+    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
+    const standardLaenge = vorgaben.bauteilStandardLaenge
+        ?? vorgaben.bauteilLaengen?.[0]
+        ?? undefined;
+
     const bauteil = {
         id: generateId('btl'),
         gruppe: aktiveGruppe,
@@ -1124,7 +1221,8 @@ export function gruppeAddBauteil(typ) {
         artikelnummer: artikel?.artikelnummer || '',
         bezeichnung: artikel?.beschreibung || '',
         notiz: '',
-        anzahl: 1
+        anzahl: 1,
+        laenge: standardLaenge
     };
     appState.currentProjekt.bauteile.push(bauteil);
 
@@ -1173,6 +1271,8 @@ export function gruppeUpdateBauteil(id, feld, wert) {
     } else if (feld === 'anzahl') {
         const anzahl = parseInt(wert, 10);
         bauteil.anzahl = Number.isNaN(anzahl) || anzahl < 1 ? 1 : anzahl;
+    } else if (feld === 'laenge') {
+        bauteil.laenge = parseFloat(String(wert).replace(',', '.')) || 0;
     }
 
     persistCurrentProjekt();
@@ -1234,12 +1334,16 @@ export async function gruppeDeleteBauteil(id) {
  * @returns {string}
  */
 function renderLeitungButtons(presets) {
-    const buttons = presets.map((preset, i) => `
-        <button type="button" class="btn ${i === 0 ? 'btn-success' : 'btn-secondary'} btn-small"
+    const buttons = presets.map((preset, i) => {
+        const eigen = preset.custom ? ' title="Eigener Button"' : '';
+        const klasse = preset.custom ? 'btn-secondary gruppen-btn-eigen' : (i === 0 ? 'btn-success' : 'btn-secondary');
+        return `
+        <button type="button" class="btn ${klasse} btn-small"${eigen}
                 onclick="gruppeAddLeitung('${escapeHtml(preset.id)}')">
-            + ${escapeHtml(preset.label)}
+            + ${escapeHtml(preset.label)}${preset.custom ? ' ★' : ''}
         </button>
-    `).join('');
+    `;
+    }).join('');
 
     return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
         <span class="gruppen-add-hinweis">Leitung hinzufügen:</span>
@@ -1247,6 +1351,520 @@ function renderLeitungButtons(presets) {
         <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddLeitung('')">+ Leere Leitung</button>
         <button type="button" class="btn btn-primary btn-small" onclick="gruppeOpenLeitungFormular('', '')">➕ Leitung neu anlegen</button>
     </div>`;
+}
+
+
+/**
+ * @param {string} gruppenCode
+ * @returns {object}
+ */
+function getDefaultEigenerButtonFormular(gruppenCode) {
+    return {
+        gruppeCode: gruppenCode || aktiveGruppe,
+        label: '',
+        bezeichnung: '',
+        kategorie: '',
+        hersteller: '',
+        vorgabeTyp: 'katalog',
+        katalogSuche: '',
+        katalogArtikelnummer: '',
+        steckerLabel: '',
+        artikelPrefix: '',
+        artikelnummer: '',
+        laenge: '',
+        steckerA: '',
+        steckerB: '',
+        ausrichtungA: 'gerade',
+        ausrichtungB: 'gerade',
+        alleTypen: true,
+        artikelWhitelist: []
+    };
+}
+
+
+/**
+ * Übernimmt Katalogdaten einer Leitung ins Button-Formular.
+ * @param {object} form
+ * @param {string} artikelnummer
+ * @returns {boolean}
+ */
+function applyKatalogArtikelToButtonForm(form, artikelnummer) {
+    const artikel = getArtikelByNummer(artikelnummer);
+    if (!artikel || artikel.meterware) return false;
+
+    const steckerA = splitSteckerAngabe(artikel.steckerA);
+    const steckerB = splitSteckerAngabe(artikel.steckerB);
+
+    form.katalogArtikelnummer = artikel.artikelnummer;
+    form.katalogSuche = artikel.artikelnummer;
+    form.kategorie = artikel.kategorie || form.kategorie;
+    form.hersteller = artikel.hersteller || form.hersteller;
+    form.artikelnummer = artikel.artikelnummer;
+    form.artikelPrefix = deriveArtikelPrefix(artikel.artikelnummer);
+    form.laenge = artikel.laenge || '';
+    form.steckerA = steckerA.basis;
+    form.steckerB = steckerB.basis;
+    form.ausrichtungA = steckerA.ausrichtung;
+    form.ausrichtungB = steckerB.ausrichtung;
+    form.steckerLabel = `${formatSteckerKurz(artikel.steckerA)} → ${formatSteckerKurz(artikel.steckerB)}`;
+    return true;
+}
+
+
+/**
+ * @param {string} gruppenCode
+ * @returns {string}
+ */
+function renderEigeneButtonVerwaltung(gruppenCode) {
+    const customIds = getCustomPresetIdsForGruppe(gruppenCode);
+    const customPresets = customIds.map(id => getLeitungPreset(id)).filter(Boolean);
+
+    const liste = customPresets.length
+        ? `<ul class="gruppen-eigene-button-liste">
+            ${customPresets.map(preset => `
+                <li>
+                    <span>${escapeHtml(preset.label)} <span class="text-muted">(${escapeHtml(getKategorieName(preset.kategorie) || preset.kategorie)})</span></span>
+                    <button type="button" class="btn btn-danger btn-small"
+                            onclick="gruppeDeleteEigenerButton('${escapeHtml(preset.id)}')">Entfernen</button>
+                </li>
+            `).join('')}
+           </ul>`
+        : '<p class="text-muted gruppen-eigene-button-leer">Noch keine eigenen Buttons für diese Gruppe.</p>';
+
+    const formOpen = Boolean(eigenerButtonFormular && eigenerButtonFormular.gruppeCode === gruppenCode);
+
+    return `
+        <details class="gruppen-eigene-button-wrap"${formOpen ? ' open' : ''}>
+            <summary>Eigene Buttons verwalten</summary>
+            <p class="text-muted">Eigene Buttons gelten für alle Nutzer und erscheinen mit ★ neben den Standard-Buttons.</p>
+            ${liste}
+            ${formOpen ? renderEigenerButtonFormular() : `
+                <button type="button" class="btn btn-secondary btn-small"
+                        onclick="gruppeOpenEigenerButtonFormular('${escapeHtml(gruppenCode)}')">
+                    + Eigenen Button anlegen
+                </button>
+            `}
+        </details>
+    `;
+}
+
+
+/**
+ * @returns {string}
+ */
+function renderEigenerButtonFormular() {
+    const form = eigenerButtonFormular;
+    if (!form) return '';
+
+    const kategorieOptionen = getKategorien().map(k => ({ value: k.id, label: `${k.icon} ${k.name}` }));
+    const herstellerOptionen = getHerstellerFuerKategorie(form.kategorie).map(h => ({ value: h, label: h }));
+    const steckerAListe = getSteckerAOptionen(form.kategorie, form.hersteller);
+    const steckerBListe = getSteckerBOptionen(form.kategorie, form.hersteller, form.steckerA);
+
+    const meterwareTypen = istMeterwareKategorie(form.kategorie)
+        ? getMeterwareArtikel(form.kategorie, form.hersteller)
+        : [];
+
+    const katalogArtikel = form.vorgabeTyp === 'katalog'
+        ? getKonfektionierteKatalogArtikel({
+            kategorie: form.kategorie || undefined,
+            hersteller: form.hersteller || undefined,
+            suche: form.katalogSuche
+        })
+        : [];
+
+    const katalogFeld = form.vorgabeTyp === 'katalog'
+        ? `<div class="form-group gruppen-karte-breit">
+                <label>Katalog-Leitung *</label>
+                <input type="text" value="${escapeHtml(form.katalogSuche || '')}"
+                       list="gruppen-katalog-artikel-liste"
+                       placeholder="Artikelnummer suchen, z. B. ZK2000-6200-0100"
+                       oninput="gruppeOnEigenerButtonKatalogSuche(this.value)"
+                       onchange="gruppeOnEigenerButtonKatalogArtikel(this.value)">
+                <datalist id="gruppen-katalog-artikel-liste">
+                    ${katalogArtikel.map(a => `
+                        <option value="${escapeHtml(a.artikelnummer)}">${escapeHtml(a.beschreibung || a.artikelnummer)}</option>
+                    `).join('')}
+                </datalist>
+                ${form.steckerLabel ? `
+                    <p class="gruppen-preset-info text-muted">
+                        ${escapeHtml(form.steckerLabel)}
+                        · ${escapeHtml(form.hersteller || '')}
+                        · Reihe ${escapeHtml(form.artikelPrefix || '')}
+                        ${form.laenge ? ` · Standard ${escapeHtml(String(form.laenge))} m` : ''}
+                    </p>
+                ` : '<p class="text-muted">Stecker und Leitungsreihe werden aus dem Katalog übernommen.</p>'}
+           </div>`
+        : '';
+
+    const whitelistFeld = form.vorgabeTyp === 'meterware' && meterwareTypen.length
+        ? `<div class="form-group gruppen-karte-breit">
+                <label>Katalog-Typen (optional einschränken)</label>
+                <label class="admin-check">
+                    <input type="checkbox" ${form.alleTypen ? 'checked' : ''}
+                           onchange="gruppeOnEigenerButtonAlleTypen(this.checked)">
+                    Alle Typen dieses Herstellers anbieten
+                </label>
+                ${form.alleTypen ? '' : `<div class="gruppen-whitelist-checks">
+                    ${meterwareTypen.map(a => `
+                        <label class="admin-check">
+                            <input type="checkbox" value="${escapeHtml(a.artikelnummer)}"
+                                   ${form.artikelWhitelist.includes(a.artikelnummer) ? 'checked' : ''}
+                                   onchange="gruppeOnEigenerButtonWhitelistToggle(this.value, this.checked)">
+                            ${escapeHtml(a.beschreibung || a.artikelnummer)}
+                        </label>
+                    `).join('')}
+                </div>`}
+           </div>`
+        : '';
+
+    const steckerFeld = form.vorgabeTyp === 'stecker'
+        ? `<div class="form-group">
+                <label>Stecker A</label>
+                <select onchange="gruppeOnEigenerButtonField('steckerA', this.value)">
+                    ${optionen([{ value: '', label: '-- Stecker A --' }, ...steckerAListe], form.steckerA)}
+                </select>
+           </div>
+           <div class="form-group">
+                <label>Stecker B</label>
+                <select onchange="gruppeOnEigenerButtonField('steckerB', this.value)">
+                    ${optionen([{ value: '', label: '-- Stecker B --' }, ...steckerBListe], form.steckerB)}
+                </select>
+           </div>`
+        : '';
+
+    return `
+        <div class="gruppen-eigener-button-form">
+            <h5>Neuen Button anlegen</h5>
+            <div class="gruppen-karte-grid">
+                <div class="form-group">
+                    <label>Button-Name *</label>
+                    <input type="text" value="${escapeHtml(form.label)}" placeholder="z. B. Zuleitung"
+                           oninput="gruppeOnEigenerButtonField('label', this.value)">
+                </div>
+                <div class="form-group">
+                    <label>Verwendung</label>
+                    <input type="text" value="${escapeHtml(form.bezeichnung)}" placeholder="Optional, sonst wie Button-Name"
+                           oninput="gruppeOnEigenerButtonField('bezeichnung', this.value)">
+                </div>
+                <div class="form-group">
+                    <label>Leitungstyp</label>
+                    <select onchange="gruppeOnEigenerButtonKategorieChange(this.value)">
+                        ${optionen([{ value: '', label: '-- optional filtern --' }, ...kategorieOptionen], form.kategorie)}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hersteller</label>
+                    <select onchange="gruppeOnEigenerButtonHerstellerChange(this.value)">
+                        ${optionen([{ value: '', label: '-- optional filtern --' }, ...herstellerOptionen], form.hersteller)}
+                    </select>
+                </div>
+                <div class="form-group gruppen-karte-breit">
+                    <label>Vorgabe</label>
+                    <select onchange="gruppeOnEigenerButtonVorgabeTypChange(this.value)">
+                        ${optionen([
+                            { value: 'katalog', label: 'Leitung aus Katalog – Stecker und Längenreihe automatisch' },
+                            { value: 'meterware', label: 'Meterware – Typ und Länge wählen (Ölflex, Motor, Geber)' },
+                            { value: 'stecker', label: 'Stecker-Leitung – Stecker und Länge manuell wählen' },
+                            { value: 'basic', label: 'Nur Kategorie/Hersteller vorgeben' }
+                        ], form.vorgabeTyp)}
+                    </select>
+                </div>
+                ${katalogFeld}
+                ${steckerFeld}
+                ${whitelistFeld}
+            </div>
+            <div class="gruppen-eigener-button-aktionen">
+                <button type="button" class="btn btn-primary btn-small" onclick="gruppeSaveEigenerButton()">Button speichern</button>
+                <button type="button" class="btn btn-secondary btn-small" onclick="gruppeCancelEigenerButtonFormular()">Abbrechen</button>
+            </div>
+        </div>
+    `;
+}
+
+
+/**
+ * @param {string} gruppenCode
+ * @returns {void}
+ */
+export function gruppeOpenEigenerButtonFormular(gruppenCode) {
+    if (!assertCanEdit('Eigene Buttons anlegen')) return;
+    eigenerButtonFormular = getDefaultEigenerButtonFormular(gruppenCode);
+    renderGruppenPanel();
+}
+
+
+/**
+ * @returns {void}
+ */
+export function gruppeCancelEigenerButtonFormular() {
+    eigenerButtonFormular = null;
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} feld
+ * @param {string} wert
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonField(feld, wert) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular[feld] = wert;
+}
+
+
+/**
+ * @param {string} kategorie
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonKategorieChange(kategorie) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.kategorie = kategorie;
+    if (kategorie && eigenerButtonFormular.vorgabeTyp !== 'katalog') {
+        const hersteller = getHerstellerFuerKategorie(kategorie);
+        eigenerButtonFormular.hersteller = hersteller[0] || '';
+    }
+    if (istMeterwareKategorie(kategorie) && eigenerButtonFormular.vorgabeTyp === 'basic') {
+        eigenerButtonFormular.vorgabeTyp = 'meterware';
+    }
+    eigenerButtonFormular.artikelWhitelist = [];
+    clearKatalogAuswahlImButtonFormular();
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} hersteller
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonHerstellerChange(hersteller) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.hersteller = hersteller;
+    clearKatalogAuswahlImButtonFormular();
+    renderGruppenPanel();
+}
+
+
+/**
+ * Setzt die Katalog-Auswahl im Button-Formular zurück.
+ * @returns {void}
+ */
+function clearKatalogAuswahlImButtonFormular() {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.katalogArtikelnummer = '';
+    eigenerButtonFormular.steckerLabel = '';
+    eigenerButtonFormular.artikelPrefix = '';
+    eigenerButtonFormular.artikelnummer = '';
+    eigenerButtonFormular.laenge = '';
+    eigenerButtonFormular.steckerA = '';
+    eigenerButtonFormular.steckerB = '';
+}
+
+
+/**
+ * @param {string} suche
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonKatalogSuche(suche) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.katalogSuche = suche;
+    if (getArtikelByNummer(suche.trim())) {
+        applyKatalogArtikelToButtonForm(eigenerButtonFormular, suche.trim());
+    } else if (eigenerButtonFormular.katalogArtikelnummer
+        && suche.trim().toLowerCase() !== eigenerButtonFormular.katalogArtikelnummer.toLowerCase()) {
+        clearKatalogAuswahlImButtonFormular();
+    }
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonKatalogArtikel(artikelnummer) {
+    if (!eigenerButtonFormular) return;
+    const nr = (artikelnummer || '').trim();
+    eigenerButtonFormular.katalogSuche = nr;
+    if (!nr) {
+        clearKatalogAuswahlImButtonFormular();
+        renderGruppenPanel();
+        return;
+    }
+    if (!applyKatalogArtikelToButtonForm(eigenerButtonFormular, nr)) {
+        renderGruppenPanel();
+        return;
+    }
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} vorgabeTyp
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonVorgabeTypChange(vorgabeTyp) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.vorgabeTyp = vorgabeTyp;
+    clearKatalogAuswahlImButtonFormular();
+    eigenerButtonFormular.katalogSuche = '';
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {boolean} alle
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonAlleTypen(alle) {
+    if (!eigenerButtonFormular) return;
+    eigenerButtonFormular.alleTypen = alle;
+    if (alle) eigenerButtonFormular.artikelWhitelist = [];
+    renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @param {boolean} aktiv
+ * @returns {void}
+ */
+export function gruppeOnEigenerButtonWhitelistToggle(artikelnummer, aktiv) {
+    if (!eigenerButtonFormular) return;
+    const liste = new Set(eigenerButtonFormular.artikelWhitelist || []);
+    if (aktiv) liste.add(artikelnummer);
+    else liste.delete(artikelnummer);
+    eigenerButtonFormular.artikelWhitelist = Array.from(liste);
+    eigenerButtonFormular.alleTypen = eigenerButtonFormular.artikelWhitelist.length === 0;
+}
+
+
+/**
+ * Baut aus dem Formular die Preset-Daten.
+ * @returns {object}
+ */
+function buildPresetFromEigenerButtonFormular() {
+    const form = eigenerButtonFormular;
+    const data = {
+        label: form.label,
+        bezeichnung: form.bezeichnung || form.label,
+        kategorie: form.kategorie,
+        hersteller: form.hersteller,
+        vorgabeTyp: form.vorgabeTyp
+    };
+
+    if (form.vorgabeTyp === 'katalog' || form.vorgabeTyp === 'prefix') {
+        data.artikelPrefix = form.artikelPrefix;
+        data.artikelnummer = form.artikelnummer || '';
+        if (form.laenge) data.laenge = Number(form.laenge);
+        if (form.steckerA) {
+            data.steckerA = form.steckerA;
+            data.ausrichtungA = form.ausrichtungA || 'gerade';
+        }
+        if (form.steckerB) {
+            data.steckerB = form.steckerB;
+            data.ausrichtungB = form.ausrichtungB || 'gerade';
+        }
+    } else if (form.vorgabeTyp === 'meterware') {
+        data.festLeitungstyp = true;
+        if (!form.alleTypen && form.artikelWhitelist?.length) {
+            data.artikelWhitelist = form.artikelWhitelist.slice();
+        }
+    } else if (form.vorgabeTyp === 'stecker') {
+        data.steckerA = form.steckerA;
+        data.steckerB = form.steckerB;
+        data.ausrichtungA = form.ausrichtungA || 'gerade';
+        data.ausrichtungB = form.ausrichtungB || 'gerade';
+        if (form.laenge) data.laenge = Number(form.laenge);
+    }
+
+    return data;
+}
+
+
+/**
+ * @returns {Promise<void>}
+ */
+export async function gruppeSaveEigenerButton() {
+    if (!assertCanEdit('Eigene Buttons speichern')) return;
+    if (!eigenerButtonFormular) return;
+
+    try {
+        const data = buildPresetFromEigenerButtonFormular();
+        if ((data.vorgabeTyp === 'katalog' || data.vorgabeTyp === 'prefix') && !data.artikelPrefix) {
+            await showModal('Bitte eine Leitung aus dem Katalog auswählen (z. B. ZK2000-6200-0100).', {
+                type: 'warning',
+                title: 'Angaben unvollständig'
+            });
+            return;
+        }
+        if (data.vorgabeTyp === 'katalog' && !data.kategorie) {
+            await showModal('Die gewählte Katalog-Leitung konnte nicht zugeordnet werden.', {
+                type: 'warning',
+                title: 'Angaben unvollständig'
+            });
+            return;
+        }
+        await addCustomGruppenPreset(eigenerButtonFormular.gruppeCode, data);
+        eigenerButtonFormular = null;
+        renderGruppenPanel();
+        await showModal('Der Button wurde gespeichert und steht ab sofort in dieser Gruppe zur Verfügung.', {
+            type: 'success',
+            title: 'Button gespeichert'
+        });
+    } catch (error) {
+        await showModal(error.message || 'Speichern fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
+    }
+}
+
+
+/**
+ * @param {string} presetId
+ * @returns {Promise<void>}
+ */
+export async function gruppeDeleteEigenerButton(presetId) {
+    if (!assertCanEdit('Eigene Buttons löschen')) return;
+    const preset = getLeitungPreset(presetId);
+    const confirmed = await showModal(
+        preset ? `Button „${preset.label}“ wirklich entfernen?` : 'Diesen Button wirklich entfernen?',
+        { type: 'danger', title: 'Button entfernen', showCancel: true, confirmText: 'Entfernen', cancelText: 'Abbrechen' }
+    );
+    if (!confirmed) return;
+
+    try {
+        await deleteCustomGruppenPreset(presetId);
+        renderGruppenPanel();
+    } catch (error) {
+        await showModal(error.message || 'Löschen fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
+    }
+}
+
+
+/**
+ * @param {string} leitungId
+ * @returns {Promise<void>}
+ */
+export async function gruppeSaveLeitungAlsButton(leitungId) {
+    if (!assertCanEdit('Eigene Buttons anlegen')) return;
+    const leitung = findLeitung(leitungId);
+    if (!leitung) return;
+
+    const label = (leitung.bezeichnung || '').trim()
+        || prompt('Name für den Button:', leitung.bezeichnung || 'Eigener Button');
+    if (!label) return;
+
+    try {
+        const preset = presetFromLeitung(leitung, label.trim());
+        await addCustomGruppenPreset(leitung.gruppe || aktiveGruppe, preset);
+        renderGruppenPanel();
+        await showModal(`Button „${label.trim()}“ wurde für diese Gruppe gespeichert.`, {
+            type: 'success',
+            title: 'Button gespeichert'
+        });
+    } catch (error) {
+        await showModal(error.message || 'Speichern fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
+    }
 }
 
 
@@ -1642,7 +2260,7 @@ function aktualisiereArtikel(leitung) {
     }
 
     if (istMeterwareKategorie(leitung.kategorie)) {
-        const artikel = getMeterwareArtikel(leitung.kategorie)
+        const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, leitung.artikelWhitelist)
             .find(a => a.artikelnummer === leitung.artikelnummer);
         if (!artikel) {
             leitung.artikelnummer = leitung.artikelnummer || '';
@@ -1657,7 +2275,8 @@ function aktualisiereArtikel(leitung) {
         steckerA: leitung.steckerA,
         steckerB: leitung.steckerB,
         laenge: leitung.laenge,
-        bevorzugt: leitung.artikelnummer
+        bevorzugt: leitung.artikelnummer,
+        artikelPrefix: leitung.artikelPrefix
     });
 
     if (treffer?.artikel) {
@@ -1717,6 +2336,8 @@ function renderLeitungKarte(leitung) {
                        oninput="gruppeUpdateLeitungText('${id}', 'bezeichnung', this.value)">
                 <div class="leitung-karte-aktionen">
                     ${gesperrt ? '' : `
+                        <button type="button" class="btn btn-secondary btn-small" title="Als Button für diese Gruppe speichern"
+                                onclick="gruppeSaveLeitungAlsButton('${id}')">Als Button</button>
                         <button type="button" class="btn btn-secondary btn-small" title="Leitung kopieren"
                                 onclick="gruppeCopyLeitung('${id}')">Kopieren</button>
                         <button type="button" class="btn btn-danger btn-small" title="Leitung löschen"
@@ -1728,6 +2349,7 @@ function renderLeitungKarte(leitung) {
             </div>
 
             <div class="gruppen-karte-grid">
+                ${(leitung.artikelPrefix || leitung.festLeitungstyp) ? '' : `
                 <div class="form-group">
                     <label>Leitungstyp</label>
                     <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'kategorie', this.value)">
@@ -1740,7 +2362,12 @@ function renderLeitungKarte(leitung) {
                         ${optionen(herstellerOptionen, leitung.hersteller)}
                     </select>
                 </div>
-                ${meterware ? renderMeterwareFelder(leitung, disabled) : renderSteckerFelder(leitung, disabled)}
+                `}
+                ${meterware
+                    ? renderMeterwareFelder(leitung, disabled)
+                    : (leitung.artikelPrefix
+                        ? renderPresetLeitungFelder(leitung, disabled)
+                        : renderSteckerFelder(leitung, disabled))}
                 <div class="form-group gruppen-karte-anzahl">
                     <label>Anzahl</label>
                     <input type="number" min="1" step="1" value="${leitung.anzahl || 1}"${disabled}
@@ -1827,6 +2454,41 @@ export function gruppeCloseLeitungEditor() {
 
 
 /**
+ * Felder für vorgegebene Leitungsreihen (=011 Bremse): nur Länge wählen.
+ * @param {object} leitung
+ * @param {string} disabled
+ * @returns {string}
+ */
+function renderPresetLeitungFelder(leitung, disabled) {
+    const id = escapeHtml(leitung.id);
+    const prefix = leitung.artikelPrefix || '';
+    const laengen = getLaengenOptionen(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, prefix
+    );
+    const beispiel = getPassendeArtikel(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, prefix
+    )[0];
+    const typLabel = beispiel
+        ? (beispiel.beschreibung || '').replace(/\s+\d[\d.,]*\s*m\s*$/i, '').trim() || prefix
+        : prefix;
+
+    return `
+        <div class="form-group gruppen-karte-breit">
+            <label>Leitung</label>
+            <p class="gruppen-preset-info text-muted">${escapeHtml(typLabel)} · ${escapeHtml(leitung.hersteller || '')}</p>
+        </div>
+        <div class="form-group">
+            <label>Länge</label>
+            <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">
+                ${optionen([{ value: '', label: '-- Länge --' },
+                    ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], leitung.laenge || '')}
+            </select>
+        </div>
+    `;
+}
+
+
+/**
  * Felder für konfektionierte Leitungen mit Steckern.
  * @param {object} leitung
  * @param {string} disabled
@@ -1839,14 +2501,18 @@ function renderSteckerFelder(leitung, disabled) {
 
     const steckerAListe = getSteckerAOptionen(leitung.kategorie, leitung.hersteller);
     const steckerBListe = getSteckerBOptionen(leitung.kategorie, leitung.hersteller, leitung.steckerA);
-    const laengen = getLaengenOptionen(leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB);
+    const laengen = getLaengenOptionen(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+    );
     const freieLaenge = freieLaengeIds.has(leitung.id) || !laengen.length
         || (leitung.laenge > 0 && !laengen.includes(leitung.laenge));
 
     // Artikel ohne feste Länge (Meterware, Konfektion nach Maß) lassen sich nicht über
     // die Länge unterscheiden – dann braucht es eine eigene Auswahl.
     const ausfuehrungen = (leitung.steckerA && leitung.steckerB && !laengen.length)
-        ? getPassendeArtikel(leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB)
+        ? getPassendeArtikel(
+            leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+        )
         : [];
     const ausfuehrungFeld = ausfuehrungen.length > 1
         ? `<div class="form-group gruppen-karte-breit">
@@ -1927,7 +2593,7 @@ function renderAusrichtung(leitungId, seite, stecker) {
  */
 function renderMeterwareFelder(leitung, disabled) {
     const id = escapeHtml(leitung.id);
-    const artikel = getMeterwareArtikel(leitung.kategorie);
+    const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, leitung.artikelWhitelist);
 
     const typFeld = artikel.length
         ? `<select${disabled} onchange="gruppeUpdateLeitung('${id}', 'artikelnummer', this.value)">
@@ -1965,15 +2631,18 @@ export function gruppeAddLeitung(presetId) {
     const leitung = {
         id: generateId('ltg'),
         position: appState.currentProjekt.leitungen.length + 1,
-        bezeichnung: '',
+        bezeichnung: preset.bezeichnung || preset.label || '',
         kategorie: preset.kategorie || '',
         gruppe: aktiveGruppe,
         hersteller: preset.hersteller || '',
         artikelnummer: preset.artikelnummer || '',
+        artikelPrefix: preset.artikelPrefix || '',
+        artikelWhitelist: preset.artikelWhitelist || null,
         artikelCustom: '',
         laenge: preset.laenge || 0,
         steckerA: getFullSteckerTyp(preset.steckerA || '', preset.ausrichtungA),
         steckerB: getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB),
+        festLeitungstyp: preset.festLeitungstyp === true,
         notiz: '',
         anzahl: 1,
         erledigt: false
@@ -2016,22 +2685,26 @@ export function gruppeUpdateLeitung(id, feld, wert) {
         leitung.steckerA = '';
         leitung.steckerB = '';
         leitung.artikelnummer = '';
+        leitung.artikelPrefix = '';
         leitung.laenge = 0;
         freieLaengeIds.delete(id);
     } else if (feld === 'hersteller') {
         leitung.hersteller = wert;
         leitung.artikelnummer = '';
+        leitung.artikelPrefix = '';
     } else if (feld === 'steckerA') {
         const ausrichtung = zerlegeStecker(leitung.steckerA).ausrichtung;
         leitung.steckerA = getFullSteckerTyp(wert, ausrichtung);
         leitung.steckerB = '';
         leitung.laenge = 0;
         leitung.artikelnummer = '';
+        leitung.artikelPrefix = '';
     } else if (feld === 'steckerB') {
         const ausrichtung = zerlegeStecker(leitung.steckerB).ausrichtung;
         leitung.steckerB = getFullSteckerTyp(wert, ausrichtung);
         leitung.laenge = 0;
         leitung.artikelnummer = '';
+        leitung.artikelPrefix = '';
     } else if (feld === 'laenge') {
         leitung.laenge = parseFloat(String(wert).replace(',', '.')) || 0;
         // Bei Meterware bestimmt die Typauswahl die Artikelnummer, nicht die Länge.

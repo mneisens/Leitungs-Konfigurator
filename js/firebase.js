@@ -149,9 +149,55 @@ export async function loadKatalogAdditions() {
         const bauteilAdditions = await getBauteileAdditions();
         mergeBauteileAdditions(bauteilAdditions);
         bauteilAdditions.forEach(a => ensureBauteilTyp(a));
+
+        const { loadGruppenPresets } = await import('./gruppen-preset-store.js');
+        await loadGruppenPresets();
     } catch (error) {
         console.error('Katalog-Nachträge konnten nicht geladen werden:', error);
     }
+}
+
+
+/**
+ * @returns {firebase.firestore.DocumentReference|null}
+ */
+export function getGruppenPresetsConfigDoc() {
+    if (!appState.firebaseReady || !appState.firebaseDb) return null;
+    return appState.firebaseDb.collection('config').doc('gruppenPresets');
+}
+
+
+/**
+ * @returns {Promise<{ presets: Record<string, object>, gruppen: Record<string, string[]> }>}
+ */
+export async function getGruppenPresetsFromFirestore() {
+    const ref = getGruppenPresetsConfigDoc();
+    if (!ref) return { presets: {}, gruppen: {} };
+
+    const snap = await ref.get();
+    if (!snap.exists) return { presets: {}, gruppen: {} };
+    const data = snap.data() || {};
+    return {
+        presets: data.presets && typeof data.presets === 'object' ? data.presets : {},
+        gruppen: data.gruppen && typeof data.gruppen === 'object' ? data.gruppen : {}
+    };
+}
+
+
+/**
+ * @param {{ presets: Record<string, object>, gruppen: Record<string, string[]> }} config
+ * @returns {Promise<void>}
+ */
+export async function persistGruppenPresetsToFirestore(config) {
+    const ref = getGruppenPresetsConfigDoc();
+    if (!ref) throw new Error('Firebase ist nicht bereit.');
+
+    await ref.set({
+        presets: config?.presets || {},
+        gruppen: config?.gruppen || {},
+        updatedBy: appState.currentUser?.uid || '',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 }
 
 

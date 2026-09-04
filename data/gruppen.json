@@ -158,6 +158,12 @@
       "label": "=034 Spindel 3 Temperatursensoren"
     },
     {
+      "code": "=035",
+      "bezeichnung": "Spindel 3 Zusatzbedienung",
+      "bemerkung": "",
+      "label": "=035 Spindel 3 Zusatzbedienung"
+    },
+    {
       "code": "=036",
       "bezeichnung": "Spindel 3 Beleuchtung",
       "bemerkung": "",

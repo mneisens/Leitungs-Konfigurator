@@ -20,7 +20,8 @@ import {
     loadBauteilAdditions as loadBauteileAdditionsList,
     saveBauteilAdditions as saveBauteileAdditionsList,
     bauteilnummerVergeben,
-    upsertBauteilKatalogEntry
+    upsertBauteilKatalogEntry,
+    renameBauteilKatalogEntry
 } from './katalog-additions.js';
 import { getGruppeDisplay } from './overview.js';
 
@@ -635,6 +636,12 @@ export function cancelEditKatalogBauteil() {
 }
 
 
+function canEditBauteilArtikelnummer(artikelnummer) {
+    const artikel = artikelnummer ? getBauteilByNummer(artikelnummer) : null;
+    return Boolean(artikel?.placeholder);
+}
+
+
 /**
  * Passt Titel, Buttons und Felder des Bauteil-Formulars an.
  * @returns {void}
@@ -645,11 +652,17 @@ function updateBauteilFormMode() {
     const cancelBtn = document.getElementById('katalog-bauteil-form-cancel');
     const artikelInput = document.getElementById('katalog-bauteil-form-artikelnummer');
     const isEdit = Boolean(editingBauteilNr);
+    const artikelnummerEditable = isEdit && canEditBauteilArtikelnummer(editingBauteilNr);
 
     if (title) title.textContent = isEdit ? 'Bauteil bearbeiten' : 'Bauteil nachtragen';
     if (submitBtn) submitBtn.textContent = isEdit ? 'Änderungen speichern' : '+ Bauteil speichern';
     if (cancelBtn) cancelBtn.hidden = !isEdit;
-    if (artikelInput) artikelInput.readOnly = isEdit;
+    if (artikelInput) {
+        artikelInput.readOnly = isEdit && !artikelnummerEditable;
+        artikelInput.title = artikelnummerEditable
+            ? 'Platzhalter durch die echte Artikelnummer ersetzen'
+            : (isEdit ? 'Artikelnummer kann beim Bearbeiten nicht geändert werden' : '');
+    }
 }
 
 
@@ -747,14 +760,39 @@ export async function addKatalogBauteil() {
 async function saveKatalogBauteilEdit(article) {
     if (!editingBauteilNr) return;
 
+    const alteNr = editingBauteilNr.trim();
+    const neueNr = (article.artikelnummer || '').trim();
+    const altesBauteil = getBauteilByNummer(alteNr);
+
+    if (neueNr.toLowerCase() !== alteNr.toLowerCase()) {
+        if (!altesBauteil?.placeholder) {
+            showModal('Die Artikelnummer kann bei bestehenden Bauteilen nicht geändert werden.', {
+                type: 'warning',
+                title: 'Artikelnummer gesperrt'
+            });
+            return;
+        }
+        if (bauteilnummerVergeben(neueNr)) {
+            showModal(`Artikelnummer ${neueNr} ist bereits im Bauteile-Katalog.`, {
+                type: 'warning',
+                title: 'Bereits vorhanden'
+            });
+            return;
+        }
+    }
+
     try {
-        await upsertBauteilKatalogEntry(article, { isNew: false });
+        if (neueNr.toLowerCase() !== alteNr.toLowerCase()) {
+            await renameBauteilKatalogEntry(alteNr, article);
+        } else {
+            await upsertBauteilKatalogEntry(article, { isNew: false });
+        }
         editingBauteilNr = null;
         resetBauteilForm();
         updateBauteilFormMode();
         populateBauteileFormOptions();
         renderKatalogBauteileListe();
-        showModal(`Bauteil ${article.artikelnummer} wurde aktualisiert.`, {
+        showModal(`Bauteil ${neueNr} wurde aktualisiert.`, {
             type: 'success',
             title: 'Gespeichert'
         });

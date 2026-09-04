@@ -2423,6 +2423,72 @@ body {
     margin-top: 0.6rem;
 }
 
+.gruppen-eigene-button-wrap {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px dashed var(--border-color, #cbd5e1);
+    border-radius: 8px;
+    background: var(--surface-muted, #f8fafc);
+}
+
+.gruppen-eigene-button-wrap summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.gruppen-eigene-button-liste {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0;
+}
+
+.gruppen-eigene-button-liste li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.gruppen-eigene-button-liste li:last-child {
+    border-bottom: none;
+}
+
+.gruppen-eigener-button-form {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.gruppen-eigener-button-form h5 {
+    margin: 0 0 0.75rem;
+}
+
+.gruppen-eigener-button-aktionen {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.gruppen-whitelist-checks {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    max-height: 12rem;
+    overflow: auto;
+}
+
+.gruppen-btn-eigen {
+    border-style: dashed;
+}
+
+.gruppen-eigene-button-leer {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
 .gruppen-add-buttons-unten {
     justify-content: flex-start;
     align-items: center;

@@ -171,10 +171,12 @@ function sortiereStecker(basistypen) {
  * @param {string} hersteller
  * @param {string} steckerAFull
  * @param {string} steckerBFull
+ * @param {string} [artikelPrefix] - Nur Artikel dieser Nummern-Reihe (z. B. ZK2000-2122).
  * @returns {object[]}
  */
-export function getPassendeArtikel(kategorie, hersteller, steckerAFull, steckerBFull) {
+export function getPassendeArtikel(kategorie, hersteller, steckerAFull, steckerBFull, artikelPrefix) {
     return getArtikelPool(kategorie, hersteller).filter(a => {
+        if (artikelPrefix && !(a.artikelnummer || '').startsWith(artikelPrefix)) return false;
         const direkt = (!steckerAFull || a.steckerA === steckerAFull)
             && (!steckerBFull || a.steckerB === steckerBFull);
         const vertauscht = (!steckerAFull || a.steckerB === steckerAFull)
@@ -189,11 +191,12 @@ export function getPassendeArtikel(kategorie, hersteller, steckerAFull, steckerB
  * @param {string} hersteller
  * @param {string} steckerAFull
  * @param {string} steckerBFull
+ * @param {string} [artikelPrefix]
  * @returns {number[]}
  */
-export function getLaengenOptionen(kategorie, hersteller, steckerAFull, steckerBFull) {
+export function getLaengenOptionen(kategorie, hersteller, steckerAFull, steckerBFull, artikelPrefix) {
     const laengen = new Set();
-    getPassendeArtikel(kategorie, hersteller, steckerAFull, steckerBFull).forEach(a => {
+    getPassendeArtikel(kategorie, hersteller, steckerAFull, steckerBFull, artikelPrefix).forEach(a => {
         if (typeof a.laenge === 'number' && a.laenge > 0) laengen.add(a.laenge);
     });
     return Array.from(laengen).sort((a, b) => a - b);
@@ -208,11 +211,11 @@ export function getLaengenOptionen(kategorie, hersteller, steckerAFull, steckerB
  * @param {string} auswahl.steckerA - Vollständiger Steckertyp inkl. Ausrichtung.
  * @param {string} auswahl.steckerB - Vollständiger Steckertyp inkl. Ausrichtung.
  * @param {number} auswahl.laenge
- * @param {string} [auswahl.bevorzugt] - Artikelnummer, die bei mehreren Treffern gewinnt.
+ * @param {string} [auswahl.artikelPrefix] - Nur Artikel dieser Nummern-Reihe.
  * @returns {{artikel: object, exakt: boolean, verfuegbareLaengen: number[]}|null}
  */
-export function findArtikel({ kategorie, hersteller, steckerA, steckerB, laenge, bevorzugt }) {
-    const kandidaten = getPassendeArtikel(kategorie, hersteller, steckerA, steckerB);
+export function findArtikel({ kategorie, hersteller, steckerA, steckerB, laenge, bevorzugt, artikelPrefix }) {
+    const kandidaten = getPassendeArtikel(kategorie, hersteller, steckerA, steckerB, artikelPrefix);
     if (!kandidaten.length) return null;
 
     const laengeNum = parseFloat(laenge);
@@ -246,12 +249,20 @@ export function findArtikel({ kategorie, hersteller, steckerA, steckerB, laenge,
 /**
  * Auswählbare Meterware-Typen einer Kategorie (z. B. Ölflex- oder Motorleitungen).
  * @param {string} kategorie
+ * @param {string} [hersteller]
+ * @param {string[]} [artikelWhitelist]
  * @returns {object[]}
  */
-export function getMeterwareArtikel(kategorie) {
+export function getMeterwareArtikel(kategorie, hersteller, artikelWhitelist) {
     const alle = getArtikelFuerKategorie(kategorie);
-    const meterware = alle.filter(a => a.meterware);
-    return (meterware.length ? meterware : alle)
+    let gefiltert = hersteller
+        ? alle.filter(a => a.hersteller === hersteller)
+        : alle;
+    if (artikelWhitelist?.length) {
+        gefiltert = gefiltert.filter(a => artikelWhitelist.includes(a.artikelnummer));
+    }
+    const meterware = gefiltert.filter(a => a.meterware);
+    return (meterware.length ? meterware : gefiltert)
         .slice()
         .sort((a, b) => (a.beschreibung || '').localeCompare(b.beschreibung || '', 'de'));
 }
@@ -266,6 +277,95 @@ export function getArtikelLabel(artikel) {
     if (!artikel) return '';
     const teile = [artikel.beschreibung, artikel.artikelnummer].filter(Boolean);
     return teile.join(' · ');
+}
+
+
+/**
+ * Leitungsreihe aus einer Katalog-Artikelnummer ableiten (z. B. ZK2000-6200-0100 → ZK2000-6200).
+ * @param {string} artikelnummer
+ * @returns {string}
+ */
+export function deriveArtikelPrefix(artikelnummer) {
+    const nr = (artikelnummer || '').trim();
+    if (!nr) return '';
+
+    const standard = nr.match(/^(.+)-(\d{4})$/);
+    if (standard) return standard[1];
+
+    const parts = nr.split('-');
+    if (parts.length >= 2) {
+        const last = parts[parts.length - 1];
+        if (/^\d+$/.test(last) && last.length > 4) {
+            return `${parts.slice(0, -1).join('-')}-${last.slice(0, -4)}`;
+        }
+    }
+
+    return nr;
+}
+
+
+/**
+ * Stecker kurz für die Anzeige (z. B. „M12 Buchse“, „offenes Ende“).
+ * @param {string} stecker
+ * @returns {string}
+ */
+export function formatSteckerKurz(stecker) {
+    if (!stecker || stecker === 'offen') return 'offenes Ende';
+
+    const gewinkelt = /\bgewinkelt/i.test(stecker) ? ' gewinkelt' : '';
+    const m = stecker.match(/^(M\d+)\s+\d+-polig\s+(Stecker|Buchse)/i);
+    if (m) return `${m[1]} ${m[2]}${gewinkelt}`.trim();
+
+    const ventil = stecker.match(/^(Ventilstecker\s+DIN\s+C)/i);
+    if (ventil) return ventil[1];
+
+    const basis = getBaseSteckerTyp(stecker);
+    if (/^RJ45/i.test(basis)) return basis.replace(/\s+(gerade|gewinkelt)$/i, '') + gewinkelt;
+    return `${basis}${gewinkelt}`.trim();
+}
+
+
+/**
+ * Zerlegt einen vollständigen Stecker-String in Basis und Ausrichtung.
+ * @param {string} stecker
+ * @returns {{ basis: string, ausrichtung: string }}
+ */
+export function splitSteckerAngabe(stecker) {
+    if (!stecker) return { basis: '', ausrichtung: 'gerade' };
+    return {
+        basis: getBaseSteckerTyp(stecker),
+        ausrichtung: /\bgewinkelt$/i.test(stecker) ? 'gewinkelt' : 'gerade'
+    };
+}
+
+
+/**
+ * Konfektionierte Katalog-Leitungen für die Button-Auswahl (ohne Meterware).
+ * @param {{ kategorie?: string, hersteller?: string, suche?: string, limit?: number }} [filter]
+ * @returns {object[]}
+ */
+export function getKonfektionierteKatalogArtikel(filter = {}) {
+    const suche = (filter.suche || '').trim().toLowerCase();
+    const limit = filter.limit ?? 150;
+
+    return (appState.katalog?.artikel || [])
+        .filter(a => !a.meterware && Number(a.laenge) > 0)
+        .filter(a => !filter.kategorie || a.kategorie === filter.kategorie)
+        .filter(a => !filter.hersteller || a.hersteller === filter.hersteller)
+        .filter(a => {
+            if (!suche) return true;
+            const haystack = [
+                a.artikelnummer,
+                a.beschreibung,
+                a.hersteller,
+                formatSteckerKurz(a.steckerA),
+                formatSteckerKurz(a.steckerB)
+            ].join(' ').toLowerCase();
+            return haystack.includes(suche);
+        })
+        .slice()
+        .sort((a, b) => (a.artikelnummer || '').localeCompare(b.artikelnummer || '', 'de'))
+        .slice(0, limit);
 }
 
 

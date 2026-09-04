@@ -4599,6 +4599,16 @@
         },
         {
             "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-4G25",
+            "beschreibung": "ÖLFLEX CLASSIC 110 4G2,5",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
+            "hersteller": "Lapp Kabel",
             "artikelnummer": "0021812",
             "beschreibung": "ÖLFLEX CLASSIC 110 5G0,75",
             "steckerA": "offen",
@@ -4716,6 +4726,50 @@
             "kategorie": "sonstiges",
             "meterware": true,
             "placeholder": true
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4800-8022",
+            "beschreibung": "Motorleitung 1,0 mm² mit itec-Stecker, schleppkettentauglich",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4800-8022"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4800-8023",
+            "beschreibung": "Motorleitung 1,5 mm² mit M23 speedtec, schleppkettentauglich",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4800-8023"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4800-8003",
+            "beschreibung": "Motorleitung 1,5 mm² mit M23 speedtec, feste Verlegung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4800-8003"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4800-8024",
+            "beschreibung": "Motorleitung 2,5 mm², schleppkettentauglich",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4800-8024"
         },
         {
             "hersteller": "Lapp Kabel",
