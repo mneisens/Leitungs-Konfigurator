@@ -351,7 +351,22 @@
                     <label for="projekt-notiz">Bemerkungen</label>
                     <textarea id="projekt-notiz" rows="3" placeholder="Optionale Notizen zum Projekt..."></textarea>
                 </div>
-                
+
+                <div class="form-group vorlage-group" id="projekt-vorlage-group">
+                    <label for="projekt-vorlage">Startpunkt</label>
+                    <select id="projekt-vorlage" onchange="onProjektVorlageChange()">
+                        <option value="">Leeres Projekt – jede Gruppe einzeln erfassen</option>
+                    </select>
+                    <p class="text-muted" id="projekt-vorlage-hinweis">
+                        Bei den meisten Anlagen wiederholen sich die Gruppen. Ein bestehendes Projekt als
+                        Startpunkt zu wählen spart das erneute Zusammenstellen.
+                    </p>
+                    <label class="wizard-skip-label" id="projekt-vorlage-laengen-wrap" hidden>
+                        <input type="checkbox" id="projekt-vorlage-laengen">
+                        Längen und Stückzahlen mit übernehmen (sonst nur die Positionen)
+                    </label>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="showView('home')">Abbrechen</button>
                     <button type="submit" class="btn btn-primary">Speichern & Gruppen-Konfigurator öffnen</button>

@@ -4669,6 +4669,16 @@
         },
         {
             "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-7G25",
+            "beschreibung": "ÖLFLEX CLASSIC 110 7G2,5",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
+            "hersteller": "Lapp Kabel",
             "artikelnummer": "OELFLEX110-12G25",
             "beschreibung": "ÖLFLEX CLASSIC 110 12G2,5",
             "steckerA": "offen",

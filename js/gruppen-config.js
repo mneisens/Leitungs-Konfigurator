@@ -110,6 +110,14 @@ const LEITUNG_PRESETS = {
         festLeitungstyp: true,
         artikelWhitelist: ['OELFLEX110-5G25', 'OELFLEX110-4G25', '0021810']
     },
+    'oelflex-buskasten': {
+        label: 'Ölflexleitung Buskasten',
+        bezeichnung: 'Ölflexleitung',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['OELFLEX110-7G25', 'OELFLEX110-12G25', 'OELFLEX110-18G25']
+    },
     'geberleitung': {
         label: 'Geberleitung',
         kategorie: 'geber', hersteller: 'IGUS'
@@ -446,16 +454,21 @@ const GRUPPEN = {
         leitungen: ['ethercat-m8-m8', 'oelflex']
     },
     '=301': {
-        hinweis: 'EtherCAT-Module am Stößel.',
-        leitungen: ['ethercat-m8-m8', 'ethercat-m8-m12', 'power-m8-m8']
+        hinweis: 'EtherCAT-Module und EP-Module am Stößel.',
+        leitungen: ['ethercat-m8-m8', 'ethercat-m8-m12', 'power-m8-m8'],
+        bauteile: ['ep-modul']
     },
     '=401': {
-        hinweis: 'Buskasten Bedienseite.',
-        leitungen: ['ethercat-m8-m8', 'power-m8-m8', 'sensor-m8-m8']
+        hinweis: 'Buskasten Bedienseite: Ölflex 7G2,5, 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
+        leitungen: ['oelflex-buskasten'],
+        ohneUniversal: true,
+        nurLeitungen: true
     },
     '=402': {
-        hinweis: 'Buskasten Rückseite.',
-        leitungen: ['ethercat-m8-m8', 'power-m8-m8', 'sensor-m8-m8']
+        hinweis: 'Buskasten Rückseite: Ölflex 7G2,5, 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
+        leitungen: ['oelflex-buskasten'],
+        ohneUniversal: true,
+        nurLeitungen: true
     }
 };
 
@@ -509,47 +522,67 @@ function getBauteilTypenAusKatalog(gruppenCode) {
 
 
 /**
+ * Löst eine Liste von Preset-IDs in Presets auf, ohne Duplikate.
+ * @param {string[]} ids
+ * @returns {object[]}
+ */
+function toPresets(ids) {
+    const map = new Map();
+    (ids || []).forEach(id => {
+        const preset = getLeitungPreset(id);
+        if (preset) map.set(preset.id, preset);
+    });
+    return Array.from(map.values());
+}
+
+
+/**
  * Liefert Hinweistext, Leitungs-Presets und Bauteiltypen einer Gruppe.
+ *
+ * `standardLeitungen` und `standardBauteilTypen` sind die fest hinterlegten Positionen,
+ * die in nahezu jedem Projekt gebraucht werden – sie erscheinen als Vorschlagszeilen.
+ * `weitereLeitungen` und `weitereBauteilTypen` sind nur grobe Vorschläge aus Regeln
+ * bzw. dem Katalog und stehen erst im Auswahldialog zur Verfügung.
+ *
  * @param {object} gruppe - Eintrag aus data/gruppen.json.
- * @returns {{hinweis: string, leitungPresets: object[], bauteilTypen: string[]}}
+ * @returns {object}
  */
 export function getGruppenVorgaben(gruppe) {
     const code = gruppe?.code || '';
     const bezeichnung = gruppe?.bezeichnung || '';
     const fest = GRUPPEN[code] || {};
 
-    let presetIds = fest.leitungen;
-    if (!presetIds && !fest.nurBauteile) {
-        const regel = BEZEICHNUNG_REGELN.find(r => r.test.test(bezeichnung));
-        presetIds = regel ? regel.leitungen : FALLBACK_LEITUNGEN;
-    }
-    if (fest.nurBauteile) presetIds = [];
-
-    const alleIds = fest.ohneUniversal || fest.nurFestgelegteLeitungen
-        ? (presetIds || [])
-        : Array.from(new Set([...(presetIds || []), ...UNIVERSAL_PRESETS]));
-
-    let bauteilTypen;
-    if (fest.nurFestgelegteBauteile || fest.nurBauteile || fest.nurLeitungen) {
-        bauteilTypen = fest.bauteile || [];
-    } else {
-        bauteilTypen = Array.from(new Set([
-            ...(fest.bauteile || []),
-            ...getBauteilTypenAusKatalog(code)
-        ]));
-    }
-
+    const festeIds = fest.nurBauteile ? [] : (fest.leitungen || []);
     const customIds = getCustomPresetIdsForGruppe(code);
-    const presetMap = new Map();
-    [...alleIds, ...customIds].forEach(id => {
-        const preset = getLeitungPreset(id);
-        if (preset) presetMap.set(preset.id, preset);
-    });
+    const standardIds = Array.from(new Set([...festeIds, ...customIds]));
+
+    let weitereIds = [];
+    if (!fest.nurBauteile) {
+        if (!festeIds.length) {
+            const regel = BEZEICHNUNG_REGELN.find(r => r.test.test(bezeichnung));
+            weitereIds = (regel ? regel.leitungen : FALLBACK_LEITUNGEN).slice();
+        }
+        if (!fest.ohneUniversal) weitereIds.push(...UNIVERSAL_PRESETS);
+    }
+    weitereIds = Array.from(new Set(weitereIds)).filter(id => !standardIds.includes(id));
+
+    const standardBauteilTypen = fest.bauteile || [];
+    const nurFest = fest.nurFestgelegteBauteile || fest.nurBauteile || fest.nurLeitungen;
+    const weitereBauteilTypen = nurFest
+        ? []
+        : getBauteilTypenAusKatalog(code).filter(typ => !standardBauteilTypen.includes(typ));
+
+    const standardLeitungen = toPresets(standardIds);
+    const weitereLeitungen = toPresets(weitereIds);
 
     return {
         hinweis: fest.hinweis || '',
-        leitungPresets: Array.from(presetMap.values()),
-        bauteilTypen,
+        standardLeitungen,
+        weitereLeitungen,
+        leitungPresets: [...standardLeitungen, ...weitereLeitungen],
+        standardBauteilTypen,
+        weitereBauteilTypen,
+        bauteilTypen: [...standardBauteilTypen, ...weitereBauteilTypen],
         bauteilLaengen: fest.bauteilLaengen || [],
         bauteilStandardLaenge: fest.bauteilStandardLaenge,
         nurLeitungen: Boolean(fest.nurLeitungen),

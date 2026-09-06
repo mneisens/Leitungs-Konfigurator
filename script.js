@@ -39,7 +39,8 @@ import {
     shareProjectWithUser,
     removeProjectShare,
     openProjectSharing,
-    toggleProjectVisibility
+    toggleProjectVisibility,
+    onProjektVorlageChange
 } from './js/projects.js';
 import { showView } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
@@ -104,7 +105,23 @@ import {
     gruppeSaveEigenerButton,
     gruppeDeleteEigenerButton,
     gruppeSaveLeitungAlsButton,
-    toggleBauteilTypSchnellwahl
+    toggleBauteilTypSchnellwahl,
+    gruppeOpenPicker,
+    gruppeClosePicker,
+    gruppeOnPickerSuche,
+    gruppeOnPickerTaste,
+    gruppePickerBauteilTyp,
+    gruppePickerZurueck,
+    gruppeAddLeitungAusArtikel,
+    gruppeAddBauteilAusArtikel,
+    gruppeVorschlagUebernehmen,
+    gruppeVorschlagAusblenden,
+    gruppeVorschlaegeZuruecksetzen,
+    gruppeAlleVorschlaegeUebernehmen,
+    gruppeBauteilVorschlagUebernehmen,
+    gruppeAddLeitungAusReihe,
+    gruppeStandardAngebotVerwerfen,
+    gruppeToggleExtras
 } from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
@@ -198,6 +215,7 @@ Object.assign(window, {
     removeProjectShare,
     openProjectSharing,
     toggleProjectVisibility,
+    onProjektVorlageChange,
     onKatalogKategorieChange,
     onKatalogSearch,
     onKatalogHerstellerChange,
@@ -271,6 +289,22 @@ Object.assign(window, {
     gruppeDeleteEigenerButton,
     gruppeSaveLeitungAlsButton,
     toggleBauteilTypSchnellwahl,
+    gruppeOpenPicker,
+    gruppeClosePicker,
+    gruppeOnPickerSuche,
+    gruppeOnPickerTaste,
+    gruppePickerBauteilTyp,
+    gruppePickerZurueck,
+    gruppeAddLeitungAusArtikel,
+    gruppeAddBauteilAusArtikel,
+    gruppeVorschlagUebernehmen,
+    gruppeVorschlagAusblenden,
+    gruppeVorschlaegeZuruecksetzen,
+    gruppeAlleVorschlaegeUebernehmen,
+    gruppeBauteilVorschlagUebernehmen,
+    gruppeAddLeitungAusReihe,
+    gruppeStandardAngebotVerwerfen,
+    gruppeToggleExtras,
     exportCSV,
     exportPDF,
     closeModal,

@@ -67,6 +67,17 @@ let neuesLeitungFormular = null;
  * @type {object|null}
  */
 let eigenerButtonFormular = null;
+/**
+ * Geöffneter Auswahldialog für Leitungen bzw. Bauteile.
+ * Bei Bauteilen kann `typFilter` auf einen Typ gesetzt sein – dann zeigt der
+ * Dialog die Katalogartikel dieses Typs zur Auswahl (Drill-down).
+ * @type {{art: string, suche: string, typFilter?: string}|null}
+ */
+let pickerState = null;
+/** Leitungen, denen gerade angeboten wird, sie als Standard der Gruppe zu merken. */
+const standardAngebotIds = new Set();
+/** Auf-/zugeklappter Zustand des Extras-Bereichs; `null` bedeutet automatisch. */
+let extrasOffen = null;
 
 
 /**
@@ -107,6 +118,9 @@ function getGruppenStatus(code) {
     }
     if (!Array.isArray(projekt.gruppenStatus[code].ausgeblendeteBauteilTypen)) {
         projekt.gruppenStatus[code].ausgeblendeteBauteilTypen = [];
+    }
+    if (!Array.isArray(projekt.gruppenStatus[code].ausgeblendeteLeitungPresets)) {
+        projekt.gruppenStatus[code].ausgeblendeteLeitungPresets = [];
     }
     return projekt.gruppenStatus[code];
 }
@@ -427,6 +441,8 @@ export function selectGruppe(code) {
     aktivesBauteilId = '';
     neuesBauteilFormular = null;
     neuesLeitungFormular = null;
+    pickerState = null;
+    extrasOffen = null;
     renderGruppenListe();
     renderGruppenPanel();
     document.getElementById('gruppen-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -469,6 +485,10 @@ function renderGruppenPanel() {
 
     const gruppen = getGruppen();
     const index = gruppen.findIndex(g => g.code === gruppe.code);
+    const leitungVorschlaege = getOffeneLeitungVorschlaege(gruppe.code);
+    const bauteilVorschlaege = getOffeneBauteilVorschlaege(gruppe.code);
+    const extrasAuf = Boolean(eigenerButtonFormular)
+        || (extrasOffen === null ? Boolean(status.notiz) : extrasOffen);
     const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
     const zeigeLeitungen = !vorgaben.nurBauteile || leitungen.length > 0;
 
@@ -481,33 +501,25 @@ function renderGruppenPanel() {
                 </div>
                 <div class="gruppen-panel-meta">
                     <span class="gruppen-panel-position">Gruppe ${index + 1} von ${gruppen.length}</span>
+                    <label class="wizard-skip-label gruppen-entfaellt-label">
+                        <input type="checkbox" id="gruppen-nicht-benoetigt"
+                               ${status.nichtBenoetigt ? 'checked' : ''}${disabled}
+                               onchange="toggleGruppeNichtBenoetigt(this.checked)">
+                        Nicht benötigt
+                    </label>
                     ${!gesperrt && gruppe.custom ? `<button type="button" class="btn btn-danger btn-small" onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
                 </div>
             </div>
 
             ${vorgaben.hinweis ? `<p class="gruppen-hinweis">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
 
-            <label class="wizard-skip-label gruppen-entfaellt-label">
-                <input type="checkbox" id="gruppen-nicht-benoetigt"
-                       ${status.nichtBenoetigt ? 'checked' : ''}${disabled}
-                       onchange="toggleGruppeNichtBenoetigt(this.checked)">
-                Für dieses Projekt nicht benötigt
-            </label>
-
-            <div class="form-group">
-                <label for="gruppen-notiz">Notiz zur Gruppe</label>
-                <textarea id="gruppen-notiz" rows="2" placeholder="Optionale Bemerkung…"${disabled}
-                          oninput="updateGruppeNotiz(this.value)">${escapeHtml(status.notiz || '')}</textarea>
-            </div>
-
             ${zeigeBauteile ? `
             <div class="gruppen-abschnitt">
                 <div class="gruppen-abschnitt-kopf">
                     <h4>Bauteile <span class="gruppen-anzahl">${bauteile.length}</span></h4>
                 </div>
-                <div id="gruppen-bauteile-tabelle">${renderBauteilTabelle(bauteile)}</div>
-                ${gesperrt ? '' : renderBauteilButtons(getSichtbareBauteilTypen(vorgaben.bauteilTypen))}
-                ${gesperrt ? '' : renderBauteilSchnellwahlEinstellungen(vorgaben.bauteilTypen)}
+                <div id="gruppen-bauteile-tabelle">${renderBauteilTabelle(bauteile, bauteilVorschlaege)}</div>
+                ${gesperrt ? '' : renderBauteilButtons()}
                 ${gesperrt ? '' : renderNeuesBauteilFormular()}
                 <div id="gruppen-bauteil-editor">${renderBauteilEditor()}</div>
             </div>
@@ -518,13 +530,27 @@ function renderGruppenPanel() {
                 <div class="gruppen-abschnitt-kopf">
                     <h4>Leitungen <span class="gruppen-anzahl">${leitungen.length}</span></h4>
                 </div>
-                <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen)}</div>
-                ${gesperrt ? '' : renderLeitungButtons(vorgaben.leitungPresets)}
-                ${gesperrt ? '' : renderEigeneButtonVerwaltung(gruppe.code)}
+                <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen, leitungVorschlaege)}</div>
+                ${gesperrt ? '' : renderLeitungButtons()}
                 ${gesperrt ? '' : renderNeuesLeitungFormular()}
                 <div id="gruppen-leitung-editor">${renderLeitungEditor()}</div>
             </div>
             ` : ''}
+
+            ${gesperrt ? (status.notiz
+                ? `<p class="gruppen-notiz-readonly"><strong>Notiz:</strong> ${escapeHtml(status.notiz)}</p>`
+                : '') : `
+            <details class="gruppen-extras"${extrasAuf ? ' open' : ''} ontoggle="gruppeToggleExtras(this.open)">
+                <summary>Notiz &amp; Standardvorgaben dieser Gruppe</summary>
+                <div class="form-group">
+                    <label for="gruppen-notiz">Notiz zur Gruppe</label>
+                    <textarea id="gruppen-notiz" rows="2" placeholder="Optionale Bemerkung…"
+                              oninput="updateGruppeNotiz(this.value)">${escapeHtml(status.notiz || '')}</textarea>
+                </div>
+                ${renderEigeneButtonVerwaltung(gruppe.code)}
+                ${renderBauteilSchnellwahlEinstellungen(vorgaben.bauteilTypen)}
+            </details>
+            `}
 
             <div class="form-actions gruppen-nav">
                 <button type="button" class="btn btn-secondary" onclick="gruppeWechseln(-1)"${index <= 0 ? ' disabled' : ''}>
@@ -536,6 +562,7 @@ function renderGruppenPanel() {
                 </button>
             </div>
         </div>
+        ${renderPicker()}
     `;
 }
 
@@ -572,26 +599,12 @@ export function updateGruppeNotiz(wert) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Bauteiltypen, die in der Schnellwahl dieser Gruppe sichtbar sind.
- * @param {string[]} alleTypen
- * @returns {string[]}
- */
-function getSichtbareBauteilTypen(alleTypen) {
-    const ausgeblendet = new Set(getGruppenStatus(aktiveGruppe).ausgeblendeteBauteilTypen || []);
-    return (alleTypen || []).filter(typ => !ausgeblendet.has(typ));
-}
-
-
-/**
- * Einstellungen zum Ein-/Ausblenden von Schnellwahl-Buttons je Gruppe.
+ * Einstellungen zum Ein-/Ausblenden von Bauteil-Vorschlägen je Gruppe.
  * @param {string[]} alleTypen
  * @returns {string}
  */
 function renderBauteilSchnellwahlEinstellungen(alleTypen) {
     if (!alleTypen.length) return '';
-
-    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
-    if (vorgaben.nurFestgelegteBauteile && vorgaben.nurBauteile) return '';
 
     const ausgeblendet = new Set(getGruppenStatus(aktiveGruppe).ausgeblendeteBauteilTypen || []);
     const checks = alleTypen.map(typ => {
@@ -606,14 +619,14 @@ function renderBauteilSchnellwahlEinstellungen(alleTypen) {
     }).join('');
 
     return `
-        <details class="gruppen-schnellwahl-details">
-            <summary>Schnellwahl anpassen (${ausgeblendet.size} ausgeblendet)</summary>
+        <div class="gruppen-schnellwahl-block">
+            <h6>Vorgeschlagene Bauteile (${ausgeblendet.size} ausgeblendet)</h6>
             <p class="text-muted">
-                Abgewählte Typen erscheinen nicht mehr als +‑Button in dieser Gruppe.
-                Über „+ Anderes Bauteil" sind sie weiterhin verfügbar. Gilt nur für dieses Projekt.
+                Abgewählte Typen werden in dieser Gruppe nicht mehr vorgeschlagen.
+                Über „+ Bauteil“ bleiben sie auffindbar. Gilt nur für dieses Projekt.
             </p>
             <div class="gruppen-schnellwahl-checks">${checks}</div>
-        </details>
+        </div>
     `;
 }
 
@@ -643,27 +656,107 @@ export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
 
 
 /**
+ * @returns {string}
+ */
+function renderBauteilButtons() {
+    return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
+        <button type="button" class="btn btn-success" onclick="gruppeOpenPicker('bauteil')">
+            + Bauteil
+        </button>
+        <span class="gruppen-add-hinweis">Standard, Katalog oder neues Bauteil – alles über die Suche.</span>
+    </div>`;
+}
+
+
+/**
+ * Bauteiltypen der Gruppe, die noch nicht erfasst und nicht ausgeblendet sind.
+ * @param {string} code
+ * @returns {string[]}
+ */
+function getOffeneBauteilVorschlaege(code) {
+    const gruppe = getGruppe(code);
+    if (!gruppe || istSchreibgeschuetzt()) return [];
+
+    const erfasst = new Set(getBauteileDerGruppe(code).map(b => b.typ));
+    const ausgeblendet = new Set(getGruppenStatus(code).ausgeblendeteBauteilTypen || []);
+    return getGruppenVorgaben(gruppe).standardBauteilTypen
+        .filter(typ => !erfasst.has(typ) && !ausgeblendet.has(typ));
+}
+
+
+/**
+ * Vorschlagszeilen unterhalb der erfassten Bauteile.
  * @param {string[]} typen
  * @returns {string}
  */
-function renderBauteilButtons(typen) {
-    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
-    const nurFest = vorgaben.nurFestgelegteBauteile && vorgaben.nurBauteile;
+function renderBauteilVorschlagZeilen(typen) {
+    const laengen = getGruppenVorgaben(getGruppe(aktiveGruppe)).bauteilLaengen || [];
 
-    const schnellwahl = typen.map(typ => `
-        <button type="button" class="btn btn-success btn-small" onclick="gruppeAddBauteil('${escapeHtml(typ)}')">
-            + ${escapeHtml(getBauteilTypName(typ))}
-        </button>
-    `).join('');
+    return typen.map(typ => {
+        const id = escapeHtml(typ);
+        const artikelliste = getArtikelAuswahlFuerGruppe(typ);
+        const artikel = artikelliste[0] || null;
+        const mehrere = artikelliste.length > 1;
+        const meta = mehrere
+            ? `${artikelliste.length} Artikel im Katalog – beim Übernehmen auswählen`
+            : (artikel
+                ? `${artikel.beschreibung || ''}${artikel.hersteller ? ` · ${artikel.hersteller}` : ''}`
+                : 'Noch kein Katalogartikel – wird beim Übernehmen angelegt');
 
-    return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
-        <span class="gruppen-add-hinweis">Bauteil hinzufügen:</span>
-        ${schnellwahl}
-        ${nurFest ? '' : `
-        <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddBauteil('')">+ Anderes Bauteil</button>
-        <button type="button" class="btn btn-primary btn-small" onclick="gruppeOpenBauteilFormular('', '')">➕ Bauteil neu anlegen</button>
-        `}
-    </div>`;
+        const artikelFeld = laengen.length
+            ? `<select class="vorschlag-laenge" aria-label="Länge wählen und übernehmen"
+                       onchange="gruppeBauteilVorschlagUebernehmen('${id}', this.value)">
+                    ${optionen([{ value: '', label: 'Länge…' },
+                        ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], '')}
+               </select>`
+            : (mehrere
+                ? `${artikelliste.length} Artikel`
+                : escapeHtml(artikel?.artikelnummer || '–'));
+
+        return `
+            <tr class="vorschlag-zeile">
+                <td class="leitung-tabelle-nr">+</td>
+                <td>
+                    <span class="leitung-tabelle-verwendung">${escapeHtml(getBauteilTypName(typ))}</span>
+                    <span class="leitung-tabelle-typ">${escapeHtml(meta)}</span>
+                </td>
+                <td class="leitung-tabelle-artikel">${artikelFeld}</td>
+                <td class="leitung-tabelle-anzahl">1×</td>
+                <td class="leitung-tabelle-aktionen">
+                    <div class="table-actions">
+                        <button type="button" class="btn btn-success btn-small"
+                                onclick="gruppeBauteilVorschlagUebernehmen('${id}', '')">${mehrere ? 'Auswählen…' : 'Übernehmen'}</button>
+                        <button type="button" class="btn btn-secondary btn-small btn-icon"
+                                title="Vorschlag in diesem Projekt ausblenden"
+                                onclick="toggleBauteilTypSchnellwahl('${id}', false)">✕</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+/**
+ * Übernimmt einen vorgeschlagenen Bauteiltyp, optional mit Länge.
+ * Bei mehreren Katalogartikeln öffnet sich die Auswahl statt den ersten zu nehmen.
+ * @param {string} typ
+ * @param {string|number} laenge
+ * @returns {void}
+ */
+export function gruppeBauteilVorschlagUebernehmen(typ, laenge) {
+    if (!assertCanEdit('Bauteile hinzufügen')) return;
+    const wert = parseFloat(String(laenge).replace(',', '.'));
+    const mitLaenge = !Number.isNaN(wert) && wert > 0;
+
+    if (!mitLaenge && getArtikelAuswahlFuerGruppe(typ).length > 1) {
+        pickerState = { art: 'bauteil', suche: '', typFilter: typ };
+        renderGruppenPanel();
+        document.getElementById('picker-suche')?.focus();
+        return;
+    }
+
+    gruppeAddBauteil(typ, { laenge: Number.isNaN(wert) ? 0 : wert, direkt: mitLaenge });
 }
 
 
@@ -745,6 +838,7 @@ export function gruppeOpenBauteilFormular(bauteilId, typ) {
     if (!assertCanEdit('Bauteile anlegen')) return;
     neuesBauteilFormular = { bauteilId: bauteilId || '', typ: typ || '' };
     neuesLeitungFormular = null;
+    pickerState = null;
     renderGruppenPanel();
 
     const select = document.getElementById('neu-bauteil-typ');
@@ -886,9 +980,9 @@ function getBauteilLabel(bauteil) {
  * @param {object[]} bauteile
  * @returns {string}
  */
-function renderBauteilTabelle(bauteile) {
-    if (!bauteile.length) {
-        return '<p class="text-muted gruppen-leer">Noch keine Bauteile. Unten ein Bauteil hinzufügen.</p>';
+function renderBauteilTabelle(bauteile, vorschlaege = []) {
+    if (!bauteile.length && !vorschlaege.length) {
+        return '<p class="text-muted gruppen-leer">Noch keine Bauteile. Unten „+ Bauteil“ wählen.</p>';
     }
 
     const gesperrt = istSchreibgeschuetzt();
@@ -926,6 +1020,15 @@ function renderBauteilTabelle(bauteile) {
 
     const gesamt = bauteile.reduce((summe, b) => summe + (b.anzahl || 1), 0);
 
+    const vorschlagBlock = vorschlaege.length
+        ? `<tbody class="vorschlag-block">
+                <tr class="vorschlag-kopf">
+                    <td colspan="5">Standardbauteile dieser Gruppe – übernehmen oder ausblenden.</td>
+                </tr>
+                ${renderBauteilVorschlagZeilen(vorschlaege)}
+           </tbody>`
+        : '';
+
     return `
         <div class="table-container gruppen-tabelle-container">
             <table class="leitung-table leitung-tabelle">
@@ -939,6 +1042,8 @@ function renderBauteilTabelle(bauteile) {
                     </tr>
                 </thead>
                 <tbody>${zeilen}</tbody>
+                ${vorschlagBlock}
+                ${bauteile.length ? `
                 <tfoot>
                     <tr>
                         <td colspan="3">Gesamt</td>
@@ -946,6 +1051,7 @@ function renderBauteilTabelle(bauteile) {
                         <td class="leitung-tabelle-aktionen"></td>
                     </tr>
                 </tfoot>
+                ` : ''}
             </table>
         </div>
     `;
@@ -958,7 +1064,11 @@ function renderBauteilTabelle(bauteile) {
  */
 function aktualisiereBauteilTabelle() {
     const container = document.getElementById('gruppen-bauteile-tabelle');
-    if (container) container.innerHTML = renderBauteilTabelle(getBauteileDerGruppe(aktiveGruppe));
+    if (!container) return;
+    container.innerHTML = renderBauteilTabelle(
+        getBauteileDerGruppe(aktiveGruppe),
+        getOffeneBauteilVorschlaege(aktiveGruppe)
+    );
 }
 
 
@@ -1181,11 +1291,13 @@ function getTypenFuerGruppe(gruppeCode) {
 
 /**
  * @param {string} typ
+ * @param {{laenge?: number, direkt?: boolean}} [options] - `direkt` übernimmt ohne Formular.
  * @returns {void}
  */
-export function gruppeAddBauteil(typ) {
+export function gruppeAddBauteil(typ, options = {}) {
     if (!assertCanEdit('Bauteile hinzufügen')) return;
     if (!appState.currentProjekt.bauteile) appState.currentProjekt.bauteile = [];
+    pickerState = null;
 
     if (typ) {
         const artikelListe = getArtikelAuswahlFuerGruppe(typ);
@@ -1222,7 +1334,48 @@ export function gruppeAddBauteil(typ) {
         bezeichnung: artikel?.beschreibung || '',
         notiz: '',
         anzahl: 1,
-        laenge: standardLaenge
+        laenge: options.laenge || standardLaenge
+    };
+    appState.currentProjekt.bauteile.push(bauteil);
+    persistCurrentProjekt();
+
+    if (options.direkt) {
+        renderGruppenListe();
+        renderGruppenPanel();
+        return;
+    }
+
+    aktivesBauteilId = bauteil.id;
+    renderGruppenListe();
+    renderGruppenPanel();
+    fokussiereBauteilEditor();
+}
+
+
+/**
+ * Übernimmt ein Bauteil direkt aus dem Katalog in die aktive Gruppe.
+ * @param {string} artikelnummer
+ * @returns {Promise<void>}
+ */
+export async function gruppeAddBauteilAusArtikel(artikelnummer) {
+    if (!assertCanEdit('Bauteile hinzufügen')) return;
+
+    const artikel = (appState.bauteileKatalog?.artikel || [])
+        .find(a => a.artikelnummer === artikelnummer);
+    if (!artikel) return;
+
+    pickerState = null;
+    if (!appState.currentProjekt.bauteile) appState.currentProjekt.bauteile = [];
+
+    const bauteil = {
+        id: generateId('btl'),
+        gruppe: aktiveGruppe,
+        typ: artikel.typ || '',
+        hersteller: artikel.hersteller || '',
+        artikelnummer: artikel.artikelnummer,
+        bezeichnung: artikel.beschreibung || '',
+        notiz: '',
+        anzahl: 1
     };
     appState.currentProjekt.bauteile.push(bauteil);
 
@@ -1333,24 +1486,396 @@ export async function gruppeDeleteBauteil(id) {
  * @param {object[]} presets
  * @returns {string}
  */
-function renderLeitungButtons(presets) {
-    const buttons = presets.map((preset, i) => {
-        const eigen = preset.custom ? ' title="Eigener Button"' : '';
-        const klasse = preset.custom ? 'btn-secondary gruppen-btn-eigen' : (i === 0 ? 'btn-success' : 'btn-secondary');
-        return `
-        <button type="button" class="btn ${klasse} btn-small"${eigen}
-                onclick="gruppeAddLeitung('${escapeHtml(preset.id)}')">
-            + ${escapeHtml(preset.label)}${preset.custom ? ' ★' : ''}
-        </button>
-    `;
-    }).join('');
+function renderLeitungButtons() {
+    const ausgeblendet = getGruppenStatus(aktiveGruppe).ausgeblendeteLeitungPresets.length;
 
     return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
-        <span class="gruppen-add-hinweis">Leitung hinzufügen:</span>
-        ${buttons}
-        <button type="button" class="btn btn-secondary btn-small" onclick="gruppeAddLeitung('')">+ Leere Leitung</button>
-        <button type="button" class="btn btn-primary btn-small" onclick="gruppeOpenLeitungFormular('', '')">➕ Leitung neu anlegen</button>
+        <button type="button" class="btn btn-success" onclick="gruppeOpenPicker('leitung')">
+            + Leitung
+        </button>
+        <span class="gruppen-add-hinweis">Standard, Katalog oder neue Leitung – alles über die Suche.</span>
+        ${ausgeblendet ? `
+            <button type="button" class="btn btn-secondary btn-small"
+                    onclick="gruppeVorschlaegeZuruecksetzen()">
+                ${ausgeblendet === 1 ? '1 ausgeblendeten Vorschlag' : `${ausgeblendet} ausgeblendete Vorschläge`} einblenden
+            </button>
+        ` : ''}
     </div>`;
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Auswahldialog für Leitungen und Bauteile                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ein Listeneintrag im Auswahldialog.
+ * @param {{onclick: string, titel: string, meta: string, marke?: string}} eintrag
+ * @returns {string}
+ */
+function renderPickerEintrag(eintrag) {
+    return `
+        <button type="button" class="picker-eintrag" onclick="${eintrag.onclick}">
+            <span class="picker-eintrag-titel">${escapeHtml(eintrag.titel)}${eintrag.marke || ''}</span>
+            <span class="picker-eintrag-meta">${escapeHtml(eintrag.meta)}</span>
+        </button>
+    `;
+}
+
+
+/**
+ * @param {string} titel
+ * @param {string[]} eintraege
+ * @returns {string}
+ */
+function renderPickerSektion(titel, eintraege) {
+    if (!eintraege.length) return '';
+    return `
+        <div class="picker-sektion">
+            <h6 class="picker-sektion-titel">${escapeHtml(titel)}</h6>
+            ${eintraege.join('')}
+        </div>
+    `;
+}
+
+
+/**
+ * @param {string} text
+ * @param {string} suche
+ * @returns {boolean}
+ */
+function passtZurSuche(text, suche) {
+    if (!suche) return true;
+    return String(text || '').toLowerCase().includes(suche);
+}
+
+
+/**
+ * Entfernt die Längenangabe am Ende einer Katalog-Beschreibung.
+ * @param {string} beschreibung
+ * @returns {string}
+ */
+function ohneLaengenangabe(beschreibung) {
+    return String(beschreibung || '').replace(/[\s-]*\d+([.,]\d+)?\s*m\s*$/i, '').trim();
+}
+
+
+/**
+ * Katalogtreffer nach Leitungsreihe zusammenfassen – sonst unterscheiden sich
+ * die Einträge nur in der Länge und die Liste wird unlesbar.
+ * @param {string} suche
+ * @returns {string[]}
+ */
+function renderKatalogReihen(suche) {
+    const reihen = new Map();
+
+    getKonfektionierteKatalogArtikel({ suche, limit: 400 }).forEach(artikel => {
+        const prefix = deriveArtikelPrefix(artikel.artikelnummer) || artikel.artikelnummer;
+        if (!reihen.has(prefix)) reihen.set(prefix, []);
+        reihen.get(prefix).push(artikel);
+    });
+
+    return Array.from(reihen.entries()).slice(0, 20).map(([prefix, artikel]) => {
+        const erste = artikel[0];
+
+        if (artikel.length === 1) {
+            return renderPickerEintrag({
+                onclick: `gruppeAddLeitungAusArtikel('${escapeHtml(erste.artikelnummer)}')`,
+                titel: erste.beschreibung || erste.artikelnummer,
+                meta: `${erste.artikelnummer} · ${erste.hersteller || ''} · ${formatLaenge(erste.laenge)} m`
+            });
+        }
+
+        const laengen = artikel.map(a => a.laenge).filter(l => l > 0).sort((a, b) => a - b);
+        return renderPickerEintrag({
+            onclick: `gruppeAddLeitungAusReihe('${escapeHtml(prefix)}', '${escapeHtml(erste.artikelnummer)}')`,
+            titel: ohneLaengenangabe(erste.beschreibung) || prefix,
+            meta: `Reihe ${prefix} · ${erste.hersteller || ''} · ${laengen.length} Längen`
+                + (laengen.length ? ` (${formatLaenge(laengen[0])}–${formatLaenge(laengen[laengen.length - 1])} m)` : '')
+        });
+    });
+}
+
+
+/**
+ * Trefferliste für Leitungen: erst die Vorgaben der Gruppe, dann der Katalog.
+ * @param {string} suche
+ * @returns {string}
+ */
+function renderPickerLeitungen(suche) {
+    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
+    const erfasst = getLeitungenDerGruppe(aktiveGruppe);
+
+    const presetEintrag = preset => renderPickerEintrag({
+        onclick: `gruppeAddLeitung('${escapeHtml(preset.id)}')`,
+        titel: preset.label,
+        meta: getPresetBeschreibung(preset)
+            + (presetIstErfasst(preset, erfasst) ? ' · bereits erfasst' : ''),
+        marke: preset.custom ? ' <span class="picker-marke">★ eigener Standard</span>' : ''
+    });
+
+    const filter = preset => passtZurSuche(
+        `${preset.label} ${preset.bezeichnung || ''} ${getPresetBeschreibung(preset)} ${preset.artikelnummer || ''}`,
+        suche
+    );
+
+    const standard = vorgaben.standardLeitungen.filter(filter).map(presetEintrag);
+    const weitere = vorgaben.weitereLeitungen.filter(filter).map(presetEintrag);
+
+    const katalog = suche.length >= 2 ? renderKatalogReihen(suche) : [];
+
+    const treffer = renderPickerSektion(`Standard in ${aktiveGruppe}`, standard)
+        + renderPickerSektion('Weitere übliche Leitungen', weitere)
+        + renderPickerSektion('Aus dem Katalog', katalog);
+
+    if (treffer) return treffer;
+
+    return `<p class="picker-leer">Kein Treffer für „${escapeHtml(suche)}“.
+            Lege die Leitung unten neu im Katalog an.</p>`;
+}
+
+
+/**
+ * Artikel eines Bauteiltyps zur Auswahl – wenn ein Typ mehrere Varianten hat.
+ * @param {string} typ
+ * @param {string} suche
+ * @returns {string}
+ */
+function renderPickerBauteilArtikel(typ, suche) {
+    const name = getBauteilTypName(typ);
+    const artikelliste = getArtikelAuswahlFuerGruppe(typ)
+        .filter(a => passtZurSuche(
+            `${a.artikelnummer} ${a.beschreibung || ''} ${a.hersteller || ''}`,
+            suche
+        ));
+
+    const eintraege = artikelliste.map(artikel => renderPickerEintrag({
+        onclick: `gruppeAddBauteilAusArtikel('${escapeHtml(artikel.artikelnummer)}')`,
+        titel: artikel.beschreibung || artikel.artikelnummer,
+        meta: `${artikel.artikelnummer}${artikel.hersteller ? ` · ${artikel.hersteller}` : ''}`
+    }));
+
+    const treffer = renderPickerSektion(`${name} – Artikel wählen`, eintraege);
+    if (treffer) return treffer;
+
+    return `<p class="picker-leer">Kein Artikel zu „${escapeHtml(name)}“ gefunden.
+            Lege das Bauteil unten neu im Katalog an.</p>`;
+}
+
+
+/**
+ * Trefferliste für Bauteile: erst die Typen der Gruppe, dann der Bauteilkatalog.
+ * @param {string} suche
+ * @returns {string}
+ */
+function renderPickerBauteile(suche) {
+    if (pickerState?.typFilter) {
+        return renderPickerBauteilArtikel(pickerState.typFilter, suche);
+    }
+
+    const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
+    const erfasst = new Set(getBauteileDerGruppe(aktiveGruppe).map(b => b.typ));
+
+    const typEintrag = typ => {
+        const name = getBauteilTypName(typ);
+        const anzahl = getArtikelAuswahlFuerGruppe(typ).length;
+        return renderPickerEintrag({
+            onclick: `gruppePickerBauteilTyp('${escapeHtml(typ)}')`,
+            titel: name,
+            meta: [
+                anzahl ? `${anzahl} Artikel im Katalog` : 'noch kein Katalogartikel',
+                erfasst.has(typ) ? 'bereits erfasst' : ''
+            ].filter(Boolean).join(' · ')
+        });
+    };
+
+    const filter = typ => passtZurSuche(getBauteilTypName(typ), suche);
+    const standard = vorgaben.standardBauteilTypen.filter(filter).map(typEintrag);
+    const weitere = vorgaben.weitereBauteilTypen.filter(filter).map(typEintrag);
+
+    const katalog = suche.length >= 2
+        ? (appState.bauteileKatalog?.artikel || [])
+            .filter(a => passtZurSuche(`${a.artikelnummer} ${a.beschreibung} ${a.hersteller}`, suche))
+            .slice(0, 25)
+            .map(artikel => renderPickerEintrag({
+                onclick: `gruppeAddBauteilAusArtikel('${escapeHtml(artikel.artikelnummer)}')`,
+                titel: artikel.beschreibung || artikel.artikelnummer,
+                meta: `${artikel.artikelnummer} · ${artikel.hersteller || ''} · ${getBauteilTypName(artikel.typ)}`
+            }))
+        : [];
+
+    const treffer = renderPickerSektion(`Standard in ${aktiveGruppe}`, standard)
+        + renderPickerSektion('Weitere Bauteiltypen', weitere)
+        + renderPickerSektion('Aus dem Bauteilkatalog', katalog);
+
+    if (treffer) return treffer;
+
+    return `<p class="picker-leer">Kein Treffer für „${escapeHtml(suche)}“.
+            Lege das Bauteil unten neu im Katalog an.</p>`;
+}
+
+
+/**
+ * @returns {string}
+ */
+function renderPickerErgebnisse() {
+    if (!pickerState) return '';
+    const suche = pickerState.suche.trim().toLowerCase();
+    return pickerState.art === 'bauteil'
+        ? renderPickerBauteile(suche)
+        : renderPickerLeitungen(suche);
+}
+
+
+/**
+ * Overlay zur Auswahl einer Leitung bzw. eines Bauteils.
+ * @returns {string}
+ */
+function renderPicker() {
+    if (!pickerState) return '';
+
+    const istBauteil = pickerState.art === 'bauteil';
+    const typFilter = istBauteil ? pickerState.typFilter : '';
+    const gruppe = getGruppe(aktiveGruppe);
+    const titel = typFilter
+        ? `${getBauteilTypName(typFilter)} wählen`
+        : (istBauteil ? 'Bauteil hinzufügen' : 'Leitung hinzufügen');
+    const suchePlaceholder = typFilter
+        ? 'Artikel suchen: Nummer, Bezeichnung…'
+        : (istBauteil
+            ? 'Bauteil suchen: Typ, Artikelnummer, Hersteller…'
+            : 'Leitung suchen: Bezeichnung, Artikelnummer, Stecker…');
+
+    return `
+        <div class="picker-overlay" onclick="gruppeClosePicker()">
+            <div class="picker-dialog" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+                <div class="picker-kopf">
+                    <h4>${escapeHtml(titel)}</h4>
+                    <span class="picker-gruppe">${escapeHtml(aktiveGruppe)} ${escapeHtml(gruppe?.bezeichnung || '')}</span>
+                    <button type="button" class="picker-close" title="Schließen"
+                            onclick="gruppeClosePicker()">✕</button>
+                </div>
+                ${typFilter ? `
+                    <button type="button" class="picker-zurueck" onclick="gruppePickerZurueck()">
+                        ← Alle Bauteiltypen
+                    </button>
+                ` : ''}
+                <input type="search" id="picker-suche" class="picker-suche" autocomplete="off"
+                       value="${escapeHtml(pickerState.suche)}"
+                       placeholder="${suchePlaceholder}"
+                       oninput="gruppeOnPickerSuche(this.value)"
+                       onkeydown="gruppeOnPickerTaste(event)">
+                <div class="picker-ergebnisse" id="picker-ergebnisse">${renderPickerErgebnisse()}</div>
+                <div class="picker-fuss">
+                    ${istBauteil ? `
+                        <button type="button" class="btn btn-secondary btn-small"
+                                onclick="gruppeAddBauteil('')">Leeres Bauteil</button>
+                        <button type="button" class="btn btn-primary btn-small"
+                                onclick="gruppeOpenBauteilFormular('', '${escapeHtml(typFilter || '')}')">➕ Neu im Katalog anlegen</button>
+                    ` : `
+                        <button type="button" class="btn btn-secondary btn-small"
+                                onclick="gruppeAddLeitung('')">Leere Leitung</button>
+                        <button type="button" class="btn btn-primary btn-small"
+                                onclick="gruppeOpenLeitungFormular('', '')">➕ Neu im Katalog anlegen</button>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+/**
+ * @param {string} art - 'leitung' oder 'bauteil'.
+ * @returns {void}
+ */
+export function gruppeOpenPicker(art) {
+    if (!assertCanEdit('Positionen hinzufügen')) return;
+    pickerState = { art: art === 'bauteil' ? 'bauteil' : 'leitung', suche: '' };
+    renderGruppenPanel();
+    document.getElementById('picker-suche')?.focus();
+}
+
+
+/**
+ * @returns {void}
+ */
+export function gruppeClosePicker() {
+    if (!pickerState) return;
+    pickerState = null;
+    renderGruppenPanel();
+}
+
+
+/**
+ * Bauteiltyp im Picker gewählt: bei einem Artikel direkt übernehmen,
+ * bei mehreren die Artikelliste öffnen, sonst leeres Formular.
+ * @param {string} typ
+ * @returns {void}
+ */
+export function gruppePickerBauteilTyp(typ) {
+    if (!assertCanEdit('Bauteile hinzufügen')) return;
+    if (!pickerState || pickerState.art !== 'bauteil') {
+        gruppeAddBauteil(typ);
+        return;
+    }
+
+    const artikelliste = getArtikelAuswahlFuerGruppe(typ);
+    if (artikelliste.length <= 1) {
+        gruppeAddBauteil(typ);
+        return;
+    }
+
+    pickerState = { art: 'bauteil', suche: '', typFilter: typ };
+    renderGruppenPanel();
+    document.getElementById('picker-suche')?.focus();
+}
+
+
+/**
+ * Aus der Artikelauswahl zurück zur Typenliste.
+ * @returns {void}
+ */
+export function gruppePickerZurueck() {
+    if (!pickerState) return;
+    pickerState = { art: pickerState.art, suche: '' };
+    renderGruppenPanel();
+    document.getElementById('picker-suche')?.focus();
+}
+
+
+/**
+ * Zeichnet nur die Trefferliste neu, damit der Cursor im Suchfeld bleibt.
+ * @param {string} wert
+ * @returns {void}
+ */
+export function gruppeOnPickerSuche(wert) {
+    if (!pickerState) return;
+    pickerState.suche = wert;
+    const container = document.getElementById('picker-ergebnisse');
+    if (container) container.innerHTML = renderPickerErgebnisse();
+}
+
+
+/**
+ * Enter übernimmt den ersten Treffer, Escape schließt bzw. geht eine Ebene zurück.
+ * @param {KeyboardEvent} event
+ * @returns {void}
+ */
+export function gruppeOnPickerTaste(event) {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        if (pickerState?.typFilter) {
+            gruppePickerZurueck();
+            return;
+        }
+        gruppeClosePicker();
+        return;
+    }
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        document.querySelector('#picker-ergebnisse .picker-eintrag')?.click();
+    }
 }
 
 
@@ -1429,22 +1954,24 @@ function renderEigeneButtonVerwaltung(gruppenCode) {
                 </li>
             `).join('')}
            </ul>`
-        : '<p class="text-muted gruppen-eigene-button-leer">Noch keine eigenen Buttons für diese Gruppe.</p>';
+        : '<p class="text-muted gruppen-eigene-button-leer">Noch keine eigenen Standardleitungen für diese Gruppe.</p>';
 
     const formOpen = Boolean(eigenerButtonFormular && eigenerButtonFormular.gruppeCode === gruppenCode);
 
     return `
-        <details class="gruppen-eigene-button-wrap"${formOpen ? ' open' : ''}>
-            <summary>Eigene Buttons verwalten</summary>
-            <p class="text-muted">Eigene Buttons gelten für alle Nutzer und erscheinen mit ★ neben den Standard-Buttons.</p>
+        <div class="gruppen-eigene-button-wrap">
+            <h6>Selbst angelegte Standardleitungen</h6>
+            <p class="text-muted">
+                Gelten für alle Nutzer und alle Projekte und erscheinen mit ★ in den Vorschlägen dieser Gruppe.
+            </p>
             ${liste}
             ${formOpen ? renderEigenerButtonFormular() : `
                 <button type="button" class="btn btn-secondary btn-small"
                         onclick="gruppeOpenEigenerButtonFormular('${escapeHtml(gruppenCode)}')">
-                    + Eigenen Button anlegen
+                    + Standardleitung anlegen
                 </button>
             `}
-        </details>
+        </div>
     `;
 }
 
@@ -1535,16 +2062,16 @@ function renderEigenerButtonFormular() {
 
     return `
         <div class="gruppen-eigener-button-form">
-            <h5>Neuen Button anlegen</h5>
+            <h5>Neue Standardleitung anlegen</h5>
             <div class="gruppen-karte-grid">
                 <div class="form-group">
-                    <label>Button-Name *</label>
+                    <label>Name *</label>
                     <input type="text" value="${escapeHtml(form.label)}" placeholder="z. B. Zuleitung"
                            oninput="gruppeOnEigenerButtonField('label', this.value)">
                 </div>
                 <div class="form-group">
                     <label>Verwendung</label>
-                    <input type="text" value="${escapeHtml(form.bezeichnung)}" placeholder="Optional, sonst wie Button-Name"
+                    <input type="text" value="${escapeHtml(form.bezeichnung)}" placeholder="Optional, sonst wie der Name"
                            oninput="gruppeOnEigenerButtonField('bezeichnung', this.value)">
                 </div>
                 <div class="form-group">
@@ -1575,7 +2102,7 @@ function renderEigenerButtonFormular() {
                 ${whitelistFeld}
             </div>
             <div class="gruppen-eigener-button-aktionen">
-                <button type="button" class="btn btn-primary btn-small" onclick="gruppeSaveEigenerButton()">Button speichern</button>
+                <button type="button" class="btn btn-primary btn-small" onclick="gruppeSaveEigenerButton()">Standardleitung speichern</button>
                 <button type="button" class="btn btn-secondary btn-small" onclick="gruppeCancelEigenerButtonFormular()">Abbrechen</button>
             </div>
         </div>
@@ -1588,7 +2115,7 @@ function renderEigenerButtonFormular() {
  * @returns {void}
  */
 export function gruppeOpenEigenerButtonFormular(gruppenCode) {
-    if (!assertCanEdit('Eigene Buttons anlegen')) return;
+    if (!assertCanEdit('Standardleitungen anlegen')) return;
     eigenerButtonFormular = getDefaultEigenerButtonFormular(gruppenCode);
     renderGruppenPanel();
 }
@@ -1787,7 +2314,7 @@ function buildPresetFromEigenerButtonFormular() {
  * @returns {Promise<void>}
  */
 export async function gruppeSaveEigenerButton() {
-    if (!assertCanEdit('Eigene Buttons speichern')) return;
+    if (!assertCanEdit('Standardleitungen speichern')) return;
     if (!eigenerButtonFormular) return;
 
     try {
@@ -1809,9 +2336,9 @@ export async function gruppeSaveEigenerButton() {
         await addCustomGruppenPreset(eigenerButtonFormular.gruppeCode, data);
         eigenerButtonFormular = null;
         renderGruppenPanel();
-        await showModal('Der Button wurde gespeichert und steht ab sofort in dieser Gruppe zur Verfügung.', {
+        await showModal('Die Standardleitung wird ab sofort in dieser Gruppe vorgeschlagen – auch in neuen Projekten.', {
             type: 'success',
-            title: 'Button gespeichert'
+            title: 'Standardleitung gespeichert'
         });
     } catch (error) {
         await showModal(error.message || 'Speichern fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
@@ -1824,11 +2351,11 @@ export async function gruppeSaveEigenerButton() {
  * @returns {Promise<void>}
  */
 export async function gruppeDeleteEigenerButton(presetId) {
-    if (!assertCanEdit('Eigene Buttons löschen')) return;
+    if (!assertCanEdit('Standardleitungen löschen')) return;
     const preset = getLeitungPreset(presetId);
     const confirmed = await showModal(
-        preset ? `Button „${preset.label}“ wirklich entfernen?` : 'Diesen Button wirklich entfernen?',
-        { type: 'danger', title: 'Button entfernen', showCancel: true, confirmText: 'Entfernen', cancelText: 'Abbrechen' }
+        preset ? `Standardleitung „“ wirklich entfernen?` : 'Diese Standardleitung wirklich entfernen?',
+        { type: 'danger', title: 'Standardleitung entfernen', showCancel: true, confirmText: 'Entfernen', cancelText: 'Abbrechen' }
     );
     if (!confirmed) return;
 
@@ -1846,22 +2373,25 @@ export async function gruppeDeleteEigenerButton(presetId) {
  * @returns {Promise<void>}
  */
 export async function gruppeSaveLeitungAlsButton(leitungId) {
-    if (!assertCanEdit('Eigene Buttons anlegen')) return;
+    if (!assertCanEdit('Standardleitungen anlegen')) return;
     const leitung = findLeitung(leitungId);
     if (!leitung) return;
 
     const label = (leitung.bezeichnung || '').trim()
-        || prompt('Name für den Button:', leitung.bezeichnung || 'Eigener Button');
+        || prompt('Name der Standardleitung:', leitung.bezeichnung || 'Eigene Leitung');
     if (!label) return;
 
+    const gruppenCode = leitung.gruppe || aktiveGruppe;
     try {
         const preset = presetFromLeitung(leitung, label.trim());
-        await addCustomGruppenPreset(leitung.gruppe || aktiveGruppe, preset);
+        leitung.presetId = await addCustomGruppenPreset(gruppenCode, preset);
+        standardAngebotIds.delete(leitungId);
+        persistCurrentProjekt();
         renderGruppenPanel();
-        await showModal(`Button „${label.trim()}“ wurde für diese Gruppe gespeichert.`, {
-            type: 'success',
-            title: 'Button gespeichert'
-        });
+        await showModal(
+            `„${label.trim()}“ wird in ${gruppenCode} ab sofort immer vorgeschlagen – auch in neuen Projekten.`,
+            { type: 'success', title: 'Als Standard gemerkt' }
+        );
     } catch (error) {
         await showModal(error.message || 'Speichern fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
     }
@@ -1980,6 +2510,7 @@ export function gruppeOpenLeitungFormular(leitungId, presetId) {
     };
 
     neuesBauteilFormular = null;
+    pickerState = null;
     renderGruppenPanel();
     document.getElementById('neu-leitung-beschreibung')?.focus();
 }
@@ -2129,6 +2660,9 @@ export async function gruppeSaveNeuesLeitung() {
     renderGruppenPanel();
     fokussiereLeitungEditor();
 
+    if (aktiveLeitungId) standardAngebotIds.add(aktiveLeitungId);
+    renderGruppenPanel();
+
     showModal(`${beschreibung} (${artikelnummer}) wurde im Katalog angelegt.`, {
         type: 'success',
         title: 'Leitung gespeichert'
@@ -2150,14 +2684,216 @@ function getLeitungAusfuehrung(leitung) {
 }
 
 
+/* -------------------------------------------------------------------------- */
+/* Standardleitungen als Vorschlagszeilen                                      */
+/* -------------------------------------------------------------------------- */
+
 /**
- * Übersicht aller Leitungen der Gruppe als Tabelle.
+ * Prüft, ob eine Standardleitung in dieser Gruppe schon erfasst ist.
+ * Ältere Projekte kennen `presetId` noch nicht, daher der Rückfall auf Reihe und Bezeichnung.
+ * @param {object} preset
  * @param {object[]} leitungen
+ * @returns {boolean}
+ */
+function presetIstErfasst(preset, leitungen) {
+    const label = (preset.bezeichnung || preset.label || '').trim().toLowerCase();
+    return leitungen.some(leitung => {
+        if (leitung.presetId) return leitung.presetId === preset.id;
+        if (preset.artikelPrefix && leitung.artikelPrefix) {
+            return leitung.artikelPrefix === preset.artikelPrefix;
+        }
+        return Boolean(label) && (leitung.bezeichnung || '').trim().toLowerCase() === label;
+    });
+}
+
+
+/**
+ * Standardleitungen der Gruppe, die noch nicht erfasst und nicht ausgeblendet sind.
+ * @param {string} code
+ * @returns {object[]}
+ */
+function getOffeneLeitungVorschlaege(code) {
+    const gruppe = getGruppe(code);
+    if (!gruppe || istSchreibgeschuetzt()) return [];
+
+    const leitungen = getLeitungenDerGruppe(code);
+    const ausgeblendet = new Set(getGruppenStatus(code).ausgeblendeteLeitungPresets);
+    return getGruppenVorgaben(gruppe).standardLeitungen
+        .filter(preset => !ausgeblendet.has(preset.id) && !presetIstErfasst(preset, leitungen));
+}
+
+
+/**
+ * Katalog-Längen, die es zu einem Preset gibt.
+ * @param {object} preset
+ * @returns {number[]}
+ */
+function getPresetLaengen(preset) {
+    if (!preset.kategorie || istMeterwareKategorie(preset.kategorie) || preset.festLeitungstyp) return [];
+
+    const steckerA = getFullSteckerTyp(preset.steckerA || '', preset.ausrichtungA);
+    const steckerB = getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB);
+    if (!preset.artikelPrefix && !(steckerA && steckerB)) return [];
+
+    return getLaengenOptionen(preset.kategorie, preset.hersteller, steckerA, steckerB, preset.artikelPrefix);
+}
+
+
+/**
+ * Kurzbeschreibung eines Presets für Vorschlagszeilen und Auswahldialog.
+ * @param {object} preset
  * @returns {string}
  */
-function renderLeitungTabelle(leitungen) {
-    if (!leitungen.length) {
-        return '<p class="text-muted gruppen-leer">Noch keine Leitungen. Unten eine Leitung hinzufügen.</p>';
+function getPresetBeschreibung(preset) {
+    const teile = [];
+    if (preset.steckerA || preset.steckerB) {
+        teile.push(`${formatSteckerKurz(preset.steckerA)} → ${formatSteckerKurz(preset.steckerB)}`);
+    }
+    if (preset.hersteller) teile.push(preset.hersteller);
+    if (preset.artikelPrefix) teile.push(`Reihe ${preset.artikelPrefix}`);
+    else if (istMeterwareKategorie(preset.kategorie)) teile.push('Meterware – Typ und Länge wählen');
+    return teile.join(' · ') || getKategorieName(preset.kategorie) || 'Frei konfigurierbar';
+}
+
+
+/**
+ * Vorschlagszeilen unterhalb der erfassten Leitungen.
+ * @param {object[]} vorschlaege
+ * @returns {string}
+ */
+function renderLeitungVorschlagZeilen(vorschlaege) {
+    return vorschlaege.map(preset => {
+        const id = escapeHtml(preset.id);
+        const laengen = getPresetLaengen(preset);
+
+        const laengeFeld = laengen.length
+            ? `<select class="vorschlag-laenge" aria-label="Länge wählen und übernehmen"
+                       onchange="gruppeVorschlagUebernehmen('${id}', this.value)">
+                    ${optionen([
+                        { value: '', label: 'Länge…' },
+                        ...laengen.map(l => ({
+                            value: l,
+                            label: `${formatLaenge(l)} m${Number(l) === Number(preset.laenge) ? ' · Standard' : ''}`
+                        }))
+                    ], '')}
+               </select>`
+            : '<span class="text-muted">im Formular</span>';
+
+        return `
+            <tr class="vorschlag-zeile">
+                <td class="leitung-tabelle-nr">+</td>
+                <td>
+                    <span class="leitung-tabelle-verwendung">${escapeHtml(preset.label)}${preset.custom ? ' ★' : ''}</span>
+                    <span class="leitung-tabelle-typ">${escapeHtml(getPresetBeschreibung(preset))}</span>
+                </td>
+                <td class="leitung-tabelle-laenge">${laengeFeld}</td>
+                <td class="leitung-tabelle-artikel">${escapeHtml(preset.artikelPrefix || preset.artikelnummer || '–')}</td>
+                <td class="leitung-tabelle-anzahl">1×</td>
+                <td class="leitung-tabelle-aktionen">
+                    <div class="table-actions">
+                        <button type="button" class="btn btn-success btn-small"
+                                onclick="gruppeVorschlagUebernehmen('${id}', '')">Übernehmen</button>
+                        <button type="button" class="btn btn-secondary btn-small btn-icon"
+                                title="Vorschlag in diesem Projekt ausblenden"
+                                onclick="gruppeVorschlagAusblenden('${id}')">✕</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+
+/**
+ * Legt eine Standardleitung an – mit Länge direkt fertig, sonst im Formular.
+ * @param {string} presetId
+ * @param {string|number} laenge
+ * @returns {void}
+ */
+export function gruppeVorschlagUebernehmen(presetId, laenge) {
+    if (!assertCanEdit('Leitungen hinzufügen')) return;
+    const wert = parseFloat(String(laenge).replace(',', '.'));
+    gruppeAddLeitung(presetId, { laenge: Number.isNaN(wert) ? 0 : wert, direkt: !Number.isNaN(wert) && wert > 0 });
+}
+
+
+/**
+ * Blendet eine Standardleitung für dieses Projekt aus.
+ * @param {string} presetId
+ * @returns {void}
+ */
+export function gruppeVorschlagAusblenden(presetId) {
+    if (!assertCanEdit('Vorschläge ausblenden')) return;
+    const status = getGruppenStatus(aktiveGruppe);
+    if (!status.ausgeblendeteLeitungPresets.includes(presetId)) {
+        status.ausgeblendeteLeitungPresets.push(presetId);
+    }
+    persistCurrentProjekt();
+    renderGruppenPanel();
+}
+
+
+/**
+ * Holt alle ausgeblendeten Standardleitungen der Gruppe zurück.
+ * @returns {void}
+ */
+export function gruppeVorschlaegeZuruecksetzen() {
+    if (!assertCanEdit('Vorschläge einblenden')) return;
+    getGruppenStatus(aktiveGruppe).ausgeblendeteLeitungPresets = [];
+    persistCurrentProjekt();
+    renderGruppenPanel();
+}
+
+
+/**
+ * Übernimmt alle offenen Standardleitungen mit ihrer Standardlänge.
+ * @returns {void}
+ */
+export function gruppeAlleVorschlaegeUebernehmen() {
+    if (!assertCanEdit('Leitungen hinzufügen')) return;
+    getOffeneLeitungVorschlaege(aktiveGruppe).forEach(preset => {
+        gruppeAddLeitung(preset.id, { laenge: preset.laenge || 0, direkt: true, stillsam: true });
+    });
+    renderGruppenListe();
+    renderGruppenPanel();
+}
+
+
+/**
+ * Längenzelle einer erfassten Leitung. Fehlt die Länge noch, lässt sie sich direkt
+ * in der Liste wählen – sonst müsste man für jede Position den Editor öffnen.
+ * @param {object} leitung
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderLaengeZelle(leitung, gesperrt) {
+    if (leitung.laenge) return `${formatLaenge(leitung.laenge)} m`;
+    if (gesperrt) return '–';
+
+    const laengen = getLaengenOptionen(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+    );
+    if (!laengen.length) return '–';
+
+    return `
+        <select class="vorschlag-laenge" aria-label="Länge wählen"
+                onchange="gruppeUpdateLeitung('${escapeHtml(leitung.id)}', 'laenge', this.value)">
+            ${optionen([{ value: '', label: 'Länge…' },
+                ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], '')}
+        </select>
+    `;
+}
+
+
+/**
+ * Übersicht aller Leitungen der Gruppe als Tabelle, gefolgt von den offenen Standardleitungen.
+ * @param {object[]} leitungen
+ * @param {object[]} [vorschlaege]
+ * @returns {string}
+ */
+function renderLeitungTabelle(leitungen, vorschlaege = []) {
+    if (!leitungen.length && !vorschlaege.length) {
+        return '<p class="text-muted gruppen-leer">Noch keine Leitungen. Unten „+ Leitung“ wählen.</p>';
     }
 
     const gesperrt = istSchreibgeschuetzt();
@@ -2177,7 +2913,7 @@ function renderLeitungTabelle(leitungen) {
                     <span class="leitung-tabelle-verwendung">${escapeHtml(leitung.bezeichnung || '— ohne Verwendung —')}</span>
                     <span class="leitung-tabelle-typ">${escapeHtml(getLeitungAusfuehrung(leitung))}</span>
                 </td>
-                <td class="leitung-tabelle-laenge">${leitung.laenge ? `${formatLaenge(leitung.laenge)} m` : '–'}</td>
+                <td class="leitung-tabelle-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
                 <td class="leitung-tabelle-artikel">${escapeHtml(artikelnummer || 'offen')}</td>
                 <td class="leitung-tabelle-anzahl">${leitung.anzahl || 1}×</td>
                 <td class="leitung-tabelle-aktionen">
@@ -2198,6 +2934,23 @@ function renderLeitungTabelle(leitungen) {
 
     const gesamt = leitungen.reduce((summe, l) => summe + (l.anzahl || 1), 0);
 
+    const vorschlagBlock = vorschlaege.length
+        ? `<tbody class="vorschlag-block">
+                <tr class="vorschlag-kopf">
+                    <td colspan="6">
+                        <div class="vorschlag-kopf-inhalt">
+                            <span>Standardleitungen dieser Gruppe – Länge wählen, dann steht die Leitung in der Liste.</span>
+                            ${vorschlaege.length > 1 ? `
+                                <button type="button" class="btn btn-secondary btn-small"
+                                        onclick="gruppeAlleVorschlaegeUebernehmen()">Alle übernehmen</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+                ${renderLeitungVorschlagZeilen(vorschlaege)}
+           </tbody>`
+        : '';
+
     return `
         <div class="table-container gruppen-tabelle-container">
             <table class="leitung-table leitung-tabelle">
@@ -2212,6 +2965,8 @@ function renderLeitungTabelle(leitungen) {
                     </tr>
                 </thead>
                 <tbody>${zeilen}</tbody>
+                ${vorschlagBlock}
+                ${leitungen.length ? `
                 <tfoot>
                     <tr>
                         <td colspan="4">Gesamt</td>
@@ -2219,6 +2974,7 @@ function renderLeitungTabelle(leitungen) {
                         <td class="leitung-tabelle-aktionen"></td>
                     </tr>
                 </tfoot>
+                ` : ''}
             </table>
         </div>
     `;
@@ -2231,7 +2987,11 @@ function renderLeitungTabelle(leitungen) {
  */
 function aktualisiereLeitungsTabelle() {
     const container = document.getElementById('gruppen-leitungen-tabelle');
-    if (container) container.innerHTML = renderLeitungTabelle(getLeitungenDerGruppe(aktiveGruppe));
+    if (!container) return;
+    container.innerHTML = renderLeitungTabelle(
+        getLeitungenDerGruppe(aktiveGruppe),
+        getOffeneLeitungVorschlaege(aktiveGruppe)
+    );
 }
 
 
@@ -2297,7 +3057,8 @@ function aktualisiereArtikel(leitung) {
 
     const laengen = treffer?.verfuegbareLaengen || [];
     if (laengen.length) {
-        return { text: `Bitte Länge wählen (${laengen.map(formatLaenge).join(', ')} m)`, klasse: 'no-match' };
+        // Die Leitung steht im Katalog, es fehlt nur die Länge – kein Fall für „neu anlegen“.
+        return { text: `Bitte Länge wählen (${laengen.map(formatLaenge).join(', ')} m)`, klasse: 'laenge-fehlt' };
     }
     return { text: 'Kein Katalogartikel – Artikelnummer manuell eintragen', klasse: 'no-match' };
 }
@@ -2336,8 +3097,11 @@ function renderLeitungKarte(leitung) {
                        oninput="gruppeUpdateLeitungText('${id}', 'bezeichnung', this.value)">
                 <div class="leitung-karte-aktionen">
                     ${gesperrt ? '' : `
-                        <button type="button" class="btn btn-secondary btn-small" title="Als Button für diese Gruppe speichern"
-                                onclick="gruppeSaveLeitungAlsButton('${id}')">Als Button</button>
+                        ${standardAngebotIds.has(leitung.id) ? '' : `
+                        <button type="button" class="btn btn-secondary btn-small"
+                                title="Diese Leitung künftig in dieser Gruppe vorschlagen"
+                                onclick="gruppeSaveLeitungAlsButton('${id}')">Als Standard merken</button>
+                        `}
                         <button type="button" class="btn btn-secondary btn-small" title="Leitung kopieren"
                                 onclick="gruppeCopyLeitung('${id}')">Kopieren</button>
                         <button type="button" class="btn btn-danger btn-small" title="Leitung löschen"
@@ -2374,6 +3138,8 @@ function renderLeitungKarte(leitung) {
                            onchange="gruppeUpdateLeitung('${id}', 'anzahl', this.value)">
                 </div>
             </div>
+
+            ${gesperrt ? '' : renderStandardAngebot(leitung)}
 
             <div class="artikel-vorschlag gruppen-karte-artikel-box ${artikelInfo.klasse}">
                 <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
@@ -2621,16 +3387,20 @@ function renderMeterwareFelder(leitung, disabled) {
 /**
  * Legt eine neue Leitung anhand eines Presets an.
  * @param {string} presetId
+ * @param {{laenge?: number, direkt?: boolean, stillsam?: boolean}} [options]
+ *        `direkt` übernimmt ohne Editor, `stillsam` unterdrückt das Neuzeichnen (Sammelaktion).
  * @returns {void}
  */
-export function gruppeAddLeitung(presetId) {
+export function gruppeAddLeitung(presetId, options = {}) {
     if (!assertCanEdit('Leitungen hinzufügen')) return;
     if (!appState.currentProjekt.leitungen) appState.currentProjekt.leitungen = [];
+    pickerState = null;
 
     const preset = getLeitungPreset(presetId) || {};
     const leitung = {
         id: generateId('ltg'),
         position: appState.currentProjekt.leitungen.length + 1,
+        presetId: presetId || '',
         bezeichnung: preset.bezeichnung || preset.label || '',
         kategorie: preset.kategorie || '',
         gruppe: aktiveGruppe,
@@ -2639,7 +3409,7 @@ export function gruppeAddLeitung(presetId) {
         artikelPrefix: preset.artikelPrefix || '',
         artikelWhitelist: preset.artikelWhitelist || null,
         artikelCustom: '',
-        laenge: preset.laenge || 0,
+        laenge: options.laenge || preset.laenge || 0,
         steckerA: getFullSteckerTyp(preset.steckerA || '', preset.ausrichtungA),
         steckerB: getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB),
         festLeitungstyp: preset.festLeitungstyp === true,
@@ -2653,6 +3423,15 @@ export function gruppeAddLeitung(presetId) {
     renumberLeitungen();
     persistCurrentProjekt();
 
+    if (options.stillsam) return;
+
+    // Mit gewählter Länge ist die Leitung fertig – die Liste bleibt der Arbeitsplatz.
+    if (options.direkt && artikelInfo.klasse !== 'no-match') {
+        renderGruppenListe();
+        renderGruppenPanel();
+        return;
+    }
+
     if (artikelInfo.klasse === 'no-match' && (preset.kategorie || preset.artikelnummer || presetId)) {
         aktiveLeitungId = leitung.id;
         renderGruppenListe();
@@ -2664,6 +3443,122 @@ export function gruppeAddLeitung(presetId) {
     renderGruppenListe();
     renderGruppenPanel();
     fokussiereLeitungEditor();
+}
+
+
+/**
+ * Übernimmt eine Katalog-Leitung direkt in die aktive Gruppe und bietet an,
+ * sie künftig als Standard dieser Gruppe vorzuschlagen.
+ * @param {string} artikelnummer
+ * @returns {Promise<void>}
+ */
+export async function gruppeAddLeitungAusArtikel(artikelnummer) {
+    await addLeitungAusKatalog(artikelnummer, '');
+}
+
+
+/**
+ * Übernimmt eine ganze Leitungsreihe – die Länge wird danach in der Karte gewählt.
+ * @param {string} prefix
+ * @param {string} referenzArtikelnummer
+ * @returns {Promise<void>}
+ */
+export async function gruppeAddLeitungAusReihe(prefix, referenzArtikelnummer) {
+    await addLeitungAusKatalog(referenzArtikelnummer, prefix);
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @param {string} reihenPrefix - Gesetzt, wenn nur die Reihe feststeht und die Länge noch fehlt.
+ * @returns {Promise<void>}
+ */
+async function addLeitungAusKatalog(artikelnummer, reihenPrefix) {
+    if (!assertCanEdit('Leitungen hinzufügen')) return;
+
+    const artikel = getArtikelByNummer(artikelnummer);
+    if (!artikel) return;
+
+    pickerState = null;
+    if (!appState.currentProjekt.leitungen) appState.currentProjekt.leitungen = [];
+
+    const gruppenCode = aktiveGruppe;
+    const nurReihe = Boolean(reihenPrefix);
+    const leitung = {
+        id: generateId('ltg'),
+        position: appState.currentProjekt.leitungen.length + 1,
+        presetId: '',
+        bezeichnung: nurReihe
+            ? ohneLaengenangabe(artikel.beschreibung) || artikel.artikelnummer
+            : (artikel.beschreibung || artikel.artikelnummer),
+        kategorie: artikel.kategorie || '',
+        gruppe: gruppenCode,
+        hersteller: artikel.hersteller || '',
+        artikelnummer: nurReihe ? '' : artikel.artikelnummer,
+        artikelPrefix: artikel.meterware ? '' : (reihenPrefix || deriveArtikelPrefix(artikel.artikelnummer)),
+        artikelWhitelist: null,
+        artikelCustom: '',
+        laenge: nurReihe ? 0 : (artikel.laenge || 0),
+        steckerA: artikel.steckerA || '',
+        steckerB: artikel.steckerB || '',
+        festLeitungstyp: false,
+        notiz: '',
+        anzahl: 1,
+        erledigt: false
+    };
+
+    appState.currentProjekt.leitungen.push(leitung);
+    renumberLeitungen();
+    persistCurrentProjekt();
+
+    standardAngebotIds.add(leitung.id);
+    aktiveLeitungId = leitung.id;
+    renderGruppenListe();
+    renderGruppenPanel();
+    fokussiereLeitungEditor();
+}
+
+
+/**
+ * Angebot in der Leitungskarte, eine Sonderposition künftig immer vorzuschlagen.
+ * @param {object} leitung
+ * @returns {string}
+ */
+function renderStandardAngebot(leitung) {
+    if (leitung.presetId || !standardAngebotIds.has(leitung.id)) return '';
+    const id = escapeHtml(leitung.id);
+
+    return `
+        <div class="standard-angebot">
+            <span>Diese Leitung künftig in ${escapeHtml(leitung.gruppe)} immer vorschlagen?</span>
+            <div class="standard-angebot-aktionen">
+                <button type="button" class="btn btn-primary btn-small"
+                        onclick="gruppeSaveLeitungAlsButton('${id}')">Ja, merken</button>
+                <button type="button" class="btn btn-secondary btn-small"
+                        onclick="gruppeStandardAngebotVerwerfen('${id}')">Nur dieses Projekt</button>
+            </div>
+        </div>
+    `;
+}
+
+
+/**
+ * @param {string} leitungId
+ * @returns {void}
+ */
+export function gruppeStandardAngebotVerwerfen(leitungId) {
+    standardAngebotIds.delete(leitungId);
+    renderGruppenPanel();
+}
+
+
+/**
+ * Merkt sich, ob der Extras-Bereich auf- oder zugeklappt ist.
+ * @param {boolean} offen
+ * @returns {void}
+ */
+export function gruppeToggleExtras(offen) {
+    extrasOffen = Boolean(offen);
 }
 
 

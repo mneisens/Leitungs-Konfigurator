@@ -30,6 +30,7 @@ import {
     VISIBILITY_PUBLIC,
     VISIBILITY_PRIVATE
 } from './project-access.js';
+import { METERWARE_KATEGORIEN } from './leitung-optionen.js';
 
 /**
  * getProjects.
@@ -224,6 +225,91 @@ export function resetProjektForm() {
     document.getElementById('projekt-form-titel').textContent = 'Neues Projekt anlegen';
     document.getElementById('projekt-form').reset();
     document.getElementById('projekt-id').value = '';
+    fillProjektVorlagen();
+}
+
+
+/**
+ * Füllt die Auswahl „Startpunkt" mit den vorhandenen Projekten.
+ * Nur beim Anlegen sichtbar – ein bestehendes Projekt hat schon einen Inhalt.
+ * @param {boolean} [sichtbar]
+ * @returns {void}
+ */
+export function fillProjektVorlagen(sichtbar = true) {
+    const gruppe = document.getElementById('projekt-vorlage-group');
+    const select = document.getElementById('projekt-vorlage');
+    if (!gruppe || !select) return;
+
+    const vorlagen = getProjects().filter(p => (p.leitungen?.length || p.bauteile?.length));
+    gruppe.hidden = !sichtbar || vorlagen.length === 0;
+
+    select.innerHTML = '<option value="">Leeres Projekt – jede Gruppe einzeln erfassen</option>'
+        + vorlagen.map(p => {
+            const teile = [];
+            if (p.leitungen?.length) teile.push(`${p.leitungen.length} Leitungen`);
+            if (p.bauteile?.length) teile.push(`${p.bauteile.length} Bauteile`);
+            const label = `${p.projektnummer || ''} ${p.name || ''} (${teile.join(', ')})`.trim();
+            return `<option value="${p.id}">${label}</option>`;
+        }).join('');
+
+    onProjektVorlageChange();
+}
+
+
+/**
+ * Zeigt die Zusatzoption nur, wenn wirklich eine Vorlage gewählt ist.
+ * @returns {void}
+ */
+export function onProjektVorlageChange() {
+    const wrap = document.getElementById('projekt-vorlage-laengen-wrap');
+    const select = document.getElementById('projekt-vorlage');
+    if (wrap && select) wrap.hidden = !select.value;
+}
+
+
+/**
+ * Kopiert Positionen und Gruppenstatus einer Vorlage in ein neues Projekt.
+ * Ohne `mitWerten` bleiben Längen und Stückzahlen offen – die Positionen stehen
+ * dann als Arbeitsliste bereit und müssen nur noch bemaßt werden.
+ * @param {object} projekt
+ * @param {string} vorlageId
+ * @param {boolean} mitWerten
+ * @returns {void}
+ */
+function applyProjektVorlage(projekt, vorlageId, mitWerten) {
+    const vorlage = getProjects().find(p => p.id === vorlageId);
+    if (!vorlage) return;
+
+    projekt.leitungen = (vorlage.leitungen || []).map((quelle, index) => {
+        const leitung = { ...quelle, id: generateId('ltg'), position: index + 1, notiz: '' };
+        if (!mitWerten) {
+            leitung.anzahl = 1;
+            leitung.laenge = 0;
+            // Bei Meterware benennt die Artikelnummer den Typ, nicht die Länge – die bleibt.
+            if (!METERWARE_KATEGORIEN.includes(leitung.kategorie) && leitung.artikelPrefix) {
+                leitung.artikelnummer = '';
+            }
+            leitung.artikelCustom = '';
+        }
+        return leitung;
+    });
+
+    projekt.bauteile = (vorlage.bauteile || []).map(quelle => {
+        const bauteil = { ...quelle, id: generateId('btl'), notiz: '' };
+        if (!mitWerten) bauteil.anzahl = 1;
+        return bauteil;
+    });
+
+    projekt.zusaetzlicheGruppen = (vorlage.zusaetzlicheGruppen || []).map(g => ({ ...g }));
+    projekt.gruppenStatus = {};
+    Object.entries(vorlage.gruppenStatus || {}).forEach(([code, status]) => {
+        projekt.gruppenStatus[code] = {
+            nichtBenoetigt: Boolean(status.nichtBenoetigt),
+            notiz: '',
+            ausgeblendeteBauteilTypen: [...(status.ausgeblendeteBauteilTypen || [])],
+            ausgeblendeteLeitungPresets: [...(status.ausgeblendeteLeitungPresets || [])]
+        };
+    });
 }
 
 
@@ -277,6 +363,10 @@ export function saveProjekt(event) {
         projekt.visibility = projects[existingIndex].visibility || VISIBILITY_PUBLIC;
         projects[existingIndex] = projekt;
     } else {
+        const vorlageId = document.getElementById('projekt-vorlage')?.value || '';
+        const mitWerten = document.getElementById('projekt-vorlage-laengen')?.checked === true;
+        if (vorlageId) applyProjektVorlage(projekt, vorlageId, mitWerten);
+
         ensureProjectAccessFields(projekt, true);
         projects.unshift(projekt);
     }
@@ -334,7 +424,8 @@ export function editProjekt(id) {
         document.getElementById('kunde').value = projekt.kunde || '';
         document.getElementById('liefertermin').value = projekt.liefertermin || '';
         document.getElementById('projekt-notiz').value = projekt.notiz || '';
-        
+        fillProjektVorlagen(false);
+
         appState.currentProjekt = projekt;
         ensureWizardAnswers(appState.currentProjekt);
         showView('projekt-form');
