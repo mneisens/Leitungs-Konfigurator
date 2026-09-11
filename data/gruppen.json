@@ -296,6 +296,12 @@
       "label": "=301 EtherCAT-Module Stößel"
     },
     {
+      "code": "=303",
+      "bezeichnung": "Werkzeugsicherung",
+      "bemerkung": "",
+      "label": "=303 Werkzeugsicherung"
+    },
+    {
       "code": "=401",
       "bezeichnung": "Buskasten 1 Bedienseite",
       "bemerkung": "",

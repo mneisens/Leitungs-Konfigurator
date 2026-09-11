@@ -1333,9 +1333,12 @@ export function gruppeAddBauteil(typ, options = {}) {
         artikelnummer: artikel?.artikelnummer || '',
         bezeichnung: artikel?.beschreibung || '',
         notiz: '',
-        anzahl: 1,
-        laenge: options.laenge || standardLaenge
+        anzahl: 1
     };
+    const laenge = options.laenge ?? standardLaenge;
+    if (laenge != null && !Number.isNaN(laenge)) {
+        bauteil.laenge = laenge;
+    }
     appState.currentProjekt.bauteile.push(bauteil);
     persistCurrentProjekt();
 
@@ -1606,13 +1609,24 @@ function renderPickerLeitungen(suche) {
     const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
     const erfasst = getLeitungenDerGruppe(aktiveGruppe);
 
-    const presetEintrag = preset => renderPickerEintrag({
-        onclick: `gruppeAddLeitung('${escapeHtml(preset.id)}')`,
-        titel: preset.label,
-        meta: getPresetBeschreibung(preset)
-            + (presetIstErfasst(preset, erfasst) ? ' · bereits erfasst' : ''),
-        marke: preset.custom ? ' <span class="picker-marke">★ eigener Standard</span>' : ''
-    });
+    const presetEintrag = preset => {
+        const anzahl = erfasst.filter(l => {
+            if (l.presetId === preset.id) return true;
+            return preset.artikelPrefix && l.artikelPrefix === preset.artikelPrefix;
+        }).length;
+        let meta = getPresetBeschreibung(preset);
+        if (presetMehrfachMoeglich(preset) && anzahl) {
+            meta += ` · ${anzahl}× erfasst`;
+        } else if (presetIstErfasst(preset, erfasst)) {
+            meta += ' · bereits erfasst';
+        }
+        return renderPickerEintrag({
+            onclick: `gruppeAddLeitung('${escapeHtml(preset.id)}')`,
+            titel: preset.label,
+            meta,
+            marke: preset.custom ? ' <span class="picker-marke">★ eigener Standard</span>' : ''
+        });
+    };
 
     const filter = preset => passtZurSuche(
         `${preset.label} ${preset.bezeichnung || ''} ${getPresetBeschreibung(preset)} ${preset.artikelnummer || ''}`,
@@ -2689,6 +2703,17 @@ function getLeitungAusfuehrung(leitung) {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Presets mit Artikelreihe (z. B. ZK1090-3131) dürfen mehrfach erfasst werden –
+ * in der Praxis braucht man oft viele gleiche Steckerpaare in unterschiedlichen Längen.
+ * @param {object} preset
+ * @returns {boolean}
+ */
+function presetMehrfachMoeglich(preset) {
+    return Boolean(preset?.artikelPrefix);
+}
+
+
+/**
  * Prüft, ob eine Standardleitung in dieser Gruppe schon erfasst ist.
  * Ältere Projekte kennen `presetId` noch nicht, daher der Rückfall auf Reihe und Bezeichnung.
  * @param {object} preset
@@ -2696,6 +2721,8 @@ function getLeitungAusfuehrung(leitung) {
  * @returns {boolean}
  */
 function presetIstErfasst(preset, leitungen) {
+    if (presetMehrfachMoeglich(preset)) return false;
+
     const label = (preset.bezeichnung || preset.label || '').trim().toLowerCase();
     return leitungen.some(leitung => {
         if (leitung.presetId) return leitung.presetId === preset.id;

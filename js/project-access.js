@@ -135,11 +135,29 @@ export function ensureProjectAccessFields(projekt, isNew = false) {
 
 
 /**
+ * Entfernt `undefined`-Werte rekursiv – Firestore akzeptiert diese nicht.
+ * @param {*} value
+ * @returns {*}
+ */
+function sanitizeForFirestore(value) {
+    if (value === undefined) return undefined;
+    if (value === null || typeof value !== 'object') return value;
+    if (typeof value._methodName === 'string') return value;
+    if (Array.isArray(value)) return value.map(sanitizeForFirestore);
+    const out = {};
+    Object.entries(value).forEach(([key, entry]) => {
+        if (entry !== undefined) out[key] = sanitizeForFirestore(entry);
+    });
+    return out;
+}
+
+
+/**
  * @param {object} projekt
  * @returns {object}
  */
 export function projectToFirestore(projekt) {
-    return {
+    return sanitizeForFirestore({
         id: projekt.id,
         projektnummer: projekt.projektnummer,
         name: projekt.name,
@@ -159,7 +177,7 @@ export function projectToFirestore(projekt) {
         members: projekt.members || {},
         memberIds: projekt.memberIds || [],
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+    });
 }
 
 

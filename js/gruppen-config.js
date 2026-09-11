@@ -95,12 +95,30 @@ const LEITUNG_PRESETS = {
         label: 'Motorleitung',
         kategorie: 'motor', hersteller: 'Lapp Kabel'
     },
+    'motorleitung-spindel-servo719': {
+        label: 'Motorleitung ÖLFLEX SERVO 719',
+        bezeichnung: 'Motorleitung ÖLFLEX SERVO 719 CY 4G35',
+        kategorie: 'motor',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['1020033']
+    },
+    'motorleitung-vorschub-zk4500': {
+        label: 'Beckhoff Motorleitung ZK4500-8022',
+        bezeichnung: 'Beckhoff Motorleitung Vorschub',
+        kategorie: 'motor',
+        hersteller: 'Beckhoff',
+        artikelPrefix: 'ZK4500-8022',
+        artikelnummer: 'ZK4500-8022-0150',
+        laenge: 15
+    },
     'beckhoff-motorleitung': {
         label: 'Beckhoff Motorleitung',
         bezeichnung: 'Beckhoff Motorleitung',
         kategorie: 'motor',
         hersteller: 'Beckhoff',
-        festLeitungstyp: true
+        festLeitungstyp: true,
+        artikelWhitelist: ['ZK4500-8022', 'ZK4500-8003']
     },
     'zuleitung': {
         label: 'Zuleitung',
@@ -116,7 +134,55 @@ const LEITUNG_PRESETS = {
         kategorie: 'oelflex',
         hersteller: 'Lapp Kabel',
         festLeitungstyp: true,
-        artikelWhitelist: ['OELFLEX110-7G25', 'OELFLEX110-12G25', 'OELFLEX110-18G25']
+        artikelWhitelist: ['OELFLEX110-12G25', 'OELFLEX110-18G25']
+    },
+    'oelflex-extern': {
+        label: 'Ölflexleitung Extern',
+        bezeichnung: 'Ölflexleitung 25G1,5',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['OELFLEX110-25G15']
+    },
+    'oelflex-extern-netzwerk': {
+        label: 'Ölflexleitung Extern/Netzwerk',
+        bezeichnung: 'Ölflexleitung',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['OELFLEX110-5G16', 'OELFLEX110-25G15', 'OELFLEX110-3G15']
+    },
+    'oelflex-kuehlung': {
+        label: 'Ölflexleitung Kühlung',
+        bezeichnung: 'Ölflexleitung 4G1,5',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['0021810']
+    },
+    'oelflex-werkzeugspanner': {
+        label: 'Ölflexleitung Werkzeugspanner',
+        bezeichnung: 'Ölflexleitung',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['0021810', 'OELFLEX110-12G15', 'OELFLEX110-18G15']
+    },
+    'oelflex-werkzeugwechsel': {
+        label: 'Ölflexleitung Werkzeugwechsel',
+        bezeichnung: 'Ölflexleitung 5G2,5',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['OELFLEX110-5G25']
+    },
+    'oelflex-steckdosen': {
+        label: 'Ölflexleitung Steckdosen',
+        bezeichnung: 'Ölflexleitung',
+        kategorie: 'oelflex',
+        hersteller: 'Lapp Kabel',
+        festLeitungstyp: true,
+        artikelWhitelist: ['0021814', 'OELFLEX110-3G25', 'OELFLEX110-5G25']
     },
     'geberleitung': {
         label: 'Geberleitung',
@@ -206,8 +272,8 @@ const LEITUNG_PRESETS = {
         steckerA: 'M12 4-polig Buchse', ausrichtungA: 'gerade',
         steckerB: 'offen',
         artikelPrefix: 'ZK2000-6200',
-        artikelnummer: 'ZK2000-6200-0100',
-        laenge: 10
+        artikelnummer: 'ZK2000-6200-0150',
+        laenge: 15
     },
     'sensorleitung-stoessel': {
         label: 'Sensorleitung Stößel',
@@ -227,6 +293,135 @@ const LEITUNG_PRESETS = {
         steckerB: 'offen',
         artikelPrefix: 'ZK2000-6400',
         artikelnummer: 'ZK2000-6400-0100',
+        laenge: 10
+    },
+    'ethercat-zk3191-m8-rj45': {
+        label: 'EtherCAT M8 → RJ45',
+        bezeichnung: 'EtherCAT Bus M8 → RJ45',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'RJ45',
+        artikelPrefix: 'ZK1090-3191',
+        artikelnummer: 'ZK1090-3191-0200',
+        laenge: 20
+    },
+    'ethercat-zk3131-m8-m8': {
+        label: 'EtherCAT M8 → M8',
+        bezeichnung: 'EtherCAT Bus M8 → M8',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'M8 4-polig', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK1090-3131',
+        artikelnummer: 'ZK1090-3131-0010',
+        laenge: 1
+    },
+    'ethercat-zk9191-rj45-rj45': {
+        label: 'EtherCAT RJ45 → RJ45',
+        bezeichnung: 'EtherCAT Spindel/Regler',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'RJ45', steckerB: 'RJ45',
+        artikelPrefix: 'ZK1090-9191',
+        artikelnummer: 'ZK1090-9191-0020',
+        laenge: 2
+    },
+    'ethercat-zk3161-linear': {
+        label: 'EtherCAT M8 → M12 Linearmaßstab',
+        bezeichnung: 'EtherCAT Linearmaßstab Sp1/2',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'M12 4-polig', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK1090-3161',
+        artikelnummer: 'ZK1090-3161-0050',
+        laenge: 5
+    },
+    'ethercat-zk6161-linear': {
+        label: 'EtherCAT M12 → M12 Linearmaßstab',
+        bezeichnung: 'EtherCAT Linearmaßstab Sp3/4',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'M12 4-polig', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK1090-6161',
+        artikelnummer: 'ZK1090-6161-0050',
+        laenge: 5
+    },
+    'ethercat-zk3333-werkzeug': {
+        label: 'EtherCAT M8 gewinkelt → M8 gewinkelt',
+        bezeichnung: 'EtherCAT Werkzeugsicherung',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig gewinkelt', ausrichtungA: 'gewinkelt',
+        steckerB: 'M8 4-polig gewinkelt', ausrichtungB: 'gewinkelt',
+        artikelPrefix: 'ZK1090-3333',
+        artikelnummer: 'ZK1090-3333-0010',
+        laenge: 1
+    },
+    'ethercat-zk3133-werkzeug': {
+        label: 'EtherCAT M8 gerade → M8 gewinkelt',
+        bezeichnung: 'EtherCAT Werkzeugsicherung',
+        kategorie: 'ethercat', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'M8 4-polig gewinkelt', ausrichtungB: 'gewinkelt',
+        artikelPrefix: 'ZK1090-3133',
+        artikelnummer: 'ZK1090-3133-0010',
+        laenge: 1
+    },
+    'key-system-leitung': {
+        label: 'Key-System Leitung',
+        bezeichnung: 'Key-System RJ45 → RJ45',
+        kategorie: 'ethercat',
+        hersteller: 'Murr Elektronik',
+        steckerA: 'RJ45',
+        steckerB: 'RJ45',
+        artikelnummer: '7000-74327-7960500',
+        laenge: 5
+    },
+    'powerleitung-zk2030': {
+        label: 'Powerleitung EP-Modul',
+        bezeichnung: 'Powerleitung 7/8\" → offen',
+        kategorie: 'power', hersteller: 'Beckhoff',
+        steckerA: '7/8\" 5-polig gewinkelt', ausrichtungA: 'gewinkelt',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2030-1400',
+        artikelnummer: 'ZK2030-1400-0150',
+        laenge: 15
+    },
+    'powerleitung-zk3132': {
+        label: 'Powerleitung M8 → M8',
+        bezeichnung: 'Powerleitung EP-Modul',
+        kategorie: 'power', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'M8 4-polig', ausrichtungB: 'gerade',
+        artikelPrefix: 'ZK2020-3132',
+        artikelnummer: 'ZK2020-3132-0010',
+        laenge: 1
+    },
+    'powerleitung-zk3400': {
+        label: 'Powerleitung M8 → offen',
+        bezeichnung: 'Powerleitung Werkzeugsicherung',
+        kategorie: 'power', hersteller: 'Beckhoff',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2020-3400',
+        artikelnummer: 'ZK2020-3400-0100',
+        laenge: 10
+    },
+    'sensorleitung-zk2162': {
+        label: 'Sensorleitung M8 → M12',
+        bezeichnung: 'Sensorleitung Schmierung',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M8 3-polig Stecker gerade',
+        steckerB: 'M12 4-polig Buchse gerade',
+        artikelPrefix: 'ZK2000-2162',
+        artikelnummer: 'ZK2000-2162-0030',
+        laenge: 3
+    },
+    'sensorleitung-zk6100': {
+        label: 'Sensorleitung M12 Stecker → offen',
+        bezeichnung: 'Sensorleitung M12 Stecker',
+        kategorie: 'sensor', hersteller: 'Beckhoff',
+        steckerA: 'M12 4-polig Stecker gerade',
+        steckerB: 'offen',
+        artikelPrefix: 'ZK2000-6100',
+        artikelnummer: 'ZK2000-6100-0100',
         laenge: 10
     }
 };
@@ -250,14 +445,15 @@ const GRUPPEN = {
         leitungen: ['oelflex', 'power-m8-offen']
     },
     '=004': {
-        hinweis: 'Alle EtherCAT-Leitungen der Bustopologie erfassen. Bei jeder Leitung im Feld „Verwendung“ notieren, wofür sie ist.',
+        hinweis: 'Bustopologie laut Bestellliste: Stößel (ZK1090-3191, ZK1090-3131), MTS (ZK1090-3161, ZK1090-6161), Werkzeugsicherungen (ZK1090-3333, ZK1090-3133) und Key-System (7000-74327-7960500). Länge danach frei wählbar.',
         leitungen: [
-            'ethercat-m8-m8',
-            'ethercat-m8-m8-gew',
-            'ethercat-m8-m12',
-            'ethercat-m12-m12',
-            'ethercat-m8-rj45',
-            'ethercat-rj45-rj45'
+            'ethercat-zk3191-m8-rj45',
+            'ethercat-zk3131-m8-m8',
+            'ethercat-zk3161-linear',
+            'ethercat-zk6161-linear',
+            'ethercat-zk3333-werkzeug',
+            'ethercat-zk3133-werkzeug',
+            'key-system-leitung'
         ],
         ohneUniversal: true,
         nurLeitungen: true
@@ -274,10 +470,35 @@ const GRUPPEN = {
         leitungen: ['ethercat-m8-m8', 'ethercat-m8-rj45', 'power-m8-m8']
     },
     '=007': {
-        hinweis: 'Sicherheitstechnik: Türschalter, Zweihandpult, Fußtaster und Lichtschranke. Fehlt ein Typ im Katalog, direkt beim Anlegen neu erstellen.',
-        leitungen: ['sensor-m8-m8', 'sensor-m8-offen', 'sensor-m12-m12', 'sensor-m12-offen', 'oelflex'],
+        hinweis: 'Sicherheitstechnik: Fußtaster und Zweihandpult mit Ölflexleitung (Meterware). Türschalter und Lichtschranke als Bauteile erfassen.',
+        leitungen: ['oelflex'],
         bauteile: ['tuerschalter', 'zweihand', 'fusstaster', 'lichtschranke'],
+        ohneUniversal: true,
         nurFestgelegteBauteile: true
+    },
+    '=010': {
+        hinweis: 'Spindel 1 Antrieb: ÖLFLEX SERVO 719 CY 4G35 (1020033) und Igus Readycable Geberleitung erfassen. Entspricht =020, =030, =040.',
+        leitungen: ['motorleitung-spindel-servo719', 'geberleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=020': {
+        hinweis: 'Spindel 2 Antrieb: ÖLFLEX SERVO 719 CY 4G35 (1020033) und Igus Readycable Geberleitung erfassen. Entspricht =010, =030, =040.',
+        leitungen: ['motorleitung-spindel-servo719', 'geberleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=030': {
+        hinweis: 'Spindel 3 Antrieb: ÖLFLEX SERVO 719 CY 4G35 (1020033) und Igus Readycable Geberleitung erfassen. Entspricht =010, =020, =040.',
+        leitungen: ['motorleitung-spindel-servo719', 'geberleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=040': {
+        hinweis: 'Spindel 4 Antrieb: ÖLFLEX SERVO 719 CY 4G35 (1020033) und Igus Readycable Geberleitung erfassen. Entspricht =010, =020, =030.',
+        leitungen: ['motorleitung-spindel-servo719', 'geberleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
     },
     '=011': {
         hinweis: 'Spindel 1 Bremse: drei Leitungen erfassen – Bremse geöffnet, Sensorleitung Ventil und Ventilstecker Bremse. Nach dem Anlegen nur noch die Länge wählen.',
@@ -408,7 +629,7 @@ const GRUPPEN = {
         nurLeitungen: true
     },
     '=016': {
-        hinweis: 'Spindel 1 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200). Nach dem Anlegen nur noch die Länge wählen.',
+        hinweis: 'Spindel 1 Beleuchtung: Sensorleitung Lampe erfassen (ZK2000-6200, Standard 15 m). Nach dem Anlegen nur noch die Länge wählen.',
         leitungen: ['sensorleitung-lampe'],
         ohneUniversal: true,
         nurLeitungen: true
@@ -432,14 +653,50 @@ const GRUPPEN = {
         nurLeitungen: true
     },
     '=100': {
-        hinweis: 'Vorschub: Beckhoff Motorleitung erfassen. Typ und Länge wählen.',
-        leitungen: ['beckhoff-motorleitung'],
+        hinweis: 'Vorschub: Beckhoff Motorleitung ZK4500-8022 (Standard 15 m), Sensorleitung ZK2000-6200-0100 und Geberleitung erfassen. Länge danach frei wählbar.',
+        leitungen: ['motorleitung-vorschub-zk4500', 'sensorleitung-eaton-taster', 'geberleitung'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=105': {
+        hinweis: 'Beölung: diverse M8/M12 Sensorleitungen laut Schaltplan – Typ und Länge wählen.',
+        leitungen: ['sensor-m12-m12', 'sensor-m8-m8', 'oelflex'],
         ohneUniversal: true,
         nurLeitungen: true
     },
     '=200': {
-        hinweis: 'Kühlung: Zuleitung erfassen – Ölflex 5G2,5, 4G2,5 oder 4G1,5 wählen und Länge eingeben.',
-        leitungen: ['zuleitung'],
+        hinweis: 'Kühlung: Ölflex 4G1,5, zwei Sensorleitungen ZK2000-6200 (Buchse) und eine ZK2000-6100 (Stecker) erfassen.',
+        leitungen: ['oelflex-kuehlung', 'sensorleitung-eaton-taster', 'sensorleitung-zk6100'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=210': {
+        hinweis: 'Schmierung: Sensorleitungen ZK2000-6200-0100 und ZK2000-2162-0030 erfassen. Länge danach frei wählbar.',
+        leitungen: ['sensorleitung-eaton-taster', 'sensorleitung-zk2162'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=250': {
+        hinweis: 'Steckdosen: Ölflex 5G1,5, 3G2,5 oder 5G2,5 wählen und Länge eingeben.',
+        leitungen: ['oelflex-steckdosen'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=270': {
+        hinweis: 'Druckluft: Sensorleitung ZK2000-6200, Powerleitung ZK2020-3200 und Ölflex erfassen.',
+        leitungen: ['sensorleitung-eaton-taster', 'powerleitung-mts', 'oelflex'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=281': {
+        hinweis: 'Werkzeugspanner: Ölflex 4G1,5, 12G1,5 oder 18G1,5 sowie Sensorleitung ZK2000-2122 erfassen.',
+        leitungen: ['oelflex-werkzeugspanner', 'bremse-geoeffnet'],
+        ohneUniversal: true,
+        nurLeitungen: true
+    },
+    '=282': {
+        hinweis: 'Werkzeugwechselkonsole: Ölflex 5G2,5 erfassen. Harting-Gehäuse als Bauteil.',
+        leitungen: ['oelflex-werkzeugwechsel'],
         ohneUniversal: true,
         nurLeitungen: true
     },
@@ -450,22 +707,36 @@ const GRUPPEN = {
         nurFestgelegteBauteile: true
     },
     '=110': {
-        hinweis: 'Schnittstelle zur externen Peripherie.',
-        leitungen: ['ethercat-m8-m8', 'oelflex']
+        hinweis: 'Externe Peripherie (=110–112): Ölflex 25G1,5 und EtherCAT ZK1090-9191 erfassen. Länge danach frei wählbar.',
+        leitungen: ['oelflex-extern', 'ethercat-zk9191-rj45-rj45'],
+        ohneUniversal: true,
+        nurLeitungen: true
     },
     '=301': {
-        hinweis: 'EtherCAT-Module und EP-Module am Stößel.',
-        leitungen: ['ethercat-m8-m8', 'ethercat-m8-m12', 'power-m8-m8'],
-        bauteile: ['ep-modul']
+        hinweis: 'EtherCAT-Module am Stößel: EP-Module als Bauteil, Power ZK2030-1400 (Standard 15 m), ZK2020-3132 und EtherCAT-Busleitungen erfassen.',
+        leitungen: [
+            'powerleitung-zk2030',
+            'powerleitung-zk3132',
+            'ethercat-zk3191-m8-rj45',
+            'ethercat-zk3131-m8-m8'
+        ],
+        bauteile: ['ep-modul'],
+        ohneUniversal: true
+    },
+    '=303': {
+        hinweis: 'Werkzeugsicherung: EP-Module als Bauteil, Power ZK2020-3400 (Standard 10 m) und ZK2020-3132 erfassen.',
+        leitungen: ['powerleitung-zk3400', 'powerleitung-zk3132'],
+        bauteile: ['ep-modul'],
+        ohneUniversal: true
     },
     '=401': {
-        hinweis: 'Buskasten Bedienseite: Ölflex 7G2,5, 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
+        hinweis: 'Buskasten Bedienseite: Ölflex 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
         leitungen: ['oelflex-buskasten'],
         ohneUniversal: true,
         nurLeitungen: true
     },
     '=402': {
-        hinweis: 'Buskasten Rückseite: Ölflex 7G2,5, 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
+        hinweis: 'Buskasten Rückseite: Ölflex 12G2,5 oder 18G2,5 wählen und Länge eingeben.',
         leitungen: ['oelflex-buskasten'],
         ohneUniversal: true,
         nurLeitungen: true

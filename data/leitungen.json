@@ -858,6 +858,33 @@
         },
         {
             "hersteller": "Beckhoff",
+            "artikelnummer": "ZK1090-9191-0001",
+            "beschreibung": "EtherCAT RJ45-RJ45 0,17m",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45",
+            "laenge": 0.17,
+            "kategorie": "ethercat"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK1090-9191-0005",
+            "beschreibung": "EtherCAT RJ45-RJ45 0,50m",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45",
+            "laenge": 0.5,
+            "kategorie": "ethercat"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK1090-9191-0020",
+            "beschreibung": "EtherCAT RJ45-RJ45 2,00m",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45",
+            "laenge": 2,
+            "kategorie": "ethercat"
+        },
+        {
+            "hersteller": "Beckhoff",
             "artikelnummer": "ZK1090-3133-0002",
             "beschreibung": "EtherCAT M8 gerade-M8 gewinkelt 0,20m",
             "steckerA": "M8 4-polig gerade",
@@ -3747,6 +3774,105 @@
         },
         {
             "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-6100-0010",
+            "beschreibung": "Sensor M12 4p Stecker gerade - offen 1.00m",
+            "steckerA": "M12 4-polig Stecker gerade",
+            "steckerB": "offen",
+            "laenge": 1,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-6100-0050",
+            "beschreibung": "Sensor M12 4p Stecker gerade - offen 5.00m",
+            "steckerA": "M12 4-polig Stecker gerade",
+            "steckerB": "offen",
+            "laenge": 5,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-6100-0100",
+            "beschreibung": "Sensor M12 4p Stecker gerade - offen 10.00m",
+            "steckerA": "M12 4-polig Stecker gerade",
+            "steckerB": "offen",
+            "laenge": 10,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-6100-0150",
+            "beschreibung": "Sensor M12 4p Stecker gerade - offen 15.00m",
+            "steckerA": "M12 4-polig Stecker gerade",
+            "steckerB": "offen",
+            "laenge": 15,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0010",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 1.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 1,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0015",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 1.50m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 1.5,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0020",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 2.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 2,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0030",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 3.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 3,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0050",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 5.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 5,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0100",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 10.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 10,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK2000-2162-0150",
+            "beschreibung": "Sensor M8 3p Stecker gerade - M12 4p Buchse gerade 15.00m",
+            "steckerA": "M8 3-polig Stecker gerade",
+            "steckerB": "M12 4-polig Buchse gerade",
+            "laenge": 15,
+            "kategorie": "sensor"
+        },
+        {
+            "hersteller": "Beckhoff",
             "artikelnummer": "ZK2000-6400-0005",
             "beschreibung": "Sensor M12 4p Buchse gewinkelt - offen 0.50m",
             "steckerA": "M12 4-polig Buchse gewinkelt",
@@ -4718,6 +4844,46 @@
             "meterware": true
         },
         {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-25G15",
+            "beschreibung": "ÖLFLEX CLASSIC 110 25G1,5",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-5G16",
+            "beschreibung": "ÖLFLEX CLASSIC 110 5G16",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-3G15",
+            "beschreibung": "ÖLFLEX CLASSIC 110 3G1,5",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
+            "hersteller": "Lapp Kabel",
+            "artikelnummer": "OELFLEX110-12G15",
+            "beschreibung": "ÖLFLEX CLASSIC 110 12G1,5",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "oelflex",
+            "meterware": true
+        },
+        {
             "hersteller": "Phoenix Contact",
             "artikelnummer": "632582",
             "beschreibung": "Panel Taster-Leitung (Sonepar Bestellnummer 632582)",
@@ -4736,6 +4902,47 @@
             "kategorie": "sonstiges",
             "meterware": true,
             "placeholder": true
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4500-8022-0150",
+            "beschreibung": "Motorleitung AX5000 schleppfähig 15,00 m",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 15,
+            "kategorie": "motor",
+            "serie": "zk4500-8022"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4500-8022",
+            "beschreibung": "Motorleitung AX5000 1,5–6 A, schleppfähig, 4×1 mm² + 2×0,75 mm²",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4500-8022"
+        },
+        {
+            "hersteller": "Murr Elektronik",
+            "artikelnummer": "7000-74327-7960500",
+            "beschreibung": "Key-System RJ45 gerade → RJ45 90° oben, 5,00 m",
+            "steckerA": "RJ45",
+            "steckerB": "RJ45",
+            "laenge": 5,
+            "kategorie": "ethercat"
+        },
+        {
+            "hersteller": "Beckhoff",
+            "artikelnummer": "ZK4500-8003",
+            "beschreibung": "Motorleitung AX5000 1,5 mm², feste Verlegung",
+            "steckerA": "offen",
+            "steckerB": "offen",
+            "laenge": 0,
+            "kategorie": "motor",
+            "meterware": true,
+            "serie": "zk4500-8003"
         },
         {
             "hersteller": "Beckhoff",
