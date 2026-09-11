@@ -76,8 +76,6 @@ let eigenerButtonFormular = null;
 let pickerState = null;
 /** Leitungen, denen gerade angeboten wird, sie als Standard der Gruppe zu merken. */
 const standardAngebotIds = new Set();
-/** Auf-/zugeklappter Zustand des Extras-Bereichs; `null` bedeutet automatisch. */
-let extrasOffen = null;
 
 
 /**
@@ -197,6 +195,71 @@ function optionen(werte, selected) {
             : '';
         return `<option value="${escapeHtml(String(value))}"${istAktiv}>${escapeHtml(String(label))}</option>`;
     }).join('');
+}
+
+
+/**
+ * Warenkorb-Steuerung für die Stückzahl (+ / −).
+ * @param {'leitung'|'bauteil'} art
+ * @param {string} id
+ * @param {number} anzahl
+ * @param {boolean} [gesperrt]
+ * @returns {string}
+ */
+function renderAnzahlStepper(art, id, anzahl, gesperrt = false) {
+    const wert = Math.max(1, Number(anzahl) || 1);
+    const safeId = escapeHtml(id);
+    const safeArt = escapeHtml(art);
+
+    if (gesperrt) {
+        return `<span class="anzahl-stepper anzahl-stepper-readonly">${wert}×</span>`;
+    }
+
+    return `
+        <div class="anzahl-stepper" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()">
+            <button type="button" class="anzahl-stepper-btn" title="Weniger"
+                    ${wert <= 1 ? 'disabled' : ''}
+                    onclick="event.stopPropagation(); gruppeAendereAnzahl('${safeArt}', '${safeId}', -1)">−</button>
+            <span class="anzahl-stepper-wert" aria-live="polite">${wert}</span>
+            <button type="button" class="anzahl-stepper-btn" title="Mehr"
+                    onclick="event.stopPropagation(); gruppeAendereAnzahl('${safeArt}', '${safeId}', 1)">+</button>
+        </div>
+    `;
+}
+
+
+/**
+ * Ändert die Stückzahl einer Leitung oder eines Bauteils um `delta`.
+ * @param {'leitung'|'bauteil'} art
+ * @param {string} id
+ * @param {number} delta
+ * @returns {void}
+ */
+export function gruppeAendereAnzahl(art, id, delta) {
+    if (!assertCanEdit('Stückzahl ändern')) return;
+
+    if (art === 'bauteil') {
+        const bauteil = findBauteil(id);
+        if (!bauteil) return;
+        const neu = Math.max(1, (bauteil.anzahl || 1) + Number(delta || 0));
+        bauteil.anzahl = neu;
+        persistCurrentProjekt();
+        if (document.getElementById(`bauteil-karte-${id}`)) {
+            ersetzeKarte(`bauteil-karte-${id}`, renderBauteilKarte(bauteil));
+        }
+        aktualisiereBauteilTabelle();
+        return;
+    }
+
+    const leitung = findLeitung(id);
+    if (!leitung) return;
+    const neu = Math.max(1, (leitung.anzahl || 1) + Number(delta || 0));
+    leitung.anzahl = neu;
+    persistCurrentProjekt();
+    if (document.getElementById(`leitung-karte-${id}`)) {
+        ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
+    }
+    aktualisiereLeitungsTabelle();
 }
 
 
@@ -442,7 +505,6 @@ export function selectGruppe(code) {
     neuesBauteilFormular = null;
     neuesLeitungFormular = null;
     pickerState = null;
-    extrasOffen = null;
     renderGruppenListe();
     renderGruppenPanel();
     document.getElementById('gruppen-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -487,8 +549,6 @@ function renderGruppenPanel() {
     const index = gruppen.findIndex(g => g.code === gruppe.code);
     const leitungVorschlaege = getOffeneLeitungVorschlaege(gruppe.code);
     const bauteilVorschlaege = getOffeneBauteilVorschlaege(gruppe.code);
-    const extrasAuf = Boolean(eigenerButtonFormular)
-        || (extrasOffen === null ? Boolean(status.notiz) : extrasOffen);
     const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
     const zeigeLeitungen = !vorgaben.nurBauteile || leitungen.length > 0;
 
@@ -508,6 +568,7 @@ function renderGruppenPanel() {
                         Nicht benötigt
                     </label>
                     ${!gesperrt && gruppe.custom ? `<button type="button" class="btn btn-danger btn-small" onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
+                    ${gesperrt ? '' : renderGruppenAddButtons(zeigeBauteile, zeigeLeitungen)}
                 </div>
             </div>
 
@@ -519,9 +580,6 @@ function renderGruppenPanel() {
                     <h4>Bauteile <span class="gruppen-anzahl">${bauteile.length}</span></h4>
                 </div>
                 <div id="gruppen-bauteile-tabelle">${renderBauteilTabelle(bauteile, bauteilVorschlaege)}</div>
-                ${gesperrt ? '' : renderBauteilButtons()}
-                ${gesperrt ? '' : renderNeuesBauteilFormular()}
-                <div id="gruppen-bauteil-editor">${renderBauteilEditor()}</div>
             </div>
             ` : ''}
 
@@ -529,28 +587,11 @@ function renderGruppenPanel() {
             <div class="gruppen-abschnitt">
                 <div class="gruppen-abschnitt-kopf">
                     <h4>Leitungen <span class="gruppen-anzahl">${leitungen.length}</span></h4>
+                    ${gesperrt ? '' : renderLeitungVorschlaegeAktion()}
                 </div>
                 <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen, leitungVorschlaege)}</div>
-                ${gesperrt ? '' : renderLeitungButtons()}
-                ${gesperrt ? '' : renderNeuesLeitungFormular()}
-                <div id="gruppen-leitung-editor">${renderLeitungEditor()}</div>
             </div>
             ` : ''}
-
-            ${gesperrt ? (status.notiz
-                ? `<p class="gruppen-notiz-readonly"><strong>Notiz:</strong> ${escapeHtml(status.notiz)}</p>`
-                : '') : `
-            <details class="gruppen-extras"${extrasAuf ? ' open' : ''} ontoggle="gruppeToggleExtras(this.open)">
-                <summary>Notiz &amp; Standardvorgaben dieser Gruppe</summary>
-                <div class="form-group">
-                    <label for="gruppen-notiz">Notiz zur Gruppe</label>
-                    <textarea id="gruppen-notiz" rows="2" placeholder="Optionale Bemerkung…"
-                              oninput="updateGruppeNotiz(this.value)">${escapeHtml(status.notiz || '')}</textarea>
-                </div>
-                ${renderEigeneButtonVerwaltung(gruppe.code)}
-                ${renderBauteilSchnellwahlEinstellungen(vorgaben.bauteilTypen)}
-            </details>
-            `}
 
             <div class="form-actions gruppen-nav">
                 <button type="button" class="btn btn-secondary" onclick="gruppeWechseln(-1)"${index <= 0 ? ' disabled' : ''}>
@@ -562,6 +603,10 @@ function renderGruppenPanel() {
                 </button>
             </div>
         </div>
+        ${gesperrt ? '' : renderNeuesBauteilFormular()}
+        ${gesperrt ? '' : renderNeuesLeitungFormular()}
+        ${renderBauteilEditor()}
+        ${renderLeitungEditor()}
         ${renderPicker()}
     `;
 }
@@ -580,17 +625,6 @@ export function toggleGruppeNichtBenoetigt(checked) {
     getGruppenStatus(aktiveGruppe).nichtBenoetigt = Boolean(checked);
     persistCurrentProjekt();
     renderGruppenListe();
-}
-
-
-/**
- * @param {string} wert
- * @returns {void}
- */
-export function updateGruppeNotiz(wert) {
-    if (istSchreibgeschuetzt()) return;
-    getGruppenStatus(aktiveGruppe).notiz = wert;
-    persistCurrentProjekt();
 }
 
 
@@ -656,15 +690,43 @@ export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
 
 
 /**
+ * „+ Bauteil“ / „+ Leitung“ fest oben rechts im Panel-Kopf.
+ * @param {boolean} zeigeBauteile
+ * @param {boolean} zeigeLeitungen
  * @returns {string}
  */
-function renderBauteilButtons() {
-    return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
-        <button type="button" class="btn btn-success" onclick="gruppeOpenPicker('bauteil')">
-            + Bauteil
-        </button>
-        <span class="gruppen-add-hinweis">Standard, Katalog oder neues Bauteil – alles über die Suche.</span>
+function renderGruppenAddButtons(zeigeBauteile, zeigeLeitungen) {
+    if (!zeigeBauteile && !zeigeLeitungen) return '';
+
+    return `<div class="gruppen-add-buttons gruppen-add-buttons-kopf">
+        ${zeigeBauteile ? `
+            <button type="button" class="btn btn-success btn-small"
+                    onclick="gruppeOpenPicker('bauteil')" title="Bauteil suchen oder neu anlegen">
+                + Bauteil
+            </button>
+        ` : ''}
+        ${zeigeLeitungen ? `
+            <button type="button" class="btn btn-success btn-small"
+                    onclick="gruppeOpenPicker('leitung')" title="Leitung suchen oder neu anlegen">
+                + Leitung
+            </button>
+        ` : ''}
     </div>`;
+}
+
+
+/**
+ * Aktion für ausgeblendete Leitungsvorschläge neben der Abschnittsüberschrift.
+ * @returns {string}
+ */
+function renderLeitungVorschlaegeAktion() {
+    const ausgeblendet = getGruppenStatus(aktiveGruppe).ausgeblendeteLeitungPresets.length;
+    if (!ausgeblendet) return '';
+
+    return `<button type="button" class="btn btn-secondary btn-small"
+                    onclick="gruppeVorschlaegeZuruecksetzen()">
+                ${ausgeblendet === 1 ? '1 ausgeblendeten Vorschlag' : `${ausgeblendet} ausgeblendete Vorschläge`} einblenden
+            </button>`;
 }
 
 
@@ -740,6 +802,7 @@ function renderBauteilVorschlagZeilen(typen) {
 /**
  * Übernimmt einen vorgeschlagenen Bauteiltyp, optional mit Länge.
  * Bei mehreren Katalogartikeln öffnet sich die Auswahl statt den ersten zu nehmen.
+ * Sonst landet das Bauteil direkt in der Liste – ohne Editor.
  * @param {string} typ
  * @param {string|number} laenge
  * @returns {void}
@@ -756,7 +819,10 @@ export function gruppeBauteilVorschlagUebernehmen(typ, laenge) {
         return;
     }
 
-    gruppeAddBauteil(typ, { laenge: Number.isNaN(wert) ? 0 : wert, direkt: mitLaenge });
+    gruppeAddBauteil(typ, {
+        laenge: mitLaenge ? wert : undefined,
+        direkt: true
+    });
 }
 
 
@@ -774,7 +840,9 @@ function renderNeuesBauteilFormular() {
     const zielBauteil = neuesBauteilFormular.bauteilId ? findBauteil(neuesBauteilFormular.bauteilId) : null;
     const vorauswahlTyp = neuesBauteilFormular.typ || '';
 
-    return `
+    return renderEditorOverlay({
+        onClose: 'gruppeCancelBauteilFormular()',
+        inhalt: `
         <div class="gruppen-karte bauteil-neu-formular">
             <h5>Neues Bauteil anlegen</h5>
             <p class="text-muted">
@@ -824,7 +892,8 @@ function renderNeuesBauteilFormular() {
                 <button type="button" class="btn btn-primary" onclick="gruppeSaveNeuesBauteil()">In Katalog speichern &amp; übernehmen</button>
             </div>
         </div>
-    `;
+    `
+    });
 }
 
 
@@ -1003,7 +1072,7 @@ function renderBauteilTabelle(bauteile, vorschlaege = []) {
                     ${zusatz ? `<span class="leitung-tabelle-typ">${escapeHtml(zusatz)}</span>` : ''}
                 </td>
                 <td class="leitung-tabelle-artikel">${escapeHtml(bauteil.artikelnummer || 'offen')}</td>
-                <td class="leitung-tabelle-anzahl">${bauteil.anzahl || 1}×</td>
+                <td class="leitung-tabelle-anzahl">${renderAnzahlStepper('bauteil', bauteil.id, bauteil.anzahl, gesperrt)}</td>
                 <td class="leitung-tabelle-aktionen">
                     <div class="table-actions">
                     <button type="button" class="btn btn-secondary btn-small btn-icon" title="Bauteil bearbeiten"
@@ -1073,26 +1142,49 @@ function aktualisiereBauteilTabelle() {
 
 
 /**
- * Formular für das gerade ausgewählte Bauteil. Es ist immer nur eines geöffnet.
+ * Zentriertes Bearbeitungsfenster über dem abgedunkelten Hintergrund.
+ * Klick neben dem Dialog schließt ihn.
+ * @param {{onClose: string, inhalt: string}} options
  * @returns {string}
  */
-function renderBauteilEditor() {
-    const bauteil = aktivesBauteilId ? findBauteil(aktivesBauteilId) : null;
-    if (!bauteil || bauteil.gruppe !== aktiveGruppe) return '';
-    return renderBauteilKarte(bauteil);
+function renderEditorOverlay({ onClose, inhalt }) {
+    if (!inhalt) return '';
+    return `
+        <div class="editor-overlay" onclick="${onClose}">
+            <div class="editor-dialog" role="dialog" aria-modal="true"
+                 onclick="event.stopPropagation()">
+                ${inhalt}
+            </div>
+        </div>
+    `;
 }
 
 
 /**
- * Springt zum Bauteilformular und setzt den Cursor ins Verwendungsfeld.
+ * Formular für das gerade ausgewählte Bauteil. Es ist immer nur eines geöffnet.
+ * @returns {string}
+ */
+function renderBauteilEditor() {
+    if (neuesBauteilFormular || neuesLeitungFormular || pickerState) return '';
+    const bauteil = aktivesBauteilId ? findBauteil(aktivesBauteilId) : null;
+    if (!bauteil || bauteil.gruppe !== aktiveGruppe) return '';
+    return renderEditorOverlay({
+        onClose: 'gruppeCloseBauteilEditor()',
+        inhalt: renderBauteilKarte(bauteil)
+    });
+}
+
+
+/**
+ * Springt zum Bauteilformular und setzt den Fokus.
  * @returns {void}
  */
 function fokussiereBauteilEditor() {
     const karte = document.getElementById(`bauteil-karte-${aktivesBauteilId}`);
     if (!karte) return;
 
-    karte.scrollIntoView({ behavior: 'smooth', block: 'center' });
     karte.classList.add('gerade-angelegt');
+    karte.querySelector('select, input')?.focus({ preventScroll: true });
 }
 
 
@@ -1103,6 +1195,10 @@ function fokussiereBauteilEditor() {
  */
 export function gruppeEditBauteil(id) {
     if (!findBauteil(id)) return;
+    aktiveLeitungId = '';
+    neuesBauteilFormular = null;
+    neuesLeitungFormular = null;
+    pickerState = null;
     aktivesBauteilId = id;
     renderGruppenPanel();
     fokussiereBauteilEditor();
@@ -1153,12 +1249,6 @@ function renderBauteilKarte(bauteil) {
         <div class="gruppen-karte bauteil-karte" id="bauteil-karte-${escapeHtml(bauteil.id)}">
             <div class="gruppen-karte-kopf">
                 <strong class="gruppen-karte-titel">Bauteil ${nummer} bearbeiten</strong>
-                <div class="leitung-karte-aktionen">
-                    ${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small"
-                        onclick="gruppeDeleteBauteil('${escapeHtml(bauteil.id)}')">Entfernen</button>`}
-                    <button type="button" class="btn btn-primary btn-small" title="Bearbeitung beenden"
-                            onclick="gruppeCloseBauteilEditor()">Fertig</button>
-                </div>
             </div>
             <div class="gruppen-karte-grid">
                 <div class="form-group">
@@ -1176,8 +1266,7 @@ function renderBauteilKarte(bauteil) {
                 </div>
                 <div class="form-group gruppen-karte-anzahl">
                     <label>Anzahl</label>
-                    <input type="number" min="1" step="1" value="${bauteil.anzahl || 1}"${disabled}
-                           onchange="gruppeUpdateBauteil('${escapeHtml(bauteil.id)}', 'anzahl', this.value)">
+                    ${renderAnzahlStepper('bauteil', bauteil.id, bauteil.anzahl, gesperrt)}
                 </div>
             </div>
             <div class="form-group">
@@ -1187,6 +1276,12 @@ function renderBauteilKarte(bauteil) {
             </div>
             ${bauteil.artikelnummer ? `<p class="gruppen-karte-artikel">${escapeHtml(bauteil.bezeichnung || '')}
                 <strong>${escapeHtml(bauteil.artikelnummer)}</strong></p>` : ''}
+            <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
+                ${gesperrt ? '' : `<button type="button" class="btn btn-danger"
+                    onclick="gruppeDeleteBauteil('${escapeHtml(bauteil.id)}')">Entfernen</button>`}
+                <button type="button" class="btn btn-primary" title="Bearbeitung beenden"
+                        onclick="gruppeCloseBauteilEditor()">Fertig</button>
+            </div>
         </div>
     `;
 }
@@ -1212,12 +1307,6 @@ function renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt) {
         <div class="gruppen-karte bauteil-karte" id="bauteil-karte-${id}">
             <div class="gruppen-karte-kopf">
                 <strong class="gruppen-karte-titel">Bauteil ${nummer} bearbeiten</strong>
-                <div class="leitung-karte-aktionen">
-                    ${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small"
-                        onclick="gruppeDeleteBauteil('${id}')">Entfernen</button>`}
-                    <button type="button" class="btn btn-primary btn-small" title="Bearbeitung beenden"
-                            onclick="gruppeCloseBauteilEditor()">Fertig</button>
-                </div>
             </div>
             <div class="gruppen-karte-grid">
                 <div class="form-group gruppen-karte-breit">
@@ -1232,14 +1321,19 @@ function renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt) {
                 </div>
                 <div class="form-group gruppen-karte-anzahl">
                     <label>Anzahl</label>
-                    <input type="number" min="1" step="1" value="${bauteil.anzahl || 1}"${disabled}
-                           onchange="gruppeUpdateBauteil('${id}', 'anzahl', this.value)">
+                    ${renderAnzahlStepper('bauteil', bauteil.id, bauteil.anzahl, gesperrt)}
                 </div>
             </div>
             <div class="form-group">
                 <label>Verwendung / Kommentar</label>
                 <input type="text" value="${escapeHtml(bauteil.notiz || '')}" placeholder="z. B. Kraftsensor Stößel"${disabled}
                        oninput="gruppeUpdateBauteilText('${id}', 'notiz', this.value)">
+            </div>
+            <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
+                ${gesperrt ? '' : `<button type="button" class="btn btn-danger"
+                    onclick="gruppeDeleteBauteil('${id}')">Entfernen</button>`}
+                <button type="button" class="btn btn-primary" title="Bearbeitung beenden"
+                        onclick="gruppeCloseBauteilEditor()">Fertig</button>
             </div>
         </div>
     `;
@@ -1484,28 +1578,6 @@ export async function gruppeDeleteBauteil(id) {
 /* -------------------------------------------------------------------------- */
 /* Leitungen                                                                   */
 /* -------------------------------------------------------------------------- */
-
-/**
- * @param {object[]} presets
- * @returns {string}
- */
-function renderLeitungButtons() {
-    const ausgeblendet = getGruppenStatus(aktiveGruppe).ausgeblendeteLeitungPresets.length;
-
-    return `<div class="gruppen-add-buttons gruppen-add-buttons-unten">
-        <button type="button" class="btn btn-success" onclick="gruppeOpenPicker('leitung')">
-            + Leitung
-        </button>
-        <span class="gruppen-add-hinweis">Standard, Katalog oder neue Leitung – alles über die Suche.</span>
-        ${ausgeblendet ? `
-            <button type="button" class="btn btn-secondary btn-small"
-                    onclick="gruppeVorschlaegeZuruecksetzen()">
-                ${ausgeblendet === 1 ? '1 ausgeblendeten Vorschlag' : `${ausgeblendet} ausgeblendete Vorschläge`} einblenden
-            </button>
-        ` : ''}
-    </div>`;
-}
-
 
 /* -------------------------------------------------------------------------- */
 /* Auswahldialog für Leitungen und Bauteile                                    */
@@ -2425,7 +2497,9 @@ function renderNeuesLeitungFormular() {
     const stecker = appState.katalog?.steckertypen || [];
     const form = neuesLeitungFormular;
 
-    return `
+    return renderEditorOverlay({
+        onClose: 'gruppeCancelLeitungFormular()',
+        inhalt: `
         <div class="gruppen-karte leitung-neu-formular">
             <h5>Neue Leitung im Katalog anlegen</h5>
             <p class="text-muted">
@@ -2494,7 +2568,8 @@ function renderNeuesLeitungFormular() {
                 <button type="button" class="btn btn-primary" onclick="gruppeSaveNeuesLeitung()">In Katalog speichern &amp; übernehmen</button>
             </div>
         </div>
-    `;
+    `
+    });
 }
 
 
@@ -2832,7 +2907,7 @@ function renderLeitungVorschlagZeilen(vorschlaege) {
 
 
 /**
- * Legt eine Standardleitung an – mit Länge direkt fertig, sonst im Formular.
+ * Legt eine Standardleitung an und belässt sie in der Liste (ohne Editor).
  * @param {string} presetId
  * @param {string|number} laenge
  * @returns {void}
@@ -2840,7 +2915,10 @@ function renderLeitungVorschlagZeilen(vorschlaege) {
 export function gruppeVorschlagUebernehmen(presetId, laenge) {
     if (!assertCanEdit('Leitungen hinzufügen')) return;
     const wert = parseFloat(String(laenge).replace(',', '.'));
-    gruppeAddLeitung(presetId, { laenge: Number.isNaN(wert) ? 0 : wert, direkt: !Number.isNaN(wert) && wert > 0 });
+    gruppeAddLeitung(presetId, {
+        laenge: Number.isNaN(wert) ? 0 : wert,
+        direkt: true
+    });
 }
 
 
@@ -2887,26 +2965,46 @@ export function gruppeAlleVorschlaegeUebernehmen() {
 
 
 /**
- * Längenzelle einer erfassten Leitung. Fehlt die Länge noch, lässt sie sich direkt
- * in der Liste wählen – sonst müsste man für jede Position den Editor öffnen.
+ * Längenzelle einer erfassten Leitung – immer direkt in der Liste änderbar.
  * @param {object} leitung
  * @param {boolean} gesperrt
  * @returns {string}
  */
 function renderLaengeZelle(leitung, gesperrt) {
-    if (leitung.laenge) return `${formatLaenge(leitung.laenge)} m`;
-    if (gesperrt) return '–';
+    if (gesperrt) {
+        return leitung.laenge ? `${formatLaenge(leitung.laenge)} m` : '–';
+    }
 
-    const laengen = getLaengenOptionen(
-        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
-    );
-    if (!laengen.length) return '–';
+    const id = escapeHtml(leitung.id);
+    const meterware = istMeterwareKategorie(leitung.kategorie);
+    const laengen = meterware
+        ? []
+        : getLaengenOptionen(
+            leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+        );
+    const freieEingabe = meterware
+        || !laengen.length
+        || (leitung.laenge > 0 && !laengen.includes(Number(leitung.laenge)) && !laengen.includes(leitung.laenge));
+
+    if (freieEingabe) {
+        return `
+            <span class="laenge-zelle" onclick="event.stopPropagation()" ondblclick="event.stopPropagation()">
+                <input type="number" class="laenge-zelle-input" min="0" step="0.1"
+                       value="${leitung.laenge || ''}" placeholder="m" aria-label="Länge in Metern"
+                       onchange="event.stopPropagation(); gruppeUpdateLeitung('${id}', 'laenge', this.value)"
+                       onclick="event.stopPropagation()">
+                <span class="laenge-zelle-einheit">m</span>
+            </span>
+        `;
+    }
 
     return `
         <select class="vorschlag-laenge" aria-label="Länge wählen"
-                onchange="gruppeUpdateLeitung('${escapeHtml(leitung.id)}', 'laenge', this.value)">
+                onclick="event.stopPropagation()"
+                ondblclick="event.stopPropagation()"
+                onchange="event.stopPropagation(); gruppeUpdateLeitung('${id}', 'laenge', this.value)">
             ${optionen([{ value: '', label: 'Länge…' },
-                ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], '')}
+                ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], leitung.laenge || '')}
         </select>
     `;
 }
@@ -2942,14 +3040,12 @@ function renderLeitungTabelle(leitungen, vorschlaege = []) {
                 </td>
                 <td class="leitung-tabelle-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
                 <td class="leitung-tabelle-artikel">${escapeHtml(artikelnummer || 'offen')}</td>
-                <td class="leitung-tabelle-anzahl">${leitung.anzahl || 1}×</td>
+                <td class="leitung-tabelle-anzahl">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
                 <td class="leitung-tabelle-aktionen">
                     <div class="table-actions">
                     <button type="button" class="btn btn-secondary btn-small btn-icon" title="Leitung bearbeiten"
                             onclick="gruppeEditLeitung('${id}')">✏️</button>
                     ${gesperrt ? '' : `
-                        <button type="button" class="btn btn-secondary btn-small btn-icon" title="Leitung kopieren"
-                                onclick="gruppeCopyLeitung('${id}')">📋</button>
                         <button type="button" class="btn btn-danger btn-small btn-icon" title="Leitung löschen"
                                 onclick="gruppeDeleteLeitung('${id}')">🗑️</button>
                     `}
@@ -3118,25 +3214,14 @@ function renderLeitungKarte(leitung) {
         <div class="gruppen-karte leitung-karte" id="leitung-karte-${id}">
             <div class="leitung-karte-kopf">
                 <span class="leitung-karte-nummer">Leitung ${nummer} bearbeiten</span>
+            </div>
+
+            <div class="form-group">
+                <label>Verwendung</label>
                 <input type="text" class="leitung-karte-verwendung" value="${escapeHtml(leitung.bezeichnung || '')}"
                        title="Verwendung / wofür ist die Leitung?"
-                       placeholder="Verwendung, z. B. Klemmkasten 1 → EP-Modul Stößel"${disabled}
+                       placeholder="z. B. Klemmkasten 1 → EP-Modul Stößel"${disabled}
                        oninput="gruppeUpdateLeitungText('${id}', 'bezeichnung', this.value)">
-                <div class="leitung-karte-aktionen">
-                    ${gesperrt ? '' : `
-                        ${standardAngebotIds.has(leitung.id) ? '' : `
-                        <button type="button" class="btn btn-secondary btn-small"
-                                title="Diese Leitung künftig in dieser Gruppe vorschlagen"
-                                onclick="gruppeSaveLeitungAlsButton('${id}')">Als Standard merken</button>
-                        `}
-                        <button type="button" class="btn btn-secondary btn-small" title="Leitung kopieren"
-                                onclick="gruppeCopyLeitung('${id}')">Kopieren</button>
-                        <button type="button" class="btn btn-danger btn-small" title="Leitung löschen"
-                                onclick="gruppeDeleteLeitung('${id}')">Löschen</button>
-                    `}
-                    <button type="button" class="btn btn-primary btn-small" title="Bearbeitung beenden"
-                            onclick="gruppeCloseLeitungEditor()">Fertig</button>
-                </div>
             </div>
 
             <div class="gruppen-karte-grid">
@@ -3161,8 +3246,7 @@ function renderLeitungKarte(leitung) {
                         : renderSteckerFelder(leitung, disabled))}
                 <div class="form-group gruppen-karte-anzahl">
                     <label>Anzahl</label>
-                    <input type="number" min="1" step="1" value="${leitung.anzahl || 1}"${disabled}
-                           onchange="gruppeUpdateLeitung('${id}', 'anzahl', this.value)">
+                    ${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}
                 </div>
             </div>
 
@@ -3193,8 +3277,47 @@ function renderLeitungKarte(leitung) {
                     </div>
                 </div>
             </details>
+
+            <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
+                ${gesperrt ? '' : `
+                    ${standardAngebotIds.has(leitung.id) ? '' : `
+                    <button type="button" class="btn btn-secondary"
+                            title="Diese Leitung künftig in dieser Gruppe vorschlagen"
+                            onclick="gruppeSaveLeitungAlsButton('${id}')">Als Standard merken</button>
+                    `}
+                    <button type="button" class="btn btn-danger" title="Leitung löschen"
+                            onclick="gruppeDeleteLeitung('${id}')">Löschen</button>
+                `}
+                <button type="button" class="btn btn-primary" title="Bearbeitung beenden"
+                        onclick="gruppeCloseLeitungEditor()">Fertig</button>
+            </div>
         </div>
     `;
+}
+
+
+/**
+ * Schließt das aktuell offene Bearbeitungs- oder Anlagefenster (Escape / Overlay).
+ * @returns {boolean} true, wenn etwas geschlossen wurde.
+ */
+export function gruppeCloseAktivenEditor() {
+    if (neuesLeitungFormular) {
+        gruppeCancelLeitungFormular();
+        return true;
+    }
+    if (neuesBauteilFormular) {
+        gruppeCancelBauteilFormular();
+        return true;
+    }
+    if (aktiveLeitungId) {
+        gruppeCloseLeitungEditor();
+        return true;
+    }
+    if (aktivesBauteilId) {
+        gruppeCloseBauteilEditor();
+        return true;
+    }
+    return false;
 }
 
 
@@ -3203,21 +3326,24 @@ function renderLeitungKarte(leitung) {
  * @returns {string}
  */
 function renderLeitungEditor() {
+    if (neuesBauteilFormular || neuesLeitungFormular || pickerState) return '';
     const leitung = aktiveLeitungId ? findLeitung(aktiveLeitungId) : null;
     if (!leitung || leitung.gruppe !== aktiveGruppe) return '';
-    return renderLeitungKarte(leitung);
+    return renderEditorOverlay({
+        onClose: 'gruppeCloseLeitungEditor()',
+        inhalt: renderLeitungKarte(leitung)
+    });
 }
 
 
 /**
- * Springt zum Formular und setzt den Cursor ins Verwendungsfeld.
+ * Setzt den Fokus auf das Verwendungsfeld im Leitungseditor.
  * @returns {void}
  */
 function fokussiereLeitungEditor() {
     const karte = document.getElementById(`leitung-karte-${aktiveLeitungId}`);
     if (!karte) return;
 
-    karte.scrollIntoView({ behavior: 'smooth', block: 'center' });
     karte.classList.add('gerade-angelegt');
     karte.querySelector('.leitung-karte-verwendung')?.focus({ preventScroll: true });
 }
@@ -3230,6 +3356,10 @@ function fokussiereLeitungEditor() {
  */
 export function gruppeEditLeitung(id) {
     if (!findLeitung(id)) return;
+    aktivesBauteilId = '';
+    neuesBauteilFormular = null;
+    neuesLeitungFormular = null;
+    pickerState = null;
     aktiveLeitungId = id;
     renderGruppenPanel();
     fokussiereLeitungEditor();
@@ -3452,8 +3582,8 @@ export function gruppeAddLeitung(presetId, options = {}) {
 
     if (options.stillsam) return;
 
-    // Mit gewählter Länge ist die Leitung fertig – die Liste bleibt der Arbeitsplatz.
-    if (options.direkt && artikelInfo.klasse !== 'no-match') {
+    // Übernehmen / Direktzugabe: immer in der Liste belassen, Editor nur bei Bedarf manuell öffnen.
+    if (options.direkt) {
         renderGruppenListe();
         renderGruppenPanel();
         return;
@@ -3580,16 +3710,6 @@ export function gruppeStandardAngebotVerwerfen(leitungId) {
 
 
 /**
- * Merkt sich, ob der Extras-Bereich auf- oder zugeklappt ist.
- * @param {boolean} offen
- * @returns {void}
- */
-export function gruppeToggleExtras(offen) {
-    extrasOffen = Boolean(offen);
-}
-
-
-/**
  * Ändert ein Auswahlfeld einer Leitung und zeichnet die Karte neu.
  * @param {string} id
  * @param {string} feld
@@ -3706,29 +3826,6 @@ export function gruppeToggleFreieLaenge(id) {
     else freieLaengeIds.add(id);
 
     ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
-}
-
-
-/**
- * Legt eine Kopie der Leitung direkt darunter an.
- * @param {string} id
- * @returns {void}
- */
-export function gruppeCopyLeitung(id) {
-    if (!assertCanEdit('Leitungen kopieren')) return;
-    const liste = appState.currentProjekt?.leitungen || [];
-    const index = liste.findIndex(l => l.id === id);
-    if (index === -1) return;
-
-    const kopie = { ...liste[index], id: generateId('ltg') };
-    liste.splice(index + 1, 0, kopie);
-    renumberLeitungen();
-    persistCurrentProjekt();
-
-    aktiveLeitungId = kopie.id;
-    renderGruppenListe();
-    renderGruppenPanel();
-    fokussiereLeitungEditor();
 }
 
 

@@ -680,16 +680,20 @@
                 <h2 id="stueckliste-titel">Stückliste</h2>
             </div>
 
+            <div id="stueckliste-erinnerung" class="stueckliste-erinnerung" hidden></div>
+
             <div class="form-card">
                 <h3>Leitungen</h3>
                 <div class="table-container" id="stueckliste-leitungen-table">
-                    <table class="leitung-table">
+                    <table class="leitung-table stueckliste-table">
                         <thead>
                             <tr>
                                 <th>Leitungstyp</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
                                 <th>Anzahl</th>
+                                <th>Status</th>
+                                <th>Lieferdatum</th>
                             </tr>
                         </thead>
                         <tbody id="stueckliste-body">
@@ -705,7 +709,7 @@
 
                 <h3 style="margin-top: 2rem;">Bauteile</h3>
                 <div class="table-container" id="stueckliste-bauteile-table">
-                    <table class="leitung-table">
+                    <table class="leitung-table stueckliste-table">
                         <thead>
                             <tr>
                                 <th>Gruppe</th>
@@ -713,6 +717,8 @@
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
                                 <th>Anzahl</th>
+                                <th>Status</th>
+                                <th>Lieferdatum</th>
                             </tr>
                         </thead>
                         <tbody id="stueckliste-bauteile-body"></tbody>

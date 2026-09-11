@@ -356,6 +356,7 @@ export function saveProjekt(event) {
         projekt.wizardSkipped = projects[existingIndex].wizardSkipped || {};
         projekt.gruppenStatus = projects[existingIndex].gruppenStatus || {};
         projekt.zusaetzlicheGruppen = projects[existingIndex].zusaetzlicheGruppen || [];
+        projekt.stuecklisteStatus = projects[existingIndex].stuecklisteStatus || { leitungen: {}, bauteile: {} };
         projekt.ownerId = projects[existingIndex].ownerId;
         projekt.ownerEmail = projects[existingIndex].ownerEmail;
         projekt.members = projects[existingIndex].members;

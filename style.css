@@ -2068,6 +2068,14 @@ body {
     gap: 0.35rem;
 }
 
+.gruppen-add-buttons-kopf {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    margin-top: 0.15rem;
+}
+
 .gruppen-badge.zusaetzlich {
     background: #e0e7ff;
     color: #3730a3;
@@ -2392,11 +2400,7 @@ body {
 
 /* ===== Gruppen-Konfigurator: kompakte Leitungskarten ===== */
 .leitung-karte-kopf {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 0.6rem;
-    align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
 }
 
 .leitung-karte-nummer {
@@ -2407,6 +2411,10 @@ body {
     white-space: nowrap;
 }
 
+.leitung-karte > .form-group {
+    margin-bottom: 0.75rem;
+}
+
 .leitung-karte-verwendung {
     font-weight: 500;
 }
@@ -2414,6 +2422,15 @@ body {
 .leitung-karte-aktionen {
     display: flex;
     gap: 0.35rem;
+}
+
+.leitung-karte-aktionen-unten {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border-color);
 }
 
 .gruppen-karte-details {
@@ -2498,21 +2515,6 @@ body {
 .gruppen-eigene-button-leer {
     margin: 0.5rem 0;
     font-size: 0.9rem;
-}
-
-.gruppen-add-buttons-unten {
-    justify-content: flex-start;
-    align-items: center;
-    margin-top: 0.9rem;
-    padding-top: 0.9rem;
-    border-top: 1px dashed var(--border-color);
-}
-
-.gruppen-add-hinweis {
-    margin-right: 0.25rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-muted);
 }
 
 .gruppen-schnellwahl-details {
@@ -2615,10 +2617,92 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+.leitung-tabelle-laenge {
+    width: 8rem;
+    min-width: 8rem;
+}
+
+.laenge-zelle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.laenge-zelle-input {
+    width: 4.25rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: #fff;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.laenge-zelle-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(242, 124, 34, 0.15);
+}
+
+.laenge-zelle-einheit {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
 .leitung-tabelle-anzahl {
-    width: 3.5rem;
-    min-width: 3.5rem;
+    width: 7rem;
+    min-width: 7rem;
     text-align: center;
+}
+
+.anzahl-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: #fff;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.anzahl-stepper-readonly {
+    border: none;
+    background: transparent;
+    font-variant-numeric: tabular-nums;
+}
+
+.anzahl-stepper-btn {
+    width: 1.85rem;
+    height: 1.85rem;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.anzahl-stepper-btn:hover:not(:disabled) {
+    background: #fff7ed;
+    color: var(--primary-color);
+}
+
+.anzahl-stepper-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.anzahl-stepper-wert {
+    min-width: 1.75rem;
+    padding: 0 0.15rem;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.gruppen-karte-anzahl .anzahl-stepper {
+    margin-top: 0.15rem;
 }
 
 .leitung-tabelle-artikel {
@@ -2656,17 +2740,6 @@ body {
 
 #gruppen-leitung-editor:empty {
     display: none;
-}
-
-#gruppen-leitung-editor .leitung-karte {
-    margin-top: 1rem;
-    border-color: var(--primary-color);
-    background: #fff;
-    box-shadow: var(--shadow-md);
-}
-
-#gruppen-leitung-editor .leitung-karte-nummer {
-    color: var(--primary-color);
 }
 
 /* ===== Gruppen-Konfigurator: Vorschlagszeilen (Standardpositionen) ===== */
@@ -2718,46 +2791,22 @@ body {
 select.vorschlag-laenge {
     min-width: 7.5rem;
     padding: 0.3rem 0.4rem;
-    border: 1px solid var(--primary-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm, 4px);
     background: #fff;
     font-size: 0.85rem;
+}
+
+select.vorschlag-laenge:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(242, 124, 34, 0.15);
 }
 
 .leitung-tabelle tr.vorschlag-zeile .table-actions .btn {
     padding: 0.25rem 0.5rem;
     font-size: 0.78rem;
     white-space: nowrap;
-}
-
-.gruppen-notiz-readonly {
-    margin: 1rem 0 0;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.gruppen-extras {
-    margin-top: 1.5rem;
-    padding: 0.75rem 1rem;
-    border: 1px dashed var(--border-color);
-    border-radius: var(--radius-md);
-    background: #fafafa;
-}
-
-.gruppen-extras > summary {
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    user-select: none;
-}
-
-.gruppen-extras > summary:hover {
-    color: var(--text-color);
-}
-
-.gruppen-extras .form-group {
-    margin-top: 0.75rem;
 }
 
 .gruppen-schnellwahl-block {
@@ -2776,8 +2825,39 @@ select.vorschlag-laenge {
     font-size: 0.82rem;
 }
 
-.gruppen-add-buttons-unten .gruppen-add-hinweis {
-    font-weight: 400;
+/* ===== Bearbeitungsfenster (Leitung / Bauteil) ===== */
+.editor-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.28);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: fadeIn 0.15s ease;
+}
+
+.editor-dialog {
+    width: min(720px, 100%);
+    max-height: min(90vh, 900px);
+    overflow: auto;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.28));
+}
+
+.editor-dialog .gruppen-karte {
+    margin: 0;
+    border-color: var(--primary-color);
+    background: #fff;
+    box-shadow: none;
+}
+
+.editor-dialog .leitung-karte-nummer,
+.editor-dialog .gruppen-karte-titel {
+    color: var(--primary-color);
 }
 
 /* ===== Auswahldialog für Leitungen und Bauteile ===== */
@@ -2979,4 +3059,190 @@ select.vorschlag-laenge {
 .vorlage-group .text-muted {
     margin: 0.4rem 0 0.5rem;
     font-size: 0.85rem;
+}
+
+/* ===== Stückliste Status ===== */
+.stueckliste-erinnerung {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius-md);
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.stueckliste-erinnerung-liste {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+}
+
+.stueckliste-erinnerung-liste li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    margin: 0.2rem 0;
+}
+
+.stueckliste-erinnerung-datum {
+    font-size: 0.85rem;
+    color: #b45309;
+}
+
+.stueckliste-erinnerung-datum.ueberfaellig {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.stueckliste-table th,
+.stueckliste-table td {
+    vertical-align: middle;
+}
+
+.stueckliste-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.stueckliste-status {
+    min-width: 10rem;
+}
+
+.stueckliste-status-select {
+    display: block;
+    width: 100%;
+    max-width: 11rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.stueckliste-status-select.status-muted {
+    background: #f9fafb;
+    color: #6b7280;
+}
+
+.stueckliste-status-select.status-info {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+}
+
+.stueckliste-status-select.status-warn {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fcd34d;
+}
+
+.stueckliste-status-select.status-danger {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.stueckliste-status-select.status-ok {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #86efac;
+}
+
+.stueckliste-liefer-hinweis {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.stueckliste-badge.status-muted {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.stueckliste-badge.status-info {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.stueckliste-badge.status-warn {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.stueckliste-badge.status-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.stueckliste-badge.status-ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.stueckliste-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.stueckliste-lieferdatum input[type="date"] {
+    max-width: 10.5rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    font-size: 0.85rem;
+    background: #fff;
+}
+
+.stueckliste-lieferdatum input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(242, 124, 34, 0.15);
+}
+
+.stueckliste-nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    margin-left: 0.4rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stueckliste-table tr.status-warn td:first-child,
+.stueckliste-table tr.status-danger td:first-child {
+    box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.stueckliste-table tr.status-danger td:first-child {
+    box-shadow: inset 3px 0 0 #dc2626;
+}
+
+.stueckliste-table tr.status-ok td:first-child {
+    box-shadow: inset 3px 0 0 #16a34a;
+}
+
+@media (max-width: 960px) {
+    .stueckliste-table {
+        font-size: 0.85rem;
+    }
+
+    .stueckliste-lieferdatum input[type="date"] {
+        max-width: 8.5rem;
+    }
 }

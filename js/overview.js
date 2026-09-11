@@ -90,6 +90,7 @@ export function renderUebersicht() {
 
     updateReadOnlyBanner();
     updateSharingButton();
+    import('./stueckliste.js').then(m => m.aktualisiereStuecklisteBadge()).catch(() => {});
     applyReadOnlyUI();
     renderOverviewLists();
 

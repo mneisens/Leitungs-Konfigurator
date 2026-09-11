@@ -64,16 +64,16 @@ import {
     selectGruppe,
     gruppeWechseln,
     toggleGruppeNichtBenoetigt,
-    updateGruppeNotiz,
     gruppeAddLeitung,
     gruppeUpdateLeitung,
     gruppeUpdateLeitungText,
+    gruppeAendereAnzahl,
     gruppeToggleAusrichtung,
     gruppeToggleFreieLaenge,
-    gruppeCopyLeitung,
     gruppeDeleteLeitung,
     gruppeEditLeitung,
     gruppeCloseLeitungEditor,
+    gruppeCloseAktivenEditor,
     gruppeEditBauteil,
     gruppeCloseBauteilEditor,
     gruppeAddBauteil,
@@ -120,11 +120,11 @@ import {
     gruppeAlleVorschlaegeUebernehmen,
     gruppeBauteilVorschlagUebernehmen,
     gruppeAddLeitungAusReihe,
-    gruppeStandardAngebotVerwerfen,
-    gruppeToggleExtras
+    gruppeStandardAngebotVerwerfen
 } from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
+import { stuecklisteUpdateStatus } from './js/stueckliste.js';
 document.addEventListener('keydown', e => {
     const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
     if (bauteilOverlay?.classList.contains('active')) {
@@ -136,6 +136,12 @@ document.addEventListener('keydown', e => {
     if (overlay?.classList.contains('active')) {
         if (e.key === 'Escape') closeModal(false);
         else if (e.key === 'Enter') closeModal(true);
+        return;
+    }
+
+    if (e.key === 'Escape' && document.querySelector('.editor-overlay')) {
+        e.preventDefault();
+        gruppeCloseAktivenEditor();
         return;
     }
 
@@ -247,16 +253,16 @@ Object.assign(window, {
     selectGruppe,
     gruppeWechseln,
     toggleGruppeNichtBenoetigt,
-    updateGruppeNotiz,
     gruppeAddLeitung,
     gruppeUpdateLeitung,
     gruppeUpdateLeitungText,
+    gruppeAendereAnzahl,
     gruppeToggleAusrichtung,
     gruppeToggleFreieLaenge,
-    gruppeCopyLeitung,
     gruppeDeleteLeitung,
     gruppeEditLeitung,
     gruppeCloseLeitungEditor,
+    gruppeCloseAktivenEditor,
     gruppeEditBauteil,
     gruppeCloseBauteilEditor,
     gruppeAddBauteil,
@@ -304,7 +310,6 @@ Object.assign(window, {
     gruppeBauteilVorschlagUebernehmen,
     gruppeAddLeitungAusReihe,
     gruppeStandardAngebotVerwerfen,
-    gruppeToggleExtras,
     exportCSV,
     exportPDF,
     closeModal,
@@ -315,5 +320,6 @@ Object.assign(window, {
     openBauteilEdit,
     closeBauteilEdit,
     saveBauteilEdit,
-    filterBauteilEditHersteller
+    filterBauteilEditHersteller,
+    stuecklisteUpdateStatus
 });
