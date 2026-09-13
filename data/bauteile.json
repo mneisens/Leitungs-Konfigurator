@@ -1,45 +1,165 @@
 {
   "bauteiltypen": [
-    { "id": "motor", "name": "Servomotor" },
-    { "id": "regler", "name": "Servoregler" },
-    { "id": "kuehlgeraet", "name": "Kühlgerät" },
-    { "id": "steckdose", "name": "Steckdose" },
-    { "id": "harting", "name": "Harting-Stecker" },
-    { "id": "ipc", "name": "IPC" },
-    { "id": "panel", "name": "Panel" },
-    { "id": "tuerschalter", "name": "Türschalter" },
-    { "id": "lichtschranke", "name": "Lichtschranke" },
-    { "id": "zweihand", "name": "Zweihandbedienpult" },
-    { "id": "fusstaster", "name": "Fußtaster" },
-    { "id": "netzwechselrichter", "name": "Netzwechselrichter" },
-    { "id": "drossel", "name": "Drossel" },
-    { "id": "filter", "name": "Filter" },
-    { "id": "ringkern", "name": "Ringkern" },
-    { "id": "saf-modul", "name": "SAF-Modul" },
-    { "id": "kapazitaetsmodul", "name": "Kapazitätsmodul" },
-    { "id": "masseband", "name": "Masseband" },
-    { "id": "bremse", "name": "Bremse" },
-    { "id": "ventil", "name": "Ventil" },
-    { "id": "bremssensor", "name": "Sensor für Bremse" },
-    { "id": "mts-sensor", "name": "MTS-Sensor" },
-    { "id": "dms", "name": "DMS-Sensor" },
-    { "id": "temperatursensor", "name": "Temperatursensor" },
-    { "id": "nothalt-taster", "name": "Not-Halt Taster" },
-    { "id": "schild", "name": "Schild" },
-    { "id": "beleuchtung", "name": "Maschinenbeleuchtung" },
-    { "id": "bandbeoelung", "name": "Bandbeölung" },
-    { "id": "schmiereinheit", "name": "Schmiereinheit" },
-    { "id": "progressivverteiler", "name": "Progressivverteiler" },
-    { "id": "hba", "name": "HBA" },
-    { "id": "schrottband", "name": "Schrottband / Transportband" },
-    { "id": "wartungseinheit", "name": "Wartungseinheit" },
-    { "id": "druckueberwachung", "name": "Drucküberwachung" },
-    { "id": "druckuebersetzer", "name": "Druckübersetzer" },
-    { "id": "druckluftventil", "name": "Druckluftventil" },
-    { "id": "ep-modul", "name": "EP-Modul" },
-    { "id": "klemmkasten", "name": "Klemmkasten" },
-    { "id": "tuerantrieb", "name": "Türantrieb Motor/Geber-Set" },
-    { "id": "bandmotion", "name": "Bandmotion" }
+    {
+      "id": "motor",
+      "name": "Servomotor"
+    },
+    {
+      "id": "regler",
+      "name": "Servoregler"
+    },
+    {
+      "id": "kuehlgeraet",
+      "name": "Kühlgerät"
+    },
+    {
+      "id": "steckdose",
+      "name": "Steckdose"
+    },
+    {
+      "id": "harting",
+      "name": "Harting-Stecker"
+    },
+    {
+      "id": "ipc",
+      "name": "IPC"
+    },
+    {
+      "id": "panel",
+      "name": "Panel"
+    },
+    {
+      "id": "tuerschalter",
+      "name": "Türschalter"
+    },
+    {
+      "id": "lichtschranke",
+      "name": "Lichtschranke"
+    },
+    {
+      "id": "zweihand",
+      "name": "Zweihandbedienpult"
+    },
+    {
+      "id": "fusstaster",
+      "name": "Fußtaster"
+    },
+    {
+      "id": "netzwechselrichter",
+      "name": "Netzwechselrichter"
+    },
+    {
+      "id": "drossel",
+      "name": "Drossel"
+    },
+    {
+      "id": "filter",
+      "name": "Filter"
+    },
+    {
+      "id": "ringkern",
+      "name": "Ringkern"
+    },
+    {
+      "id": "saf-modul",
+      "name": "SAF-Modul"
+    },
+    {
+      "id": "kapazitaetsmodul",
+      "name": "Kapazitätsmodul"
+    },
+    {
+      "id": "masseband",
+      "name": "Masseband"
+    },
+    {
+      "id": "bremse",
+      "name": "Bremse"
+    },
+    {
+      "id": "ventil",
+      "name": "Ventil"
+    },
+    {
+      "id": "bremssensor",
+      "name": "Sensor für Bremse"
+    },
+    {
+      "id": "mts-sensor",
+      "name": "MTS-Sensor"
+    },
+    {
+      "id": "dms",
+      "name": "DMS-Sensor"
+    },
+    {
+      "id": "temperatursensor",
+      "name": "Temperatursensor"
+    },
+    {
+      "id": "nothalt-taster",
+      "name": "Not-Halt Taster"
+    },
+    {
+      "id": "schild",
+      "name": "Schild"
+    },
+    {
+      "id": "beleuchtung",
+      "name": "Maschinenbeleuchtung"
+    },
+    {
+      "id": "bandbeoelung",
+      "name": "Bandbeölung"
+    },
+    {
+      "id": "schmiereinheit",
+      "name": "Schmiereinheit"
+    },
+    {
+      "id": "progressivverteiler",
+      "name": "Progressivverteiler"
+    },
+    {
+      "id": "hba",
+      "name": "HBA"
+    },
+    {
+      "id": "schrottband",
+      "name": "Schrottband / Transportband"
+    },
+    {
+      "id": "wartungseinheit",
+      "name": "Wartungseinheit"
+    },
+    {
+      "id": "druckueberwachung",
+      "name": "Drucküberwachung"
+    },
+    {
+      "id": "druckuebersetzer",
+      "name": "Druckübersetzer"
+    },
+    {
+      "id": "druckluftventil",
+      "name": "Druckluftventil"
+    },
+    {
+      "id": "ep-modul",
+      "name": "EP-Modul"
+    },
+    {
+      "id": "klemmkasten",
+      "name": "Klemmkasten"
+    },
+    {
+      "id": "tuerantrieb",
+      "name": "Türantrieb Motor/Geber-Set"
+    },
+    {
+      "id": "bandmotion",
+      "name": "Bandmotion"
+    }
   ],
   "artikel": [
     {
@@ -57,33 +177,6 @@
       "typ": "panel",
       "gruppe": "005",
       "lieferant": "Beckhoff"
-    },
-    {
-      "hersteller": "SSP",
-      "artikelnummer": "PLACEHOLDER-TUERSCHALTER-SSP",
-      "beschreibung": "Türschalter SSP (Artikelnummer noch nicht bekannt)",
-      "typ": "tuerschalter",
-      "gruppe": "007",
-      "lieferant": "SSP",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Pilz",
-      "artikelnummer": "PLACEHOLDER-TUERSCHALTER-PILZ",
-      "beschreibung": "Türschalter Pilz (Artikelnummer noch nicht bekannt)",
-      "typ": "tuerschalter",
-      "gruppe": "007",
-      "lieferant": "Pilz",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Euchner",
-      "artikelnummer": "PLACEHOLDER-TUERSCHALTER-EUCHNER",
-      "beschreibung": "Türschalter Euchner (Artikelnummer noch nicht bekannt)",
-      "typ": "tuerschalter",
-      "gruppe": "007",
-      "lieferant": "Euchner",
-      "placeholder": true
     },
     {
       "hersteller": "Sick",
@@ -110,156 +203,12 @@
       "lieferant": "Beckhoff"
     },
     {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-REGLER-BAUMUELLER",
-      "beschreibung": "Regler Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "regler",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-NETZWECHSELRICHTER-BAUMUELLER",
-      "beschreibung": "Netzwechselrichter Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "netzwechselrichter",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-MOTOR-BAUMUELLER",
-      "beschreibung": "Motor Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "motor",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-DROSSEL-BAUMUELLER",
-      "beschreibung": "Drossel Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "drossel",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-FILTER-BAUMUELLER",
-      "beschreibung": "Filter Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "filter",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-RINGKERN-BAUMUELLER",
-      "beschreibung": "Ringkern Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "ringkern",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-SAF-MODUL-BAUMUELLER",
-      "beschreibung": "SAF-Modul Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "saf-modul",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Baumüller",
-      "artikelnummer": "PLACEHOLDER-KAPAZITAETSMODUL-BAUMUELLER",
-      "beschreibung": "Kapazitätsmodul Baumüller (Artikelnummer noch nicht bekannt)",
-      "typ": "kapazitaetsmodul",
-      "gruppe": "009",
-      "lieferant": "Baumüller",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Sonepar",
-      "artikelnummer": "PLACEHOLDER-MASSEBAND-SONEPAR",
-      "beschreibung": "Masseband (Artikelnummer noch nicht bekannt)",
-      "typ": "masseband",
-      "gruppe": "011/021/031/042",
-      "lieferant": "Sonepar",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Ringspann",
-      "artikelnummer": "PLACEHOLDER-BREMSE-RINGSPANN",
-      "beschreibung": "Bremse Ringspann (Artikelnummer noch nicht bekannt)",
-      "typ": "bremse",
-      "gruppe": "011/021/031/042",
-      "lieferant": "Ringspann",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Festo",
-      "artikelnummer": "PLACEHOLDER-VENTIL-FESTO",
-      "beschreibung": "Ventil FESTO (Artikelnummer noch nicht bekannt)",
-      "typ": "ventil",
-      "gruppe": "011/021/031/042",
-      "lieferant": "FESTO",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Ringspann",
-      "artikelnummer": "PLACEHOLDER-BREMSSENSOR-RINGSPANN",
-      "beschreibung": "Sensor für Bremse Ringspann (Artikelnummer noch nicht bekannt)",
-      "typ": "bremssensor",
-      "gruppe": "011/021/031/042",
-      "lieferant": "Ringspann",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Temposonics",
-      "artikelnummer": "PLACEHOLDER-MTS-SENSOR-TEMPOSONICS",
-      "beschreibung": "MTS Sensor RH5 (Artikelnummer noch nicht bekannt)",
-      "typ": "mts-sensor",
-      "gruppe": "012/022/032/042",
-      "lieferant": "Temposonics",
-      "placeholder": true
-    },
-    {
       "hersteller": "Lorenz Messtechnik",
       "artikelnummer": "DZ1",
       "beschreibung": "DMS-Sensor Typ DZ1",
       "typ": "dms",
       "gruppe": "013/023/033/043",
       "lieferant": "Lorenz"
-    },
-    {
-      "hersteller": "IFM",
-      "artikelnummer": "PLACEHOLDER-TEMPSENSOR-SPINDELLAGER-IFM",
-      "beschreibung": "Temperatursensor Spindellager IFM (Artikelnummer noch nicht bekannt)",
-      "typ": "temperatursensor",
-      "gruppe": "014/024/034/045",
-      "lieferant": "IFM",
-      "placeholder": true
-    },
-    {
-      "hersteller": "IFM",
-      "artikelnummer": "PLACEHOLDER-TEMPSENSOR-SPINDELMUTTER-IFM",
-      "beschreibung": "Temperatursensor Spindelmutter IFM (Artikelnummer noch nicht bekannt)",
-      "typ": "temperatursensor",
-      "gruppe": "034/045",
-      "lieferant": "IFM",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Eaton",
-      "artikelnummer": "PLACEHOLDER-NOTHALT-EATON",
-      "beschreibung": "Not-Halt EATON (Artikelnummer noch nicht bekannt)",
-      "typ": "nothalt-taster",
-      "gruppe": "015/025/035/045",
-      "lieferant": "EATON",
-      "placeholder": true
     },
     {
       "hersteller": "Eaton",
@@ -270,219 +219,12 @@
       "lieferant": "EATON"
     },
     {
-      "hersteller": "di-soric",
-      "artikelnummer": "PLACEHOLDER-BELEUCHTUNG-DISORIC",
-      "beschreibung": "Maschinenbeleuchtung di-soric (Artikelnummer noch nicht bekannt)",
-      "typ": "beleuchtung",
-      "gruppe": "016/026/036/046",
-      "lieferant": "di-soric",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-VORSCHUB-REGLER-BECKHOFF",
-      "beschreibung": "Vorschub Regler Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "regler",
-      "gruppe": "100",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-VORSCHUB-MOTOR-BECKHOFF",
-      "beschreibung": "Vorschub Motor Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "motor",
-      "gruppe": "100",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Bandmotion",
-      "artikelnummer": "PLACEHOLDER-VORSCHUB-BANDMOTION",
-      "beschreibung": "Vorschub Bandmotion (Artikelnummer noch nicht bekannt)",
-      "typ": "bandmotion",
-      "gruppe": "100",
-      "lieferant": "Bandmotion",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-VORSCHUB-HOEHE-MOTOR-BECKHOFF",
-      "beschreibung": "Vorschub Höhenverstellung Motor Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "motor",
-      "gruppe": "101",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-VORSCHUB-HOEHE-REGLER-BECKHOFF",
-      "beschreibung": "Vorschub Höhenverstellung Regler Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "regler",
-      "gruppe": "101",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Raziol",
-      "artikelnummer": "PLACEHOLDER-BANDBEOELUNG-RAZIOL",
-      "beschreibung": "Bandbeölung Raziol (Artikelnummer noch nicht bekannt)",
-      "typ": "bandbeoelung",
-      "gruppe": "105",
-      "lieferant": "Raziol",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Hydac",
-      "artikelnummer": "PLACEHOLDER-KUEHLUNG-HYDAC",
-      "beschreibung": "Kühlung Hydac (Artikelnummer noch nicht bekannt)",
-      "typ": "kuehlgeraet",
-      "gruppe": "200",
-      "lieferant": "Hydac",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Pfannenberg",
-      "artikelnummer": "PLACEHOLDER-KUEHLUNG-PFANNENBERG",
-      "beschreibung": "Kühlung Pfannenberg (Artikelnummer noch nicht bekannt)",
-      "typ": "kuehlgeraet",
-      "gruppe": "200",
-      "lieferant": "Pfannenberg",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Harting",
-      "artikelnummer": "PLACEHOLDER-HARTING-SOCKELGEHAEUSE",
-      "beschreibung": "Harting Sockelgehäuse (Artikelnummer noch nicht bekannt)",
-      "typ": "harting",
-      "gruppe": "200",
-      "lieferant": "Harting",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Harting",
-      "artikelnummer": "PLACEHOLDER-HARTING-EINSATZ",
-      "beschreibung": "Harting Einsatz (Artikelnummer noch nicht bekannt)",
-      "typ": "harting",
-      "gruppe": "200",
-      "lieferant": "Harting",
-      "placeholder": true
-    },
-    {
       "hersteller": "Beka",
       "artikelnummer": "2185401100038",
       "beschreibung": "Schmiereinheit 2185401100038",
       "typ": "schmiereinheit",
       "gruppe": "210",
       "lieferant": "BEKA"
-    },
-    {
-      "hersteller": "Beka",
-      "artikelnummer": "PLACEHOLDER-PROGRESSIVVERTEILER-BEKA",
-      "beschreibung": "Progressivverteiler BEKA (Artikelnummer noch nicht bekannt)",
-      "typ": "progressivverteiler",
-      "gruppe": "210",
-      "lieferant": "BEKA",
-      "placeholder": true
-    },
-    {
-      "hersteller": "synchropress",
-      "artikelnummer": "PLACEHOLDER-HBA-SYNCHROPRESS",
-      "beschreibung": "HBA synchropress (Artikelnummer noch nicht bekannt)",
-      "typ": "hba",
-      "gruppe": "230",
-      "lieferant": "synchropress",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Diverse",
-      "artikelnummer": "PLACEHOLDER-SCHROTTBAND",
-      "beschreibung": "Schrottband / Transportband (Artikelnummer noch nicht bekannt)",
-      "typ": "schrottband",
-      "gruppe": "240",
-      "lieferant": "",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Harting",
-      "artikelnummer": "PLACEHOLDER-HARTINGGEHAEUSE-240",
-      "beschreibung": "Hartinggehäuse (Artikelnummer noch nicht bekannt)",
-      "typ": "harting",
-      "gruppe": "240",
-      "lieferant": "Sonepar",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Harting",
-      "artikelnummer": "PLACEHOLDER-HARTINGEINSATZ-240",
-      "beschreibung": "Hartingeinsatz (Artikelnummer noch nicht bekannt)",
-      "typ": "harting",
-      "gruppe": "240",
-      "lieferant": "Sonepar",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Mennekes",
-      "artikelnummer": "PLACEHOLDER-STECKDOSE-400V-MENNEKES",
-      "beschreibung": "Steckdose 400V Mennekes (Artikelnummer noch nicht bekannt)",
-      "typ": "steckdose",
-      "gruppe": "250",
-      "lieferant": "Sonepar",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Mennekes",
-      "artikelnummer": "PLACEHOLDER-STECKDOSE-230V-MENNEKES",
-      "beschreibung": "Steckdose 230V Mennekes (Artikelnummer noch nicht bekannt)",
-      "typ": "steckdose",
-      "gruppe": "250",
-      "lieferant": "Sonepar",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Murr Elektronik",
-      "artikelnummer": "PLACEHOLDER-STECKDOSE-230V-MURR",
-      "beschreibung": "Steckdose 230V Murr (Artikelnummer noch nicht bekannt)",
-      "typ": "steckdose",
-      "gruppe": "250",
-      "lieferant": "Murr",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Festo",
-      "artikelnummer": "PLACEHOLDER-WARTUNGSEINHEIT-FESTO",
-      "beschreibung": "Wartungseinheit FESTO (Artikelnummer noch nicht bekannt)",
-      "typ": "wartungseinheit",
-      "gruppe": "270",
-      "lieferant": "FESTO",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Festo",
-      "artikelnummer": "PLACEHOLDER-DRUCKUEBERWACHUNG-FESTO",
-      "beschreibung": "Drucküberwachung FESTO (Artikelnummer noch nicht bekannt)",
-      "typ": "druckueberwachung",
-      "gruppe": "270",
-      "lieferant": "FESTO",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Diverse",
-      "artikelnummer": "PLACEHOLDER-DRUCKUEBERSETZER-HUBLEISTEN",
-      "beschreibung": "Druckübersetzer Hydraulische Hubleisten (Artikelnummer noch nicht bekannt)",
-      "typ": "druckuebersetzer",
-      "gruppe": "275",
-      "lieferant": "",
-      "placeholder": true
-    },
-    {
-      "hersteller": "ECM",
-      "artikelnummer": "PLACEHOLDER-DRUCKLUFTVENTIL-HUBLEISTEN-ECM",
-      "beschreibung": "Druckluftventil Hubleisten ECM (Artikelnummer noch nicht bekannt)",
-      "typ": "druckluftventil",
-      "gruppe": "275",
-      "lieferant": "ECM",
-      "placeholder": true
     },
     {
       "hersteller": "Beckhoff",
@@ -550,24 +292,6 @@
     },
     {
       "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-KLEMMKASTEN-1-BECKHOFF",
-      "beschreibung": "Klemmkasten 1 Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "klemmkasten",
-      "gruppe": "302",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
-      "artikelnummer": "PLACEHOLDER-KLEMMKASTEN-2-BECKHOFF",
-      "beschreibung": "Klemmkasten 2 Beckhoff (Artikelnummer noch nicht bekannt)",
-      "typ": "klemmkasten",
-      "gruppe": "302",
-      "lieferant": "Beckhoff",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Beckhoff",
       "artikelnummer": "AM8023-0E0-0000",
       "beschreibung": "Servomotor AM8023, 1.9 Nm, 6000 U/min",
       "typ": "motor",
@@ -621,20 +345,6 @@
       "beschreibung": "Servoregler AX5125, 1 Kanal, 25 A",
       "typ": "regler",
       "leistung": "25 A"
-    },
-    {
-      "hersteller": "Diverse",
-      "artikelnummer": "NOT-HALT-SCHILD",
-      "beschreibung": "Not-Halt Schild",
-      "typ": "schild",
-      "placeholder": true
-    },
-    {
-      "hersteller": "Diverse",
-      "artikelnummer": "PLACEHOLDER-TUERANTRIEB-MOTOR-GEBER",
-      "beschreibung": "Türantrieb Motor/Geber-Set (Anzahl + Länge angeben)",
-      "typ": "tuerantrieb",
-      "placeholder": true
     }
   ]
 }

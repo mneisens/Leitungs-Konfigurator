@@ -348,8 +348,8 @@ const LEITUNG_PRESETS = {
         label: 'EtherCAT M8 gewinkelt → M8 gewinkelt',
         bezeichnung: 'EtherCAT Werkzeugsicherung',
         kategorie: 'ethercat', hersteller: 'Beckhoff',
-        steckerA: 'M8 4-polig gewinkelt', ausrichtungA: 'gewinkelt',
-        steckerB: 'M8 4-polig gewinkelt', ausrichtungB: 'gewinkelt',
+        steckerA: 'M8 4-polig', ausrichtungA: 'gewinkelt',
+        steckerB: 'M8 4-polig', ausrichtungB: 'gewinkelt',
         artikelPrefix: 'ZK1090-3333',
         artikelnummer: 'ZK1090-3333-0010',
         laenge: 1
@@ -359,7 +359,7 @@ const LEITUNG_PRESETS = {
         bezeichnung: 'EtherCAT Werkzeugsicherung',
         kategorie: 'ethercat', hersteller: 'Beckhoff',
         steckerA: 'M8 4-polig', ausrichtungA: 'gerade',
-        steckerB: 'M8 4-polig gewinkelt', ausrichtungB: 'gewinkelt',
+        steckerB: 'M8 4-polig', ausrichtungB: 'gewinkelt',
         artikelPrefix: 'ZK1090-3133',
         artikelnummer: 'ZK1090-3133-0010',
         laenge: 1

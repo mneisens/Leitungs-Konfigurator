@@ -121,6 +121,22 @@ function encodeKey(key) {
 
 
 /**
+ * Sortierreihenfolge für Hersteller in der Stückliste (Beckhoff zuerst).
+ * @param {string} hersteller
+ * @returns {string}
+ */
+function herstellerSortKey(hersteller) {
+    const name = String(hersteller || '').trim().toLowerCase();
+    if (!name || name === '-') return '99';
+    if (name === 'beckhoff') return '0';
+    if (name.startsWith('lapp')) return '1';
+    if (name.startsWith('murr')) return '2';
+    if (name.startsWith('igus')) return '3';
+    return `9-${name}`;
+}
+
+
+/**
  * Aggregierte Leitungspositionen inkl. Status.
  * @returns {Array<object>}
  */
@@ -129,10 +145,11 @@ function getLeitungEintraege() {
     const grouped = new Map();
 
     leitungen.filter(isLeitungMeaningful).forEach(l => {
+        const bezeichnung = (l.bezeichnung || '').trim() || '— ohne Bezeichnung —';
         const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
         const hersteller = (l.hersteller || '-').trim() || '-';
         const typText = getLeitungstypText(l);
-        const key = `${artikelnummer}|||${hersteller}|||${typText}`;
+        const key = `${bezeichnung}|||${artikelnummer}|||${hersteller}|||${typText}`;
         const existing = grouped.get(key);
 
         if (existing) {
@@ -141,6 +158,7 @@ function getLeitungEintraege() {
             grouped.set(key, {
                 key,
                 art: 'leitungen',
+                bezeichnung,
                 artikelnummer,
                 hersteller,
                 typText,
@@ -151,7 +169,10 @@ function getLeitungEintraege() {
     });
 
     return Array.from(grouped.values())
-        .sort((a, b) => b.count - a.count || a.typText.localeCompare(b.typText, 'de'));
+        .sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
+            || a.bezeichnung.localeCompare(b.bezeichnung, 'de')
+            || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
+            || a.typText.localeCompare(b.typText, 'de'));
 }
 
 
@@ -164,12 +185,14 @@ function getBauteilEintraege() {
     const grouped = new Map();
 
     bauteile.forEach(b => {
-        const key = `${b.gruppe || ''}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
+        const bezeichnung = (b.bezeichnung || '').trim() || getBauteilTypName(b.typ) || '—';
+        const key = `${b.gruppe || ''}|||${bezeichnung}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
         if (!grouped.has(key)) {
             grouped.set(key, {
                 key,
                 art: 'bauteile',
                 gruppe: b.gruppe || '-',
+                bezeichnung,
                 typ: b.typ,
                 hersteller: b.hersteller || '-',
                 artikelnummer: b.artikelnummer || '-',
@@ -181,7 +204,9 @@ function getBauteilEintraege() {
     });
 
     return Array.from(grouped.values())
-        .sort((a, b) => a.gruppe.localeCompare(b.gruppe, 'de')
+        .sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
+            || a.bezeichnung.localeCompare(b.bezeichnung, 'de')
+            || a.gruppe.localeCompare(b.gruppe, 'de')
             || a.artikelnummer.localeCompare(b.artikelnummer, 'de'));
 }
 
@@ -202,9 +227,7 @@ export function getStuecklisteErinnerungen() {
         if (s.status === 'geliefert' || s.status === 'kommissioniert') return;
         if (s.lieferdatum > heute) return;
 
-        const label = entry.art === 'leitungen'
-            ? `${entry.typText} (${entry.artikelnummer})`
-            : `${getBauteilTypName(entry.typ)} (${entry.artikelnummer})`;
+        const label = `${entry.bezeichnung} (${entry.artikelnummer})`;
 
         treffer.push({
             art: entry.art,
@@ -361,6 +384,7 @@ export function renderStueckliste() {
     } else {
         tbody.innerHTML = leitungEintraege.map(entry => `
             <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
+                <td>${escapeHtml(entry.bezeichnung)}</td>
                 <td>${escapeHtml(entry.typText)}</td>
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
@@ -389,6 +413,7 @@ export function renderStueckliste() {
     bauteileBody.innerHTML = bauteilEintraege.map(entry => `
         <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
             <td>${escapeHtml(getGruppeDisplay(entry.gruppe))}</td>
+            <td>${escapeHtml(entry.bezeichnung)}</td>
             <td>${escapeHtml(getBauteilTypName(entry.typ))}</td>
             <td>${escapeHtml(entry.hersteller)}</td>
             <td>${escapeHtml(entry.artikelnummer)}</td>

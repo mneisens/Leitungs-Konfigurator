@@ -354,10 +354,14 @@ export function getKonfektionierteKatalogArtikel(filter = {}) {
         .filter(a => !filter.hersteller || a.hersteller === filter.hersteller)
         .filter(a => {
             if (!suche) return true;
+            const kategorieName = (getKategorie(a.kategorie)?.name || a.kategorie || '').toLowerCase();
             const haystack = [
                 a.artikelnummer,
                 a.beschreibung,
                 a.hersteller,
+                a.kategorie,
+                kategorieName,
+                kategorieName.replace(/\s+/g, ''),
                 formatSteckerKurz(a.steckerA),
                 formatSteckerKurz(a.steckerB)
             ].join(' ').toLowerCase();

@@ -1636,6 +1636,115 @@ function ohneLaengenangabe(beschreibung) {
 
 
 /**
+ * @param {object} artikel
+ * @returns {boolean}
+ */
+function istBeckhoffLeitung(artikel) {
+    return String(artikel?.hersteller || '').toLowerCase() === 'beckhoff';
+}
+
+
+/**
+ * Kurztitel der Kategorie für Beckhoff-Picker (z. B. Powerleitung).
+ * @param {string} kategorie
+ * @returns {string}
+ */
+function beckhoffKategorieLabel(kategorie) {
+    const labels = {
+        power: 'Powerleitung',
+        ethercat: 'EtherCAT-Leitung',
+        sensor: 'Sensorleitung',
+        cplink: 'CP-Link-Leitung',
+        motor: 'Motorleitung',
+        geber: 'Geberleitung',
+        oelflex: 'Ölflexleitung',
+        sonstiges: 'Leitung'
+    };
+    if (labels[kategorie]) return labels[kategorie];
+    return getKategorieName(kategorie) || 'Leitung';
+}
+
+
+/**
+ * Bezeichnung für neue Katalog-Leitungen, wenn das Feld leer bleibt.
+ * @param {{kategorie: string, hersteller: string, artikelnummer: string, steckerA: string, steckerB: string, laenge: number, meterware: boolean}} daten
+ * @returns {string}
+ */
+function bildeNeueLeitungBezeichnung(daten) {
+    const typ = beckhoffKategorieLabel(daten.kategorie);
+    const artikel = String(daten.artikelnummer || '').trim();
+    const stecker = [
+        formatBeckhoffSteckerAnzeige(daten.steckerA),
+        formatBeckhoffSteckerAnzeige(daten.steckerB)
+    ].filter(Boolean).join(' → ');
+    const laengeText = daten.meterware
+        ? 'Meterware'
+        : (daten.laenge > 0 ? `${formatLaenge(daten.laenge)} m` : '');
+
+    if (String(daten.hersteller || '').toLowerCase() === 'beckhoff' || /^ZK/i.test(artikel)) {
+        return [typ && artikel ? `${typ} | ${artikel}` : (typ || artikel), stecker, laengeText]
+            .filter(Boolean)
+            .join(' · ');
+    }
+
+    return [typ, stecker, laengeText, artikel].filter(Boolean).join(' · ') || artikel || typ;
+}
+
+
+/**
+ * Steckeranzeige für Beckhoff: „M8 4-polig gerade“ → „M8 gerade“.
+ * @param {string} stecker
+ * @returns {string}
+ */
+function formatBeckhoffSteckerAnzeige(stecker) {
+    if (!stecker || /^offen$/i.test(stecker)) return 'offen';
+    return String(stecker)
+        .replace(/\s+\d+-polig/gi, '')
+        .replace(/\s+(Stecker|Buchse)/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim() || stecker;
+}
+
+
+/**
+ * Titel und Metazeile eines Katalog-Reiheneintrags im Picker.
+ * @param {string} prefix
+ * @param {object[]} artikel
+ * @returns {{titel: string, meta: string}}
+ */
+function formatKatalogReihenLabel(prefix, artikel) {
+    const erste = artikel[0];
+    const laengen = artikel.map(a => a.laenge).filter(l => l > 0).sort((a, b) => a - b);
+    const laengenText = !laengen.length
+        ? ''
+        : (artikel.length === 1
+            ? `${formatLaenge(erste.laenge)} m`
+            : `${laengen.length} Längen (${formatLaenge(laengen[0])}–${formatLaenge(laengen[laengen.length - 1])} m)`);
+
+    if (istBeckhoffLeitung(erste)) {
+        const titel = `${beckhoffKategorieLabel(erste.kategorie)} | ${prefix}-0xxx`;
+        const stecker = `${formatBeckhoffSteckerAnzeige(erste.steckerA)} → ${formatBeckhoffSteckerAnzeige(erste.steckerB)}`;
+        return {
+            titel,
+            meta: [stecker, erste.hersteller || '', laengenText].filter(Boolean).join(' · ')
+        };
+    }
+
+    if (artikel.length === 1) {
+        return {
+            titel: erste.beschreibung || erste.artikelnummer,
+            meta: `${erste.artikelnummer} · ${erste.hersteller || ''} · ${formatLaenge(erste.laenge)} m`
+        };
+    }
+
+    return {
+        titel: ohneLaengenangabe(erste.beschreibung) || prefix,
+        meta: `Reihe ${prefix} · ${erste.hersteller || ''} · ${laengenText}`
+    };
+}
+
+
+/**
  * Katalogtreffer nach Leitungsreihe zusammenfassen – sonst unterscheiden sich
  * die Einträge nur in der Länge und die Liste wird unlesbar.
  * @param {string} suche
@@ -1652,21 +1761,20 @@ function renderKatalogReihen(suche) {
 
     return Array.from(reihen.entries()).slice(0, 20).map(([prefix, artikel]) => {
         const erste = artikel[0];
+        const { titel, meta } = formatKatalogReihenLabel(prefix, artikel);
 
         if (artikel.length === 1) {
             return renderPickerEintrag({
                 onclick: `gruppeAddLeitungAusArtikel('${escapeHtml(erste.artikelnummer)}')`,
-                titel: erste.beschreibung || erste.artikelnummer,
-                meta: `${erste.artikelnummer} · ${erste.hersteller || ''} · ${formatLaenge(erste.laenge)} m`
+                titel,
+                meta
             });
         }
 
-        const laengen = artikel.map(a => a.laenge).filter(l => l > 0).sort((a, b) => a - b);
         return renderPickerEintrag({
             onclick: `gruppeAddLeitungAusReihe('${escapeHtml(prefix)}', '${escapeHtml(erste.artikelnummer)}')`,
-            titel: ohneLaengenangabe(erste.beschreibung) || prefix,
-            meta: `Reihe ${prefix} · ${erste.hersteller || ''} · ${laengen.length} Längen`
-                + (laengen.length ? ` (${formatLaenge(laengen[0])}–${formatLaenge(laengen[laengen.length - 1])} m)` : '')
+            titel,
+            meta
         });
     });
 }
@@ -2531,9 +2639,9 @@ function renderNeuesLeitungFormular() {
                            placeholder="z. B. ZK1090-3131-0050">
                 </div>
                 <div class="form-group gruppen-karte-breit">
-                    <label for="neu-leitung-beschreibung">Bezeichnung *</label>
+                    <label for="neu-leitung-beschreibung">Bezeichnung</label>
                     <input type="text" id="neu-leitung-beschreibung" value="${escapeHtml(form.beschreibung || '')}"
-                           placeholder="z. B. EtherCAT Kabel M8-M8 5,00 m">
+                           placeholder="Leer lassen → wird automatisch erzeugt">
                 </div>
                 <div class="form-group">
                     <label for="neu-leitung-stecker-a">Stecker A *</label>
@@ -2657,14 +2765,14 @@ export async function gruppeSaveNeuesLeitung() {
     const kategorie = document.getElementById('neu-leitung-kategorie')?.value?.trim() || '';
     const hersteller = document.getElementById('neu-leitung-hersteller')?.value?.trim() || '';
     const artikelnummer = document.getElementById('neu-leitung-artikelnummer')?.value?.trim() || '';
-    const beschreibung = document.getElementById('neu-leitung-beschreibung')?.value?.trim() || '';
+    let beschreibung = document.getElementById('neu-leitung-beschreibung')?.value?.trim() || '';
     const steckerA = document.getElementById('neu-leitung-stecker-a')?.value?.trim() || '';
     const steckerB = document.getElementById('neu-leitung-stecker-b')?.value?.trim() || '';
     const meterware = document.getElementById('neu-leitung-meterware')?.checked === true;
     const laengeRaw = document.getElementById('neu-leitung-laenge')?.value;
 
-    if (!kategorie || !hersteller || !artikelnummer || !beschreibung || !steckerA || !steckerB) {
-        showModal('Bitte Leitungstyp, Hersteller, Artikelnummer, Bezeichnung und beide Stecker ausfüllen.', {
+    if (!kategorie || !hersteller || !artikelnummer || !steckerA || !steckerB) {
+        showModal('Bitte Leitungstyp, Hersteller, Artikelnummer und beide Stecker ausfüllen.', {
             type: 'warning',
             title: 'Eingabe unvollständig'
         });
@@ -2680,6 +2788,20 @@ export async function gruppeSaveNeuesLeitung() {
             title: 'Länge fehlt'
         });
         return;
+    }
+
+    if (!beschreibung) {
+        beschreibung = bildeNeueLeitungBezeichnung({
+            kategorie,
+            hersteller,
+            artikelnummer,
+            steckerA,
+            steckerB,
+            laenge,
+            meterware
+        });
+        const beschreibungFeld = document.getElementById('neu-leitung-beschreibung');
+        if (beschreibungFeld) beschreibungFeld.value = beschreibung;
     }
 
     if (leitungsnummerVergeben(artikelnummer)) {
@@ -2827,6 +2949,8 @@ function getOffeneLeitungVorschlaege(code) {
 
 /**
  * Katalog-Längen, die es zu einem Preset gibt.
+ * Bei bekannter Artikelreihe: zuerst mit Steckern, sonst nur über die Reihe
+ * (sonst erscheint fälschlich „im Formular“, wenn die Steckerangabe nicht exakt passt).
  * @param {object} preset
  * @returns {number[]}
  */
@@ -2837,7 +2961,12 @@ function getPresetLaengen(preset) {
     const steckerB = getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB);
     if (!preset.artikelPrefix && !(steckerA && steckerB)) return [];
 
-    return getLaengenOptionen(preset.kategorie, preset.hersteller, steckerA, steckerB, preset.artikelPrefix);
+    const mitSteckern = getLaengenOptionen(
+        preset.kategorie, preset.hersteller, steckerA, steckerB, preset.artikelPrefix
+    );
+    if (mitSteckern.length || !preset.artikelPrefix) return mitSteckern;
+
+    return getLaengenOptionen(preset.kategorie, preset.hersteller, '', '', preset.artikelPrefix);
 }
 
 
@@ -2849,7 +2978,9 @@ function getPresetLaengen(preset) {
 function getPresetBeschreibung(preset) {
     const teile = [];
     if (preset.steckerA || preset.steckerB) {
-        teile.push(`${formatSteckerKurz(preset.steckerA)} → ${formatSteckerKurz(preset.steckerB)}`);
+        const steckerA = getFullSteckerTyp(preset.steckerA || '', preset.ausrichtungA) || preset.steckerA;
+        const steckerB = getFullSteckerTyp(preset.steckerB || '', preset.ausrichtungB) || preset.steckerB;
+        teile.push(`${formatSteckerKurz(steckerA)} → ${formatSteckerKurz(steckerB)}`);
     }
     if (preset.hersteller) teile.push(preset.hersteller);
     if (preset.artikelPrefix) teile.push(`Reihe ${preset.artikelPrefix}`);
@@ -2867,6 +2998,7 @@ function renderLeitungVorschlagZeilen(vorschlaege) {
     return vorschlaege.map(preset => {
         const id = escapeHtml(preset.id);
         const laengen = getPresetLaengen(preset);
+        const standardLaenge = laengen.find(l => Number(l) === Number(preset.laenge));
 
         const laengeFeld = laengen.length
             ? `<select class="vorschlag-laenge" aria-label="Länge wählen und übernehmen"
@@ -2877,7 +3009,7 @@ function renderLeitungVorschlagZeilen(vorschlaege) {
                             value: l,
                             label: `${formatLaenge(l)} m${Number(l) === Number(preset.laenge) ? ' · Standard' : ''}`
                         }))
-                    ], '')}
+                    ], standardLaenge ?? '')}
                </select>`
             : '<span class="text-muted">im Formular</span>';
 
@@ -2908,15 +3040,20 @@ function renderLeitungVorschlagZeilen(vorschlaege) {
 
 /**
  * Legt eine Standardleitung an und belässt sie in der Liste (ohne Editor).
+ * Ohne gewählte Länge wird die Preset-Standardlänge verwendet.
  * @param {string} presetId
  * @param {string|number} laenge
  * @returns {void}
  */
 export function gruppeVorschlagUebernehmen(presetId, laenge) {
     if (!assertCanEdit('Leitungen hinzufügen')) return;
-    const wert = parseFloat(String(laenge).replace(',', '.'));
+    const preset = getLeitungPreset(presetId) || {};
+    let wert = parseFloat(String(laenge ?? '').replace(',', '.'));
+    if (Number.isNaN(wert) || wert <= 0) {
+        wert = Number(preset.laenge) || 0;
+    }
     gruppeAddLeitung(presetId, {
-        laenge: Number.isNaN(wert) ? 0 : wert,
+        laenge: wert,
         direkt: true
     });
 }

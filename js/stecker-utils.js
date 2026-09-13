@@ -27,6 +27,8 @@ export function hasAusrichtung(stecker) {
 
 /**
  * Setzt Basistyp und Ausrichtung zum Katalog-Steckertyp zusammen.
+ * Vorhandene Ausrichtung im Basisstring wird entfernt, damit z. B.
+ * „M8 4-polig gewinkelt“ + „gewinkelt“ nicht zu „… gewinkelt gewinkelt“ wird.
  * @param {string} baseTyp
  * @param {string} ausrichtung
  * @returns {string}
@@ -34,5 +36,6 @@ export function hasAusrichtung(stecker) {
 export function getFullSteckerTyp(baseTyp, ausrichtung) {
     if (!baseTyp) return '';
     if (!hasAusrichtung(baseTyp)) return baseTyp;
-    return `${baseTyp} ${ausrichtung || 'gerade'}`;
+    const basis = getBaseSteckerTyp(baseTyp);
+    return `${basis} ${ausrichtung || 'gerade'}`;
 }

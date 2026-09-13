@@ -24,7 +24,7 @@ export async function loadKatalog() {
 
         appState.katalog = await katalogResponse.json();
         baseArtikel = Array.isArray(appState.katalog.artikel)
-            ? appState.katalog.artikel.map(a => ({ ...a }))
+            ? appState.katalog.artikel.filter(a => !a.placeholder).map(a => ({ ...a }))
             : [];
         appState.katalog.artikel = baseArtikel.map(a => ({ ...a }));
 
@@ -36,7 +36,7 @@ export async function loadKatalog() {
             ? bauteileData.bauteiltypen.map(t => ({ ...t }))
             : [];
         baseBauteileArtikel = Array.isArray(bauteileData.artikel)
-            ? bauteileData.artikel.map(a => ({ ...a }))
+            ? bauteileData.artikel.filter(a => !a.placeholder).map(a => ({ ...a }))
             : [];
         appState.bauteileKatalog = {
             bauteiltypen: baseBauteiltypen.map(t => ({ ...t })),
@@ -75,12 +75,13 @@ export function mergeKatalogAdditions(additions) {
     });
 
     (additions || []).forEach(a => {
+        if (a?.placeholder) return;
         const key = (a.artikelnummer || '').toLowerCase();
         if (!key) return;
         byNr.set(key, { ...a, custom: true });
     });
 
-    appState.katalog.artikel = Array.from(byNr.values());
+    appState.katalog.artikel = Array.from(byNr.values()).filter(a => !a.placeholder);
 }
 
 
@@ -135,6 +136,7 @@ export function mergeBauteileAdditions(additions) {
     });
 
     (additions || []).forEach(a => {
+        if (a?.placeholder) return;
         const key = (a.artikelnummer || '').toLowerCase();
         if (!key) return;
         if (a.hidden) {
@@ -154,7 +156,7 @@ export function mergeBauteileAdditions(additions) {
         }
     });
 
-    appState.bauteileKatalog.artikel = Array.from(byNr.values());
+    appState.bauteileKatalog.artikel = Array.from(byNr.values()).filter(a => !a.placeholder);
     appState.bauteileKatalog.bauteiltypen = baseBauteiltypen.map(t => ({ ...t }));
     (additions || []).forEach(a => ensureBauteilTyp(a));
 }

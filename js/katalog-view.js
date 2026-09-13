@@ -605,7 +605,6 @@ export function editKatalogBauteil(artikelnummer) {
     document.getElementById('katalog-bauteil-form-beschreibung').value = artikel.beschreibung || '';
     document.getElementById('katalog-bauteil-form-gruppe').value = artikel.gruppe || '';
     document.getElementById('katalog-bauteil-form-lieferant').value = artikel.lieferant || '';
-    document.getElementById('katalog-bauteil-form-placeholder').checked = Boolean(artikel.placeholder);
 
     const herstellerSelect = document.getElementById('katalog-bauteil-form-hersteller');
     if (herstellerSelect) {
@@ -696,7 +695,6 @@ function readBauteilFormValues() {
     const beschreibung = document.getElementById('katalog-bauteil-form-beschreibung')?.value?.trim();
     const gruppe = document.getElementById('katalog-bauteil-form-gruppe')?.value?.trim() || '';
     const lieferant = document.getElementById('katalog-bauteil-form-lieferant')?.value?.trim() || '';
-    const placeholder = document.getElementById('katalog-bauteil-form-placeholder')?.checked === true;
 
     if (!typ || !hersteller || !artikelnummer || !beschreibung) {
         showModal('Bitte alle Pflichtfelder ausfüllen.', { type: 'warning', title: 'Eingabe unvollständig' });
@@ -711,7 +709,6 @@ function readBauteilFormValues() {
         gruppe
     };
     if (lieferant) article.lieferant = lieferant;
-    if (placeholder) article.placeholder = true;
     return article;
 }
 

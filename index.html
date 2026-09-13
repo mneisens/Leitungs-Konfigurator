@@ -221,8 +221,6 @@
                         Bauteile aus der Bauteilliste. Ordne jedem Artikel eine Gruppe zu – im Gruppen-Konfigurator
                         werden dann nur passende Bauteile angeboten. Mehrere Gruppen mit „/“ trennen
                         (z.&nbsp;B. <code>011/021/031/042</code>).
-                        Platzhalter ohne finale Artikelnummer kannst du über <strong>Entfernen</strong> aus dem Katalog
-                        ausblenden oder per <strong>Bearbeiten</strong> durch echte Artikel ersetzen.
                     </p>
 
                     <div class="katalog-toolbar">
@@ -298,12 +296,6 @@
                             <div class="form-group">
                                 <label for="katalog-bauteil-form-lieferant">Lieferant</label>
                                 <input type="text" id="katalog-bauteil-form-lieferant" placeholder="z. B. Beckhoff">
-                            </div>
-                            <div class="form-group katalog-meterware-group">
-                                <label class="admin-check">
-                                    <input type="checkbox" id="katalog-bauteil-form-placeholder">
-                                    Platzhalter (Art.-Nr. noch nicht final)
-                                </label>
                             </div>
                         </div>
                         <div class="form-actions">
@@ -688,6 +680,7 @@
                     <table class="leitung-table stueckliste-table">
                         <thead>
                             <tr>
+                                <th>Bezeichnung</th>
                                 <th>Leitungstyp</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
@@ -713,6 +706,7 @@
                         <thead>
                             <tr>
                                 <th>Gruppe</th>
+                                <th>Bezeichnung</th>
                                 <th>Bauteiltyp</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
