@@ -667,12 +667,17 @@
 
         <!-- View: Stückliste -->
         <section id="view-stueckliste" class="view">
-            <div class="view-header">
-                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+            <div class="view-header stueckliste-view-header">
+                <button class="btn btn-back no-print" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
                 <h2 id="stueckliste-titel">Stückliste</h2>
+                <button type="button" class="btn btn-secondary no-print" onclick="printStueckliste()" title="Stückliste drucken">
+                    🖨 Drucken
+                </button>
             </div>
 
-            <div id="stueckliste-erinnerung" class="stueckliste-erinnerung" hidden></div>
+            <div id="stueckliste-druck-meta" class="stueckliste-print-only"></div>
+
+            <div id="stueckliste-erinnerung" class="stueckliste-erinnerung no-print" hidden></div>
 
             <div class="form-card">
                 <h3>Leitungen</h3>

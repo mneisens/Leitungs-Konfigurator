@@ -10,6 +10,7 @@ import { getGruppeDisplay } from './overview.js';
 import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
+import { showModal } from './modal.js';
 
 
 /**
@@ -28,13 +29,34 @@ function getStatusStore() {
 
 
 /**
+ * @param {string} artikelnummer
+ * @returns {string}
+ */
+function normalizeArtikelnummer(artikelnummer) {
+    const nr = String(artikelnummer || '').trim();
+    return nr && nr !== '-' ? nr : '';
+}
+
+
+/**
  * @param {'leitungen'|'bauteile'} art
  * @param {string} key
  * @returns {{status: string, lieferdatum: string}}
  */
 function getEintragStatus(art, key) {
     const store = getStatusStore();
-    const raw = store[art]?.[key] || {};
+    let raw = store[art]?.[key] || {};
+
+    if (!raw.status && !raw.lieferdatum && key && !key.startsWith('__einzel__')) {
+        const legacyKey = Object.keys(store[art] || {}).find(k =>
+            k === key
+            || k.includes(`|||${key}|||`)
+            || k.endsWith(`|||${key}`)
+            || k.startsWith(`${key}|||`)
+        );
+        if (legacyKey) raw = store[art][legacyKey] || {};
+    }
+
     return {
         status: normalisiereStatus(raw),
         lieferdatum: raw.lieferdatum || ''
@@ -137,7 +159,72 @@ function herstellerSortKey(hersteller) {
 
 
 /**
- * Aggregierte Leitungspositionen inkl. Status.
+ * @param {Array<object>} quellen
+ * @returns {string}
+ */
+function gruppeAnzeigeAusQuellen(quellen) {
+    const gruppen = new Set((quellen || []).map(q => q.gruppe).filter(g => g && g !== '-'));
+    if (gruppen.size <= 1) return getGruppeDisplay(quellen?.[0]?.gruppe || '-');
+    return 'mehrere';
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {string}
+ */
+function renderQuellenPrint(entry) {
+    if (!entry.quellen || entry.quellen.length <= 1) return '';
+
+    const zeilen = entry.quellen.map(q => {
+        const teile = [];
+        if (q.position) teile.push(`Pos. ${q.position}`);
+        if (q.gruppe && q.gruppe !== '-') teile.push(getGruppeDisplay(q.gruppe));
+        teile.push(`${q.count}×`);
+        teile.push(q.bezeichnung);
+        return teile.join(' · ');
+    });
+
+    return `<div class="stueckliste-print-quellen">${escapeHtml(zeilen.join(' | '))}</div>`;
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {string}
+ */
+function renderQuellenInfo(entry) {
+    if (!entry.quellen || entry.quellen.length <= 1) return '';
+
+    return `
+        ${renderQuellenPrint(entry)}
+        <details class="stueckliste-quellen no-print">
+            <summary class="stueckliste-quellen-trigger" title="Einzelpositionen anzeigen">
+                ${entry.quellen.length} Pos.
+            </summary>
+            <div class="stueckliste-quellen-panel">
+                <ul class="stueckliste-quellen-liste">
+                    ${entry.quellen.map(q => `
+                        <li>
+                            <span class="stueckliste-quellen-kopf">
+                                ${q.position ? `<span class="stueckliste-quellen-pos">Pos. ${q.position}</span>` : ''}
+                                <span class="stueckliste-quellen-gruppe">${escapeHtml(getGruppeDisplay(q.gruppe))}</span>
+                                <span class="stueckliste-quellen-anzahl">${q.count}×</span>
+                            </span>
+                            <span class="stueckliste-quellen-text">${escapeHtml(q.bezeichnung)}</span>
+                            ${q.detail ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.detail)}</span>` : ''}
+                            ${q.typ ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.typ)}</span>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        </details>
+    `;
+}
+
+
+/**
+ * Aggregierte Leitungspositionen inkl. Status (zusammengefasst nach Artikelnummer).
  * @returns {Array<object>}
  */
 function getLeitungEintraege() {
@@ -145,24 +232,34 @@ function getLeitungEintraege() {
     const grouped = new Map();
 
     leitungen.filter(isLeitungMeaningful).forEach(l => {
+        const artikelnummer = normalizeArtikelnummer(l.artikelnummer || l.artikelCustom);
+        const key = artikelnummer || `__einzel__${l.id}`;
         const bezeichnung = (l.bezeichnung || '').trim() || '— ohne Bezeichnung —';
-        const artikelnummer = (l.artikelnummer || l.artikelCustom || '-').trim() || '-';
         const hersteller = (l.hersteller || '-').trim() || '-';
         const typText = getLeitungstypText(l);
-        const key = `${bezeichnung}|||${artikelnummer}|||${hersteller}|||${typText}`;
+        const stueck = getLeitungStueckzahl(l);
+        const quelle = {
+            position: l.position,
+            gruppe: l.gruppe || '-',
+            bezeichnung,
+            count: stueck,
+            detail: typText
+        };
         const existing = grouped.get(key);
 
         if (existing) {
-            existing.count += getLeitungStueckzahl(l);
+            existing.count += stueck;
+            existing.quellen.push(quelle);
         } else {
             grouped.set(key, {
                 key,
                 art: 'leitungen',
                 bezeichnung,
-                artikelnummer,
+                artikelnummer: artikelnummer || '-',
                 hersteller,
                 typText,
-                count: getLeitungStueckzahl(l),
+                count: stueck,
+                quellen: [quelle],
                 status: getEintragStatus('leitungen', key)
             });
         }
@@ -170,14 +267,13 @@ function getLeitungEintraege() {
 
     return Array.from(grouped.values())
         .sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
-            || a.bezeichnung.localeCompare(b.bezeichnung, 'de')
             || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
-            || a.typText.localeCompare(b.typText, 'de'));
+            || a.bezeichnung.localeCompare(b.bezeichnung, 'de'));
 }
 
 
 /**
- * Aggregierte Bauteilpositionen inkl. Status.
+ * Aggregierte Bauteilpositionen inkl. Status (zusammengefasst nach Artikelnummer).
  * @returns {Array<object>}
  */
 function getBauteilEintraege() {
@@ -185,9 +281,22 @@ function getBauteilEintraege() {
     const grouped = new Map();
 
     bauteile.forEach(b => {
+        const artikelnummer = normalizeArtikelnummer(b.artikelnummer);
+        const key = artikelnummer || `__einzel__${b.id}`;
         const bezeichnung = (b.bezeichnung || '').trim() || getBauteilTypName(b.typ) || '—';
-        const key = `${b.gruppe || ''}|||${bezeichnung}|||${b.typ || ''}|||${b.artikelnummer || ''}`;
-        if (!grouped.has(key)) {
+        const stueck = b.anzahl || 1;
+        const quelle = {
+            gruppe: b.gruppe || '-',
+            bezeichnung,
+            count: stueck,
+            typ: getBauteilTypName(b.typ)
+        };
+        const existing = grouped.get(key);
+
+        if (existing) {
+            existing.count += stueck;
+            existing.quellen.push(quelle);
+        } else {
             grouped.set(key, {
                 key,
                 art: 'bauteile',
@@ -195,19 +304,20 @@ function getBauteilEintraege() {
                 bezeichnung,
                 typ: b.typ,
                 hersteller: b.hersteller || '-',
-                artikelnummer: b.artikelnummer || '-',
-                count: 0,
+                artikelnummer: artikelnummer || '-',
+                count: stueck,
+                quellen: [quelle],
                 status: getEintragStatus('bauteile', key)
             });
         }
-        grouped.get(key).count += b.anzahl || 1;
     });
 
-    return Array.from(grouped.values())
-        .sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
-            || a.bezeichnung.localeCompare(b.bezeichnung, 'de')
-            || a.gruppe.localeCompare(b.gruppe, 'de')
-            || a.artikelnummer.localeCompare(b.artikelnummer, 'de'));
+    return Array.from(grouped.values()).map(entry => ({
+        ...entry,
+        gruppe: gruppeAnzeigeAusQuellen(entry.quellen)
+    })).sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
+        || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
+        || a.bezeichnung.localeCompare(b.bezeichnung, 'de'));
 }
 
 
@@ -254,12 +364,15 @@ function renderStatusZellen(entry, gesperrt) {
     const art = entry.art;
     const disabled = gesperrt ? ' disabled' : '';
     const hinweis = (info.id === 'faellig' || info.id === 'ueberfaellig')
-        ? `<span class="stueckliste-liefer-hinweis ${info.klasse}">${escapeHtml(info.label)}</span>`
+        ? `<span class="stueckliste-liefer-hinweis no-print ${info.klasse}">${escapeHtml(info.label)}</span>`
         : '';
+
+    const lieferdatumDruck = formatDatumDe(s.lieferdatum) || '–';
 
     return `
         <td class="stueckliste-status">
-            <select class="stueckliste-status-select ${info.klasse}"${disabled}
+            <span class="stueckliste-print-only">${escapeHtml(info.label)}</span>
+            <select class="stueckliste-status-select no-print ${info.klasse}"${disabled}
                     aria-label="Status"
                     onchange="stuecklisteUpdateStatus('${art}', decodeURIComponent('${key}'), 'status', this.value)">
                 <option value="offen"${wert === 'offen' ? ' selected' : ''}>Offen</option>
@@ -270,7 +383,8 @@ function renderStatusZellen(entry, gesperrt) {
             ${hinweis}
         </td>
         <td class="stueckliste-lieferdatum">
-            <input type="date" value="${escapeHtml(s.lieferdatum)}"${disabled}
+            <span class="stueckliste-print-only">${escapeHtml(lieferdatumDruck)}</span>
+            <input class="no-print" type="date" value="${escapeHtml(s.lieferdatum)}"${disabled}
                    aria-label="Lieferdatum"
                    onchange="stuecklisteUpdateStatus('${art}', decodeURIComponent('${key}'), 'lieferdatum', this.value)">
         </td>
@@ -364,8 +478,20 @@ export function renderStueckliste() {
         return;
     }
 
+    const projekt = appState.currentProjekt;
     document.getElementById('stueckliste-titel').textContent =
-        `Stückliste - ${appState.currentProjekt.projektnummer} - ${appState.currentProjekt.name}`;
+        `Stückliste - ${projekt.projektnummer} - ${projekt.name}`;
+
+    const druckMeta = document.getElementById('stueckliste-druck-meta');
+    if (druckMeta) {
+        const metaTeile = [
+            `Projekt: ${projekt.projektnummer || '–'} – ${projekt.name || '–'}`,
+            projekt.kunde ? `Kunde: ${projekt.kunde}` : '',
+            projekt.liefertermin ? `Liefertermin: ${formatDatumDe(projekt.liefertermin)}` : '',
+            `Druck: ${new Date().toLocaleDateString('de-DE')}`
+        ].filter(Boolean);
+        druckMeta.textContent = metaTeile.join(' · ');
+    }
 
     const gesperrt = !canEditProject(appState.currentProjekt);
     const erinnerungen = getStuecklisteErinnerungen();
@@ -388,7 +514,10 @@ export function renderStueckliste() {
                 <td>${escapeHtml(entry.typText)}</td>
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
-                <td>${entry.count}</td>
+                <td class="stueckliste-anzahl">
+                    <span class="stueckliste-anzahl-wert">${entry.count}</span>
+                    ${renderQuellenInfo(entry)}
+                </td>
                 ${renderStatusZellen(entry, gesperrt)}
             </tr>
         `).join('');
@@ -412,12 +541,15 @@ export function renderStueckliste() {
 
     bauteileBody.innerHTML = bauteilEintraege.map(entry => `
         <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
-            <td>${escapeHtml(getGruppeDisplay(entry.gruppe))}</td>
+            <td>${escapeHtml(entry.gruppe === 'mehrere' ? 'mehrere' : getGruppeDisplay(entry.gruppe))}</td>
             <td>${escapeHtml(entry.bezeichnung)}</td>
             <td>${escapeHtml(getBauteilTypName(entry.typ))}</td>
             <td>${escapeHtml(entry.hersteller)}</td>
             <td>${escapeHtml(entry.artikelnummer)}</td>
-            <td>${entry.count}</td>
+            <td class="stueckliste-anzahl">
+                <span class="stueckliste-anzahl-wert">${entry.count}</span>
+                ${renderQuellenInfo(entry)}
+            </td>
             ${renderStatusZellen(entry, gesperrt)}
         </tr>
     `).join('');
@@ -474,4 +606,23 @@ export function getLeitungstypText(leitung) {
     const steckerB = leitung.steckerB || '-';
     const laenge = leitung.laenge ? `${leitung.laenge} m` : '-';
     return `${kategorie} | ${steckerA} -> ${steckerB} | ${laenge}`;
+}
+
+
+/**
+ * Öffnet den Druckdialog für die aggregierte Stückliste.
+ * @returns {void}
+ */
+export function printStueckliste() {
+    if (!appState.currentProjekt) return;
+
+    const hatLeitungen = (appState.currentProjekt.leitungen || []).some(isLeitungMeaningful);
+    const hatBauteile = (appState.currentProjekt.bauteile || []).length > 0;
+    if (!hatLeitungen && !hatBauteile) {
+        showModal('Keine Positionen zum Drucken vorhanden.', { type: 'warning', title: 'Hinweis' });
+        return;
+    }
+
+    renderStueckliste();
+    window.print();
 }
