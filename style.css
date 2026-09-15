@@ -3252,6 +3252,13 @@ select.vorschlag-laenge:focus {
     border-color: #86efac;
 }
 
+.stueckliste-status-select.status-verbaut {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #6ee7b7;
+    font-weight: 700;
+}
+
 .stueckliste-liefer-hinweis {
     display: block;
     margin-top: 0.25rem;
@@ -3282,6 +3289,11 @@ select.vorschlag-laenge:focus {
 .stueckliste-badge.status-ok {
     background: #dcfce7;
     color: #166534;
+}
+
+.stueckliste-badge.status-verbaut {
+    background: #d1fae5;
+    color: #047857;
 }
 
 .stueckliste-check-label {
@@ -3335,6 +3347,10 @@ select.vorschlag-laenge:focus {
 
 .stueckliste-table tr.status-ok td:first-child {
     box-shadow: inset 3px 0 0 #16a34a;
+}
+
+.stueckliste-table tr.status-verbaut td:first-child {
+    box-shadow: inset 3px 0 0 #059669;
 }
 
 @media (max-width: 960px) {

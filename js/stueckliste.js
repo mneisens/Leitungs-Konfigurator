@@ -8,6 +8,7 @@ import { showView } from './navigation.js';
 import { getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
 import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
+import { istMeterwareKategorie } from './leitung-optionen.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
 import { showModal } from './modal.js';
@@ -35,6 +36,95 @@ function getStatusStore() {
 function normalizeArtikelnummer(artikelnummer) {
     const nr = String(artikelnummer || '').trim();
     return nr && nr !== '-' ? nr : '';
+}
+
+
+/**
+ * @param {number|string} wert
+ * @returns {string}
+ */
+function formatLaenge(wert) {
+    const n = Number(wert);
+    if (Number.isNaN(n)) return String(wert || '');
+    if (Number.isInteger(n)) return String(n);
+    return n.toFixed(1).replace(/\.0$/, '');
+}
+
+
+/**
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getLeitungGruppenschluessel(leitung) {
+    const nr = normalizeArtikelnummer(leitung.artikelnummer || leitung.artikelCustom);
+    if (nr) return nr;
+
+    if (istMeterwareKategorie(leitung.kategorie)) {
+        const whitelist = (leitung.artikelWhitelist || []).slice().sort().join('|');
+        if (whitelist) return `mw:${whitelist}`;
+        if (leitung.kategorie && leitung.hersteller) {
+            return `mw:${leitung.kategorie}:${leitung.hersteller}`;
+        }
+    }
+
+    return `__einzel__${leitung.id}`;
+}
+
+
+/**
+ * @param {object} leitung
+ * @returns {{istMeterware: boolean, stueck: number, meter: number|null}}
+ */
+function getLeitungMenge(leitung) {
+    const stueck = getLeitungStueckzahl(leitung);
+    const laenge = Number(leitung.laenge);
+    const istMw = istMeterwareKategorie(leitung.kategorie);
+    const meter = istMw && laenge > 0 ? stueck * laenge : null;
+    return { istMeterware: istMw, stueck, meter };
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {boolean}
+ */
+function sollQuellenInfoAnzeigen(entry) {
+    if (!entry.quellen?.length) return false;
+    if (entry.quellen.length > 1) return true;
+    return Boolean(entry.meterware);
+}
+
+
+/**
+ * @param {object} q
+ * @param {object} entry
+ * @returns {string}
+ */
+function formatQuelleZeile(q, entry) {
+    const teile = [];
+    if (q.position) teile.push(`Pos. ${q.position}`);
+    if (q.gruppe && q.gruppe !== '-') teile.push(getGruppeDisplay(q.gruppe));
+
+    if (entry.meterware && q.laenge > 0) {
+        const meterText = `${formatLaenge(q.laenge)} m`;
+        teile.push(q.stueck > 1 ? `${q.stueck}× ${meterText}` : meterText);
+        if (q.meter != null && q.stueck > 1) teile.push(`= ${formatLaenge(q.meter)} m`);
+    } else {
+        teile.push(`${q.count}×`);
+    }
+
+    if (q.bezeichnung) teile.push(q.bezeichnung);
+    return teile.join(' · ');
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {string}
+ */
+function formatAnzahlAnzeige(entry) {
+    if (entry.meterware) return `${formatLaenge(entry.count)} m`;
+    return String(entry.count);
 }
 
 
@@ -67,10 +157,10 @@ function getEintragStatus(art, key) {
 /**
  * Alte Checkbox-Werte und früheres „bestellt“ auf den neuen Ablauf abbilden.
  * @param {object} raw
- * @returns {'offen'|'beosys'|'geliefert'|'kommissioniert'}
+ * @returns {'offen'|'beosys'|'geliefert'|'kommissioniert'|'verbaut'}
  */
 function normalisiereStatus(raw) {
-    const erlaubt = new Set(['offen', 'beosys', 'geliefert', 'kommissioniert']);
+    const erlaubt = new Set(['offen', 'beosys', 'geliefert', 'kommissioniert', 'verbaut']);
     let status = String(raw.status || '').trim();
 
     if (status === 'bestellt') status = 'beosys';
@@ -95,7 +185,7 @@ function heuteISO() {
 
 /**
  * @param {{status: string, lieferdatum: string}} status
- * @returns {'offen'|'beosys'|'geliefert'|'kommissioniert'}
+ * @returns {'offen'|'beosys'|'geliefert'|'kommissioniert'|'verbaut'}
  */
 export function getStuecklisteStatusWert(status) {
     return normalisiereStatus(status);
@@ -109,6 +199,9 @@ export function getStuecklisteStatusWert(status) {
 export function getStuecklisteStatusInfo(status) {
     const wert = getStuecklisteStatusWert(status);
 
+    if (wert === 'verbaut') {
+        return { id: 'verbaut', label: 'Verbaut', klasse: 'status-verbaut' };
+    }
     if (wert === 'kommissioniert') {
         return { id: 'kommissioniert', label: 'Kommissioniert', klasse: 'status-ok' };
     }
@@ -174,17 +267,9 @@ function gruppeAnzeigeAusQuellen(quellen) {
  * @returns {string}
  */
 function renderQuellenPrint(entry) {
-    if (!entry.quellen || entry.quellen.length <= 1) return '';
+    if (!sollQuellenInfoAnzeigen(entry)) return '';
 
-    const zeilen = entry.quellen.map(q => {
-        const teile = [];
-        if (q.position) teile.push(`Pos. ${q.position}`);
-        if (q.gruppe && q.gruppe !== '-') teile.push(getGruppeDisplay(q.gruppe));
-        teile.push(`${q.count}×`);
-        teile.push(q.bezeichnung);
-        return teile.join(' · ');
-    });
-
+    const zeilen = entry.quellen.map(q => formatQuelleZeile(q, entry));
     return `<div class="stueckliste-print-quellen">${escapeHtml(zeilen.join(' | '))}</div>`;
 }
 
@@ -194,13 +279,17 @@ function renderQuellenPrint(entry) {
  * @returns {string}
  */
 function renderQuellenInfo(entry) {
-    if (!entry.quellen || entry.quellen.length <= 1) return '';
+    if (!sollQuellenInfoAnzeigen(entry)) return '';
+
+    const label = entry.meterware && entry.quellen.length === 1
+        ? 'Details'
+        : `${entry.quellen.length} Pos.`;
 
     return `
         ${renderQuellenPrint(entry)}
         <details class="stueckliste-quellen no-print">
             <summary class="stueckliste-quellen-trigger" title="Einzelpositionen anzeigen">
-                ${entry.quellen.length} Pos.
+                ${label}
             </summary>
             <div class="stueckliste-quellen-panel">
                 <ul class="stueckliste-quellen-liste">
@@ -209,10 +298,16 @@ function renderQuellenInfo(entry) {
                             <span class="stueckliste-quellen-kopf">
                                 ${q.position ? `<span class="stueckliste-quellen-pos">Pos. ${q.position}</span>` : ''}
                                 <span class="stueckliste-quellen-gruppe">${escapeHtml(getGruppeDisplay(q.gruppe))}</span>
-                                <span class="stueckliste-quellen-anzahl">${q.count}×</span>
+                                <span class="stueckliste-quellen-anzahl">${
+                                    entry.meterware && q.laenge > 0
+                                        ? escapeHtml(q.stueck > 1
+                                            ? `${q.stueck}× ${formatLaenge(q.laenge)} m`
+                                            : `${formatLaenge(q.laenge)} m`)
+                                        : `${q.count}×`
+                                }</span>
                             </span>
                             <span class="stueckliste-quellen-text">${escapeHtml(q.bezeichnung)}</span>
-                            ${q.detail ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.detail)}</span>` : ''}
+                            ${q.detail && !entry.meterware ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.detail)}</span>` : ''}
                             ${q.typ ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.typ)}</span>` : ''}
                         </li>
                     `).join('')}
@@ -233,22 +328,32 @@ function getLeitungEintraege() {
 
     leitungen.filter(isLeitungMeaningful).forEach(l => {
         const artikelnummer = normalizeArtikelnummer(l.artikelnummer || l.artikelCustom);
-        const key = artikelnummer || `__einzel__${l.id}`;
+        const key = getLeitungGruppenschluessel(l);
         const bezeichnung = (l.bezeichnung || '').trim() || '— ohne Bezeichnung —';
         const hersteller = (l.hersteller || '-').trim() || '-';
-        const typText = getLeitungstypText(l);
-        const stueck = getLeitungStueckzahl(l);
+        const menge = getLeitungMenge(l);
+        const typText = menge.istMeterware
+            ? `${l.kategorie || 'sonstiges'} | ${hersteller} | Meterware`
+            : getLeitungstypText(l);
         const quelle = {
             position: l.position,
             gruppe: l.gruppe || '-',
             bezeichnung,
-            count: stueck,
-            detail: typText
+            count: menge.meter != null ? menge.meter : menge.stueck,
+            stueck: menge.stueck,
+            laenge: Number(l.laenge) || 0,
+            meter: menge.meter,
+            detail: getLeitungstypText(l)
         };
         const existing = grouped.get(key);
 
         if (existing) {
-            existing.count += stueck;
+            if (menge.meter != null) {
+                existing.count += menge.meter;
+                existing.meterware = true;
+            } else {
+                existing.count += menge.stueck;
+            }
             existing.quellen.push(quelle);
         } else {
             grouped.set(key, {
@@ -258,7 +363,8 @@ function getLeitungEintraege() {
                 artikelnummer: artikelnummer || '-',
                 hersteller,
                 typText,
-                count: stueck,
+                meterware: menge.meter != null,
+                count: menge.meter != null ? menge.meter : menge.stueck,
                 quellen: [quelle],
                 status: getEintragStatus('leitungen', key)
             });
@@ -334,7 +440,7 @@ export function getStuecklisteErinnerungen() {
     [...getLeitungEintraege(), ...getBauteilEintraege()].forEach(entry => {
         const s = entry.status;
         if (!s.lieferdatum) return;
-        if (s.status === 'geliefert' || s.status === 'kommissioniert') return;
+        if (s.status === 'geliefert' || s.status === 'kommissioniert' || s.status === 'verbaut') return;
         if (s.lieferdatum > heute) return;
 
         const label = `${entry.bezeichnung} (${entry.artikelnummer})`;
@@ -379,6 +485,7 @@ function renderStatusZellen(entry, gesperrt) {
                 <option value="beosys"${wert === 'beosys' ? ' selected' : ''}>In Beosys</option>
                 <option value="geliefert"${wert === 'geliefert' ? ' selected' : ''}>Geliefert</option>
                 <option value="kommissioniert"${wert === 'kommissioniert' ? ' selected' : ''}>Kommissioniert</option>
+                <option value="verbaut"${wert === 'verbaut' ? ' selected' : ''}>Verbaut</option>
             </select>
             ${hinweis}
         </td>
@@ -515,7 +622,7 @@ export function renderStueckliste() {
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
                 <td class="stueckliste-anzahl">
-                    <span class="stueckliste-anzahl-wert">${entry.count}</span>
+                    <span class="stueckliste-anzahl-wert">${escapeHtml(formatAnzahlAnzeige(entry))}</span>
                     ${renderQuellenInfo(entry)}
                 </td>
                 ${renderStatusZellen(entry, gesperrt)}
