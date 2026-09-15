@@ -3280,7 +3280,10 @@ function aktualisiereArtikel(leitung) {
     }
 
     if (istMeterwareKategorie(leitung.kategorie)) {
-        const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, leitung.artikelWhitelist)
+        const whitelist = leitung.presetId === 'oelflex-werkzeugspanner'
+            ? null
+            : leitung.artikelWhitelist;
+        const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, whitelist)
             .find(a => a.artikelnummer === leitung.artikelnummer);
         if (!artikel) {
             leitung.artikelnummer = leitung.artikelnummer || '';
@@ -3653,7 +3656,11 @@ function renderAusrichtung(leitungId, seite, stecker) {
  */
 function renderMeterwareFelder(leitung, disabled) {
     const id = escapeHtml(leitung.id);
-    const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, leitung.artikelWhitelist);
+    // Frühere Werkzeugspanner-Whitelist (nur 4G1,5/12G1,5/18G1,5) nicht mehr anwenden.
+    const whitelist = leitung.presetId === 'oelflex-werkzeugspanner'
+        ? null
+        : leitung.artikelWhitelist;
+    const artikel = getMeterwareArtikel(leitung.kategorie, leitung.hersteller, whitelist);
 
     const typFeld = artikel.length
         ? `<select${disabled} onchange="gruppeUpdateLeitung('${id}', 'artikelnummer', this.value)">

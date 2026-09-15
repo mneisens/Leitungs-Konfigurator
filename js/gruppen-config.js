@@ -101,6 +101,7 @@ const LEITUNG_PRESETS = {
         kategorie: 'motor',
         hersteller: 'Lapp Kabel',
         festLeitungstyp: true,
+        artikelnummer: '1020033',
         artikelWhitelist: ['1020033']
     },
     'motorleitung-vorschub-zk4500': {
@@ -162,11 +163,9 @@ const LEITUNG_PRESETS = {
     },
     'oelflex-werkzeugspanner': {
         label: 'Ölflexleitung Werkzeugspanner',
-        bezeichnung: 'Ölflexleitung',
+        bezeichnung: 'Ölflexleitung Werkzeugspanner',
         kategorie: 'oelflex',
-        hersteller: 'Lapp Kabel',
-        festLeitungstyp: true,
-        artikelWhitelist: ['0021810', 'OELFLEX110-12G15', 'OELFLEX110-18G15']
+        hersteller: 'Lapp Kabel'
     },
     'oelflex-werkzeugwechsel': {
         label: 'Ölflexleitung Werkzeugwechsel',
@@ -653,8 +652,8 @@ const GRUPPEN = {
         nurLeitungen: true
     },
     '=100': {
-        hinweis: 'Vorschub: Beckhoff Motorleitung ZK4500-8022 (Standard 15 m), Sensorleitung ZK2000-6200-0100 und Geberleitung erfassen. Länge danach frei wählbar.',
-        leitungen: ['motorleitung-vorschub-zk4500', 'sensorleitung-eaton-taster', 'geberleitung'],
+        hinweis: 'Vorschub: Beckhoff Motorleitung ZK4500-8022 (Standard 15 m), Sensorleitung ZK2000-6200-0100, Geberleitung und bei Bedarf Ölflexleitung erfassen. Länge danach frei wählbar.',
+        leitungen: ['motorleitung-vorschub-zk4500', 'sensorleitung-eaton-taster', 'geberleitung', 'oelflex'],
         ohneUniversal: true,
         nurLeitungen: true
     },
@@ -689,7 +688,7 @@ const GRUPPEN = {
         nurLeitungen: true
     },
     '=281': {
-        hinweis: 'Werkzeugspanner: Ölflex 4G1,5, 12G1,5 oder 18G1,5 sowie Sensorleitung ZK2000-2122 erfassen.',
+        hinweis: 'Werkzeugspanner: Ölflexleitung (Typ/Querschnitt wählen) sowie Sensorleitung ZK2000-2122 erfassen.',
         leitungen: ['oelflex-werkzeugspanner', 'bremse-geoeffnet'],
         ohneUniversal: true,
         nurLeitungen: true

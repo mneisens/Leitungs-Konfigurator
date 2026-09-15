@@ -5,7 +5,7 @@
 import { appState } from './state.js';
 import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
-import { getBauteilTypName } from './catalog.js';
+import { getArtikelByNummer, getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
 import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
 import { istMeterwareKategorie } from './leitung-optionen.js';
@@ -59,15 +59,112 @@ function getLeitungGruppenschluessel(leitung) {
     const nr = normalizeArtikelnummer(leitung.artikelnummer || leitung.artikelCustom);
     if (nr) return nr;
 
-    if (istMeterwareKategorie(leitung.kategorie)) {
-        const whitelist = (leitung.artikelWhitelist || []).slice().sort().join('|');
-        if (whitelist) return `mw:${whitelist}`;
-        if (leitung.kategorie && leitung.hersteller) {
-            return `mw:${leitung.kategorie}:${leitung.hersteller}`;
-        }
+    // Fester Meterware-Typ ohne gesetzte Artikelnummer (z. B. SERVO 719 CY 4G35
+    // nur über Whitelist) – über Gruppen hinweg zu einer Position zusammenfassen.
+    const whitelist = (leitung.artikelWhitelist || [])
+        .map(a => normalizeArtikelnummer(a))
+        .filter(Boolean);
+    if (whitelist.length === 1) return whitelist[0];
+    if (whitelist.length > 1) return `mw:${whitelist.slice().sort().join('|')}`;
+
+    // Meterware ohne Typ-Zuordnung nicht zusammenwerfen (z. B. verschiedene Ölflex).
+    return `__einzel__${leitung.id}`;
+}
+
+
+/**
+ * Anzeige-Artikelnummer: gesetzte Nummer oder eindeutige Whitelist.
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getLeitungArtikelnummerAnzeige(leitung) {
+    const nr = normalizeArtikelnummer(leitung.artikelnummer || leitung.artikelCustom);
+    if (nr) return nr;
+    const whitelist = (leitung.artikelWhitelist || [])
+        .map(a => normalizeArtikelnummer(a))
+        .filter(Boolean);
+    if (whitelist.length === 1) return whitelist[0];
+    return '';
+}
+
+
+/**
+ * Kurzkennung einer Meterware aus Katalogbeschreibung oder Artikelnummer (z. B. „7G1“).
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getMeterwareTypKurz(leitung) {
+    const nr = getLeitungArtikelnummerAnzeige(leitung);
+    const artikel = nr ? getArtikelByNummer(nr) : null;
+    const beschreibung = artikel?.beschreibung || '';
+
+    const parseVariante = text => {
+        const match = String(text || '').match(/(\d+)\s*[GgXx]\s*([\d.,]+)/);
+        if (!match) return null;
+        return `${match[1]}G${match[2].replace('.', ',')}`;
+    };
+
+    return parseVariante(beschreibung)
+        || parseVariante(nr)
+        || parseVariante(leitung.bezeichnung || '')
+        || (beschreibung
+            ? beschreibung
+                .replace(/^ÖLFLEX\s+CLASSIC\s+110\s+/i, '')
+                .replace(/^ÖLFLEX\s+SERVO\s+719\s+CY\s+/i, '')
+                .replace(/\s*Motorleitung\s*$/i, '')
+                .trim()
+            : '');
+}
+
+
+/**
+ * Bezeichnung für die Stückliste: Verwendungsname plus Typ, damit Ölflex unterscheidbar ist.
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getStuecklisteLeitungBezeichnung(leitung) {
+    const basis = (leitung.bezeichnung || '').trim();
+    const typ = getMeterwareTypKurz(leitung);
+
+    if (!istMeterwareKategorie(leitung.kategorie) || !typ) {
+        return basis || '— ohne Bezeichnung —';
     }
 
-    return `__einzel__${leitung.id}`;
+    const typSchonDrin = basis && (
+        basis.toLowerCase().includes(typ.toLowerCase())
+        || basis.toLowerCase().includes(typ.toLowerCase().replace(',', '.'))
+    );
+
+    if (!basis || /^(ölflexleitung|oelflexleitung|motorleitung|geberleitung)$/i.test(basis)) {
+        const prefix = /^motor/i.test(leitung.kategorie)
+            ? 'Motorleitung'
+            : (/^geber/i.test(leitung.kategorie) ? 'Geberleitung' : 'Ölflexleitung');
+        return `${prefix} ${typ}`;
+    }
+
+    if (typSchonDrin) return basis;
+    return `${basis} · ${typ}`;
+}
+
+
+/**
+ * Leitungstyp-Text in der Stückliste (bei Meterware die Katalogbeschreibung).
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getStuecklisteLeitungTypText(leitung) {
+    if (istMeterwareKategorie(leitung.kategorie)) {
+        const nr = getLeitungArtikelnummerAnzeige(leitung);
+        const artikel = nr ? getArtikelByNummer(nr) : null;
+        if (artikel?.beschreibung) return artikel.beschreibung;
+
+        const typ = getMeterwareTypKurz(leitung);
+        if (typ) return typ;
+
+        const hersteller = (leitung.hersteller || '-').trim() || '-';
+        return `${leitung.kategorie || 'sonstiges'} | ${hersteller} | Meterware`;
+    }
+    return getLeitungstypText(leitung);
 }
 
 
@@ -327,14 +424,12 @@ function getLeitungEintraege() {
     const grouped = new Map();
 
     leitungen.filter(isLeitungMeaningful).forEach(l => {
-        const artikelnummer = normalizeArtikelnummer(l.artikelnummer || l.artikelCustom);
+        const artikelnummer = getLeitungArtikelnummerAnzeige(l);
         const key = getLeitungGruppenschluessel(l);
-        const bezeichnung = (l.bezeichnung || '').trim() || '— ohne Bezeichnung —';
+        const bezeichnung = getStuecklisteLeitungBezeichnung(l);
         const hersteller = (l.hersteller || '-').trim() || '-';
         const menge = getLeitungMenge(l);
-        const typText = menge.istMeterware
-            ? `${l.kategorie || 'sonstiges'} | ${hersteller} | Meterware`
-            : getLeitungstypText(l);
+        const typText = getStuecklisteLeitungTypText(l);
         const quelle = {
             position: l.position,
             gruppe: l.gruppe || '-',
@@ -355,11 +450,15 @@ function getLeitungEintraege() {
                 existing.count += menge.stueck;
             }
             existing.quellen.push(quelle);
+            if (!existing.bezeichnungen.includes(bezeichnung)) {
+                existing.bezeichnungen.push(bezeichnung);
+            }
         } else {
             grouped.set(key, {
                 key,
                 art: 'leitungen',
                 bezeichnung,
+                bezeichnungen: [bezeichnung],
                 artikelnummer: artikelnummer || '-',
                 hersteller,
                 typText,
@@ -371,10 +470,14 @@ function getLeitungEintraege() {
         }
     });
 
-    return Array.from(grouped.values())
-        .sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
-            || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
-            || a.bezeichnung.localeCompare(b.bezeichnung, 'de'));
+    return Array.from(grouped.values()).map(entry => ({
+        ...entry,
+        bezeichnung: entry.bezeichnungen.length > 1
+            ? entry.bezeichnungen.join(' / ')
+            : entry.bezeichnung
+    })).sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
+        || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
+        || a.bezeichnung.localeCompare(b.bezeichnung, 'de'));
 }
 
 
