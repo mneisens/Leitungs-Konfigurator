@@ -124,7 +124,7 @@ import {
 } from './js/gruppen-konfigurator.js';
 import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
-import { stuecklisteUpdateStatus, printStueckliste } from './js/stueckliste.js';
+import { stuecklisteUpdateStatus, stuecklisteSetKategorieFilter, printStueckliste } from './js/stueckliste.js';
 document.addEventListener('keydown', e => {
     const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
     if (bauteilOverlay?.classList.contains('active')) {
@@ -322,5 +322,6 @@ Object.assign(window, {
     saveBauteilEdit,
     filterBauteilEditHersteller,
     stuecklisteUpdateStatus,
+    stuecklisteSetKategorieFilter,
     printStueckliste
 });

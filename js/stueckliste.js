@@ -8,10 +8,16 @@ import { showView } from './navigation.js';
 import { getArtikelByNummer, getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
 import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
-import { istMeterwareKategorie } from './leitung-optionen.js';
+import { istMeterwareKategorie, getKategorien, getKategorieName } from './leitung-optionen.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
 import { showModal } from './modal.js';
+
+
+/** Aktiver Leitungstyp-Filter in der Stückliste ('' = alle). */
+let stuecklisteKategorieFilter = '';
+/** Projekt-ID, für die der Filter gilt (beim Wechsel zurücksetzen). */
+let stuecklisteFilterProjektId = null;
 
 
 /**
@@ -416,6 +422,81 @@ function renderQuellenInfo(entry) {
 
 
 /**
+ * Kategorie einer Leitung für Filter und Anzeige (Projektdaten oder Katalog).
+ * @param {object} leitung
+ * @returns {string}
+ */
+function getLeitungKategorieForFilter(leitung) {
+    const kat = String(leitung.kategorie || '').trim();
+    if (kat && kat !== 'sonstiges') return kat;
+
+    const nr = normalizeArtikelnummer(leitung.artikelnummer || leitung.artikelCustom);
+    if (nr) {
+        const artikel = getArtikelByNummer(nr);
+        if (artikel?.kategorie) return artikel.kategorie;
+    }
+
+    return kat || 'sonstiges';
+}
+
+
+/**
+ * @param {Array<object>} eintraege
+ * @returns {Array<object>}
+ */
+function filterLeitungEintraegeNachKategorie(eintraege) {
+    if (!stuecklisteKategorieFilter) return eintraege;
+    return eintraege.filter(e => e.kategorie === stuecklisteKategorieFilter);
+}
+
+
+/**
+ * @param {Array<object>} alleEintraege
+ * @returns {void}
+ */
+function renderStuecklisteFilter(alleEintraege) {
+    const box = document.getElementById('stueckliste-filter');
+    if (!box) return;
+
+    const vorhanden = new Set(alleEintraege.map(e => e.kategorie));
+    const kategorien = getKategorien().filter(k => vorhanden.has(k.id));
+
+    if (kategorien.length <= 1 && !stuecklisteKategorieFilter) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+    }
+
+    if (stuecklisteKategorieFilter && !vorhanden.has(stuecklisteKategorieFilter)) {
+        stuecklisteKategorieFilter = '';
+    }
+
+    const sichtbar = filterLeitungEintraegeNachKategorie(alleEintraege).length;
+    const gesamt = alleEintraege.length;
+    const zaehler = stuecklisteKategorieFilter
+        ? `${sichtbar} von ${gesamt} Position${gesamt === 1 ? '' : 'en'}`
+        : `${gesamt} Position${gesamt === 1 ? '' : 'en'}`;
+
+    box.hidden = false;
+    box.innerHTML = `
+        <div class="form-group stueckliste-filter-group">
+            <label for="stueckliste-kategorie-filter">Leitungstyp</label>
+            <select id="stueckliste-kategorie-filter" class="stueckliste-filter-select"
+                    onchange="stuecklisteSetKategorieFilter(this.value)">
+                <option value=""${stuecklisteKategorieFilter === '' ? ' selected' : ''}>Alle Leitungstypen</option>
+                ${kategorien.map(k => `
+                    <option value="${escapeHtml(k.id)}"${stuecklisteKategorieFilter === k.id ? ' selected' : ''}>
+                        ${escapeHtml(k.icon ? `${k.icon} ` : '')}${escapeHtml(k.name)}
+                    </option>
+                `).join('')}
+            </select>
+        </div>
+        <span class="stueckliste-filter-count">${escapeHtml(zaehler)}</span>
+    `;
+}
+
+
+/**
  * Aggregierte Leitungspositionen inkl. Status (zusammengefasst nach Artikelnummer).
  * @returns {Array<object>}
  */
@@ -427,6 +508,7 @@ function getLeitungEintraege() {
         const artikelnummer = getLeitungArtikelnummerAnzeige(l);
         const key = getLeitungGruppenschluessel(l);
         const bezeichnung = getStuecklisteLeitungBezeichnung(l);
+        const kategorie = getLeitungKategorieForFilter(l);
         const hersteller = (l.hersteller || '-').trim() || '-';
         const menge = getLeitungMenge(l);
         const typText = getStuecklisteLeitungTypText(l);
@@ -459,6 +541,7 @@ function getLeitungEintraege() {
                 art: 'leitungen',
                 bezeichnung,
                 bezeichnungen: [bezeichnung],
+                kategorie,
                 artikelnummer: artikelnummer || '-',
                 hersteller,
                 typText,
@@ -689,6 +772,11 @@ export function renderStueckliste() {
     }
 
     const projekt = appState.currentProjekt;
+    if (stuecklisteFilterProjektId !== projekt.id) {
+        stuecklisteKategorieFilter = '';
+        stuecklisteFilterProjektId = projekt.id;
+    }
+
     document.getElementById('stueckliste-titel').textContent =
         `Stückliste - ${projekt.projektnummer} - ${projekt.name}`;
 
@@ -698,6 +786,9 @@ export function renderStueckliste() {
             `Projekt: ${projekt.projektnummer || '–'} – ${projekt.name || '–'}`,
             projekt.kunde ? `Kunde: ${projekt.kunde}` : '',
             projekt.liefertermin ? `Liefertermin: ${formatDatumDe(projekt.liefertermin)}` : '',
+            stuecklisteKategorieFilter
+                ? `Filter: ${getKategorieName(stuecklisteKategorieFilter)}`
+                : '',
             `Druck: ${new Date().toLocaleDateString('de-DE')}`
         ].filter(Boolean);
         druckMeta.textContent = metaTeile.join(' · ');
@@ -711,12 +802,24 @@ export function renderStueckliste() {
     const tbody = document.getElementById('stueckliste-body');
     const emptyState = document.getElementById('keine-stueckliste');
     const tableContainer = document.getElementById('stueckliste-leitungen-table');
-    const leitungEintraege = getLeitungEintraege();
+    const alleLeitungEintraege = getLeitungEintraege();
+    renderStuecklisteFilter(alleLeitungEintraege);
+    const leitungEintraege = filterLeitungEintraegeNachKategorie(alleLeitungEintraege);
 
-    if (leitungEintraege.length === 0) {
+    if (alleLeitungEintraege.length === 0) {
         tbody.innerHTML = '';
         if (tableContainer) tableContainer.style.display = 'none';
         emptyState.style.display = 'block';
+        emptyState.querySelector('h3').textContent = 'Keine Leitungen vorhanden';
+        emptyState.querySelector('p').textContent =
+            'Legen Sie zuerst Leitungen an, um eine Stückliste zu erhalten.';
+    } else if (leitungEintraege.length === 0) {
+        tbody.innerHTML = '';
+        if (tableContainer) tableContainer.style.display = 'none';
+        emptyState.style.display = 'block';
+        emptyState.querySelector('h3').textContent = 'Keine Treffer für diesen Filter';
+        emptyState.querySelector('p').textContent =
+            `In diesem Projekt sind keine Leitungen vom Typ „${getKategorieName(stuecklisteKategorieFilter)}“ vorhanden.`;
     } else {
         tbody.innerHTML = leitungEintraege.map(entry => `
             <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
@@ -766,6 +869,17 @@ export function renderStueckliste() {
 
     if (bauteileTable) bauteileTable.style.display = 'block';
     bauteileEmpty.style.display = 'none';
+}
+
+
+/**
+ * Setzt den Leitungstyp-Filter und rendert die Stückliste neu.
+ * @param {string} kategorie
+ * @returns {void}
+ */
+export function stuecklisteSetKategorieFilter(kategorie) {
+    stuecklisteKategorieFilter = String(kategorie || '').trim();
+    renderStueckliste();
 }
 
 
