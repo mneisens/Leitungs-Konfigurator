@@ -4329,16 +4329,27 @@ select.vorschlag-laenge:focus {
 
 .topo-edge {
     cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+/* Dunkle Kontur unter jeder Leitung: Kreuzungen bleiben lesbar. */
+.topo-edge-kontur {
+    fill: none;
+    stroke: #0f172a;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
 }
 
 .topo-edge-line {
     fill: none;
-    stroke: #e2e8f0;
-    stroke-width: 2.5;
+    stroke: var(--farbe, #e2e8f0);
+    stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
     pointer-events: none;
-    transition: stroke 0.12s ease, stroke-width 0.12s ease;
+    transition: stroke-width 0.12s ease;
 }
 
 .topo-edge-hit {
@@ -4349,36 +4360,53 @@ select.vorschlag-laenge:focus {
     cursor: pointer;
 }
 
-.topo-edge:hover .topo-edge-line,
-.topo-edge.hover .topo-edge-line {
-    stroke: #38bdf8;
-    stroke-width: 3.5;
-}
-
-.topo-edge.aktiv .topo-edge-line {
-    stroke: #fb923c;
-    stroke-width: 3.5;
-}
-
-.topo-edge.aktiv:hover .topo-edge-line,
-.topo-edge.aktiv.hover .topo-edge-line {
-    stroke: #fdba74;
-    stroke-width: 4;
-}
-
-.topo-edge-label {
-    fill: #cbd5e1;
-    font-size: 12px;
-    text-anchor: middle;
+.topo-edge-start,
+.topo-edge-pfeil {
+    fill: var(--farbe, #e2e8f0);
+    stroke: #0f172a;
+    stroke-width: 1.5;
     pointer-events: none;
-    transition: fill 0.12s ease;
 }
 
-.topo-edge:hover .topo-edge-label,
-.topo-edge.hover .topo-edge-label,
-.topo-edge.aktiv .topo-edge-label {
-    fill: #f8fafc;
+.topo-edge-badge {
+    pointer-events: none;
+}
+
+.topo-edge-badge rect {
+    fill: #0f172a;
+    stroke: var(--farbe, #e2e8f0);
+    stroke-width: 1.5;
+}
+
+.topo-edge-badge text {
+    fill: var(--farbe, #e2e8f0);
+    font-family: var(--font-mono);
+    font-size: 11px;
     font-weight: 600;
+    text-anchor: middle;
+}
+
+/* Hover auf Leitung, Modul oder Listeneintrag: übrige Leitungen treten zurück. */
+.topo-edges.fokus .topo-edge:not(.hover):not(.aktiv) {
+    opacity: 0.18;
+}
+
+.topo-edge.hover .topo-edge-line,
+.topo-edge.aktiv .topo-edge-line {
+    stroke-width: 4.5;
+}
+
+.topo-edge.hover .topo-edge-kontur,
+.topo-edge.aktiv .topo-edge-kontur {
+    stroke-width: 10;
+}
+
+.topo-edge.aktiv .topo-edge-badge rect {
+    fill: var(--farbe);
+}
+
+.topo-edge.aktiv .topo-edge-badge text {
+    fill: #0f172a;
 }
 
 .topo-canvas {
@@ -5726,4 +5754,99 @@ mark {
     .gk-optionen {
         margin-bottom: 1rem;
     }
+}
+
+
+/* ----- Topologie: belegte Ports, Modulkürzel, Leitungsliste ----- */
+.topo-modul-port.verbunden::before {
+    box-shadow: inset 0 0 0 2px #166534, 0 0 0 3px #0f172a, 0 0 0 5.5px var(--port-farbe);
+}
+
+.topo-modul-kuerzel {
+    position: absolute;
+    top: -9px;
+    left: -9px;
+    z-index: 7;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    background: #0f172a;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-color);
+    pointer-events: none;
+}
+
+.topo-legende-richtung {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+
+.topo-leitungsliste {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: 0.35rem 1rem;
+    margin: 0.75rem 0 0;
+    padding: 0.85rem 1rem;
+    list-style: none;
+}
+
+.topo-leitungsliste button {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.55rem;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid transparent;
+    border-left: 3px solid var(--farbe);
+    border-radius: 6px;
+    background: none;
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.88rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.topo-leitungsliste li.hover button,
+.topo-leitungsliste li.aktiv button,
+.topo-leitungsliste button:focus-visible {
+    border-color: var(--farbe);
+    background: rgba(255, 255, 255, 0.04);
+    outline: none;
+}
+
+.topo-liste-nr {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: var(--farbe);
+    color: #0f172a;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.topo-liste-modul b {
+    font-family: var(--font-mono);
+    color: var(--farbe);
+}
+
+.topo-liste-pfeil {
+    color: var(--text-muted);
+}
+
+.topo-liste-details {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.topo-liste-details.offen {
+    color: var(--primary-color);
 }

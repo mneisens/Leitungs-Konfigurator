@@ -130,7 +130,10 @@ import {
     topoVerbindungAbbrechen,
     topoSchliesseLeitungEditor,
     topoUpdateLeitung,
-    topoLoescheLeitung
+    topoLoescheLeitung,
+    topoHebeLeitungHervor,
+    topoHebeModulHervor,
+    topoOeffneLeitung
 } from './js/topologie.js';
 document.addEventListener('keydown', e => {
     const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
@@ -339,5 +342,8 @@ Object.assign(window, {
     topoVerbindungAbbrechen,
     topoSchliesseLeitungEditor,
     topoUpdateLeitung,
-    topoLoescheLeitung
+    topoLoescheLeitung,
+    topoHebeLeitungHervor,
+    topoHebeModulHervor,
+    topoOeffneLeitung
 });
