@@ -57,6 +57,8 @@ export function showView(viewName) {
 export function updateShellNav(viewName) {
     const isAuth = viewName === 'auth';
     document.body.classList.toggle('auth-layout', isAuth);
+    // Der Gruppen-Konfigurator ist ein Vollbild-Arbeitsbereich mit eigener Kopfzeile.
+    document.body.classList.toggle('fokus-layout', viewName === 'gruppen');
 
     const topbarTitle = document.getElementById('topbar-title');
     if (topbarTitle) {

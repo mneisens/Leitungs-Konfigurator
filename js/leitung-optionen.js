@@ -365,7 +365,8 @@ export function getKonfektionierteKatalogArtikel(filter = {}) {
                 formatSteckerKurz(a.steckerA),
                 formatSteckerKurz(a.steckerB)
             ].join(' ').toLowerCase();
-            return haystack.includes(suche);
+            // Jedes Wort muss vorkommen – „m12 off“ findet „M12 Buchse → offenes Ende“.
+            return suche.split(/\s+/).every(wort => haystack.includes(wort));
         })
         .slice()
         .sort((a, b) => (a.artikelnummer || '').localeCompare(b.artikelnummer || '', 'de'))

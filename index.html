@@ -389,36 +389,50 @@
 
         <!-- View: Gruppen-Konfigurator -->
         <section id="view-gruppen" class="view">
-            <div class="view-header">
-                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
-                <h2 id="gruppen-titel">Gruppen-Konfigurator</h2>
-            </div>
+            <div class="gk">
+                <header class="gk-kopf" id="gk-kopf">
+                    <!-- Projekt, Fortschritt über alle Gruppen, Navigation -->
+                </header>
 
-            <div class="gruppen-layout">
-                <aside class="form-card gruppen-sidebar">
-                    <div class="form-group gruppen-suche-group">
-                        <label for="gruppen-suche">Suche</label>
-                        <input type="search" id="gruppen-suche" placeholder="Gruppe oder Bezeichnung…" oninput="filterGruppenListe()">
+                <aside class="gk-links">
+                    <div id="gk-gruppe">
+                        <!-- Aktuelle Gruppe und „Als Nächstes“ -->
                     </div>
-                    <div id="gruppen-liste" class="gruppen-liste"></div>
-                    <div id="gruppen-neu-form-wrap" class="gruppen-neu-form">
-                        <h4>Zusatzgruppe anlegen</h4>
-                        <p class="text-muted">Für projektspezifische Gruppen wie =050 Ziehkissen.</p>
-                        <div class="form-group">
-                            <label for="gruppen-neu-nummer">Gruppennummer</label>
-                            <input type="text" id="gruppen-neu-nummer" placeholder="z. B. 050">
+
+                    <details class="gk-alle" id="gk-alle">
+                        <summary>Alle Gruppen</summary>
+                        <input type="search" id="gruppen-suche" class="gk-alle-suche" placeholder="Gruppe oder Bezeichnung…"
+                               aria-label="Gruppen durchsuchen" oninput="filterGruppenListe()">
+                        <div id="gruppen-liste" class="gruppen-liste"></div>
+                        <div id="gruppen-neu-form-wrap" class="gruppen-neu-form">
+                            <h4>Zusatzgruppe anlegen</h4>
+                            <p class="text-muted">Für projektspezifische Gruppen wie =050 Ziehkissen.</p>
+                            <div class="form-group">
+                                <label for="gruppen-neu-nummer">Gruppennummer</label>
+                                <input type="text" id="gruppen-neu-nummer" placeholder="z. B. 050">
+                            </div>
+                            <div class="form-group">
+                                <label for="gruppen-neu-bezeichnung">Bezeichnung</label>
+                                <input type="text" id="gruppen-neu-bezeichnung" placeholder="z. B. Ziehkissen">
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-small btn-block" onclick="gruppeSaveNeueGruppe()">+ Gruppe hinzufügen</button>
                         </div>
-                        <div class="form-group">
-                            <label for="gruppen-neu-bezeichnung">Bezeichnung</label>
-                            <input type="text" id="gruppen-neu-bezeichnung" placeholder="z. B. Ziehkissen">
-                        </div>
-                        <button type="button" class="btn btn-primary btn-small btn-block" onclick="gruppeSaveNeueGruppe()">+ Gruppe hinzufügen</button>
-                    </div>
+                    </details>
+
+                    <dl class="gk-tasten">
+                        <dt><kbd>J</kbd> / <kbd>K</kbd></dt><dd>Gruppe wechseln</dd>
+                        <dt><kbd>/</kbd></dt><dd>Leitung suchen</dd>
+                        <dt><kbd>⌘</kbd> <kbd>⏎</kbd></dt><dd>Gruppe abschließen</dd>
+                    </dl>
                 </aside>
 
-                <div class="gruppen-main" id="gruppen-main">
-                    <!-- Gruppenpanel wird dynamisch eingefügt -->
+                <div class="gk-mitte" id="gruppen-main">
+                    <!-- Suche, Leitungen und Vorschläge der Gruppe -->
                 </div>
+
+                <aside class="gk-rechts" id="gk-rechts">
+                    <!-- Stückliste der Gruppe, Bauteile, Abschließen -->
+                </aside>
             </div>
         </section>
 

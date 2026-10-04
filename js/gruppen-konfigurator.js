@@ -46,8 +46,6 @@ import { showModal } from './modal.js';
 let aktiveGruppe = '';
 /** Suchtext der Gruppenliste. */
 let gruppenSuche = '';
-/** Leitungen, bei denen die Länge frei eingegeben statt aus dem Katalog gewählt wird. */
-const freieLaengeIds = new Set();
 /** Leitung, die gerade im Formular unter der Übersicht bearbeitet wird. */
 let aktiveLeitungId = '';
 /** Bauteil, das gerade im Formular unter der Übersicht bearbeitet wird. */
@@ -273,12 +271,11 @@ export function gruppeAendereAnzahl(art, id, delta) {
  */
 export function renderGruppenKonfigurator() {
     const projekt = appState.currentProjekt;
-    const titel = document.getElementById('gruppen-titel');
+    registriereGruppenEreignisse();
 
     if (!projekt) {
-        if (titel) titel.textContent = 'Gruppen-Konfigurator';
         const main = document.getElementById('gruppen-main');
-        if (main) main.innerHTML = '<div class="form-card"><p class="text-muted">Bitte zuerst ein Projekt öffnen.</p></div>';
+        if (main) main.innerHTML = '<p class="gk-leer">Bitte zuerst ein Projekt öffnen.</p>';
         return;
     }
 
@@ -286,10 +283,6 @@ export function renderGruppenKonfigurator() {
     if (!projekt.leitungen) projekt.leitungen = [];
     if (!projekt.bauteile) projekt.bauteile = [];
     if (!Array.isArray(projekt.zusaetzlicheGruppen)) projekt.zusaetzlicheGruppen = [];
-
-    if (titel) {
-        titel.textContent = `Gruppen-Konfigurator – ${projekt.projektnummer || ''} ${projekt.name || ''}`.trim();
-    }
 
     const pendingCode = appState.pendingGruppenCode || '';
     const pendingLeitungId = appState.pendingGruppenEditLeitungId || '';
@@ -478,7 +471,6 @@ export async function gruppeDeleteZusaetzlicheGruppe() {
     if (leitungen.length) {
         const leitungIds = new Set(leitungen.map(l => l.id));
         projekt.leitungen = (projekt.leitungen || []).filter(l => !leitungIds.has(l.id));
-        leitungen.forEach(l => freieLaengeIds.delete(l.id));
         renumberLeitungen();
     }
 
@@ -522,7 +514,7 @@ export function selectGruppe(code) {
     pickerState = null;
     renderGruppenListe();
     renderGruppenPanel();
-    document.getElementById('gruppen-main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('gruppen-main')?.scrollTo({ top: 0 });
 }
 
 
@@ -540,7 +532,7 @@ export function gruppeWechseln(richtung) {
 
 
 /**
- * Zeichnet das Panel der aktiven Gruppe.
+ * Zeichnet die Mitte (Suche, Leitungen, Vorschläge) und den Rahmen der aktiven Gruppe.
  * @returns {void}
  */
 function renderGruppenPanel() {
@@ -549,82 +541,445 @@ function renderGruppenPanel() {
 
     const gruppe = getGruppe(aktiveGruppe);
     if (!gruppe) {
-        main.innerHTML = '<div class="form-card"><p class="text-muted">Keine Gruppe ausgewählt.</p></div>';
+        main.innerHTML = '<p class="gk-leer">Keine Gruppe ausgewählt.</p>';
+        renderGruppenRahmen();
         return;
     }
 
     const vorgaben = getGruppenVorgaben(gruppe);
-    const status = getGruppenStatus(gruppe.code);
     const leitungen = getLeitungenDerGruppe(gruppe.code);
-    const bauteile = getBauteileDerGruppe(gruppe.code);
     const gesperrt = istSchreibgeschuetzt();
-    const disabled = gesperrt ? ' disabled' : '';
-
-    const gruppen = getGruppen();
-    const index = gruppen.findIndex(g => g.code === gruppe.code);
-    const leitungVorschlaege = getOffeneLeitungVorschlaege(gruppe.code);
-    const bauteilVorschlaege = getOffeneBauteilVorschlaege(gruppe.code);
-    const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
     const zeigeLeitungen = !vorgaben.nurBauteile || leitungen.length > 0;
 
     main.innerHTML = `
-        <div class="form-card gruppen-panel">
-            <div class="gruppen-panel-kopf">
-                <div>
-                    <span class="gruppen-panel-code">${escapeHtml(gruppe.code)}</span>
-                    <h3>${escapeHtml(gruppe.bezeichnung)}${gruppe.custom ? ' <span class="gruppen-badge zusaetzlich">Zusatzgruppe</span>' : ''}</h3>
-                </div>
-                <div class="gruppen-panel-meta">
-                    <span class="gruppen-panel-position">Gruppe ${index + 1} von ${gruppen.length}</span>
-                    <label class="wizard-skip-label gruppen-entfaellt-label">
-                        <input type="checkbox" id="gruppen-nicht-benoetigt"
-                               ${status.nichtBenoetigt ? 'checked' : ''}${disabled}
-                               onchange="toggleGruppeNichtBenoetigt(this.checked)">
-                        Nicht benötigt
-                    </label>
-                    ${!gesperrt && gruppe.custom ? `<button type="button" class="btn btn-danger btn-small" onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
-                    ${gesperrt ? '' : renderGruppenAddButtons(zeigeBauteile, zeigeLeitungen)}
-                </div>
+        ${zeigeLeitungen ? `
+            ${gesperrt ? '' : renderLeitungSuche()}
+            <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen)}</div>
+            ${gesperrt ? '' : `<div id="gk-vorschlaege">${renderLeitungVorschlaege(gruppe)}</div>`}
+        ` : `
+            <div class="gk-leer">
+                <p>In ${escapeHtml(gruppe.code)} werden nur Bauteile erfasst.</p>
+                ${gesperrt ? '' : `<button type="button" class="btn btn-secondary btn-small"
+                        onclick="gruppeOpenPicker('bauteil')">+ Bauteil hinzufügen</button>`}
             </div>
-
-            ${renderGruppenCadLinks()}
-
-            ${vorgaben.hinweis ? `<p class="gruppen-hinweis">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
-
-            ${zeigeBauteile ? `
-            <div class="gruppen-abschnitt">
-                <div class="gruppen-abschnitt-kopf">
-                    <h4>Bauteile <span class="gruppen-anzahl">${bauteile.length}</span></h4>
-                </div>
-                <div id="gruppen-bauteile-tabelle">${renderBauteilTabelle(bauteile, bauteilVorschlaege)}</div>
-            </div>
-            ` : ''}
-
-            ${zeigeLeitungen ? `
-            <div class="gruppen-abschnitt">
-                <div class="gruppen-abschnitt-kopf">
-                    <h4>Leitungen <span class="gruppen-anzahl">${leitungen.length}</span></h4>
-                    ${gesperrt ? '' : renderLeitungVorschlaegeAktion()}
-                </div>
-                <div id="gruppen-leitungen-tabelle">${renderLeitungTabelle(leitungen, leitungVorschlaege)}</div>
-            </div>
-            ` : ''}
-
-            <div class="form-actions gruppen-nav">
-                <button type="button" class="btn btn-secondary" onclick="gruppeWechseln(-1)"${index <= 0 ? ' disabled' : ''}>
-                    ← Vorherige Gruppe
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">Zur Übersicht</button>
-                <button type="button" class="btn btn-primary" onclick="gruppeWechseln(1)"${index >= gruppen.length - 1 ? ' disabled' : ''}>
-                    Nächste Gruppe →
-                </button>
-            </div>
-        </div>
+        `}
         ${gesperrt ? '' : renderNeuesBauteilFormular()}
         ${gesperrt ? '' : renderNeuesLeitungFormular()}
         ${renderBauteilEditor()}
         ${renderLeitungEditor()}
         ${renderPicker()}
+    `;
+
+    renderGruppenRahmen();
+    if (pickerState?.art === 'leitung') {
+        const input = document.getElementById('gk-suche-input');
+        if (input) input.value = pickerState.suche || '';
+        aktualisiereLeitungDropdown();
+    }
+}
+
+
+/**
+ * Kopfzeile, linke und rechte Spalte – alles, was sich bei Änderungen an
+ * Leitungen oder Bauteilen mitändert (Zähler, Fortschritt, Stückliste).
+ * @returns {void}
+ */
+function renderGruppenRahmen() {
+    const kopf = document.getElementById('gk-kopf');
+    if (kopf) kopf.innerHTML = renderGruppenKopf();
+    const links = document.getElementById('gk-gruppe');
+    if (links) links.innerHTML = renderGruppeLinks();
+    const rechts = document.getElementById('gk-rechts');
+    if (rechts) rechts.innerHTML = renderGruppeRechts();
+}
+
+
+/**
+ * Status einer Gruppe ohne ihn anzulegen (für Listen über alle Gruppen).
+ * @param {string} code
+ * @returns {object}
+ */
+function leseGruppenStatus(code) {
+    return appState.currentProjekt?.gruppenStatus?.[code] || {};
+}
+
+
+/**
+ * @param {object} gruppe
+ * @returns {string} CSS-Klasse für Fortschritt und Listen.
+ */
+function getGruppenZustand(gruppe) {
+    const status = leseGruppenStatus(gruppe.code);
+    if (status.abgeschlossen) return 'fertig';
+    if (status.nichtBenoetigt) return 'entfaellt';
+    if (getLeitungenDerGruppe(gruppe.code).length || getBauteileDerGruppe(gruppe.code).length) return 'befuellt';
+    return 'offen';
+}
+
+
+/**
+ * Projekt, Fortschrittsleiste über alle Gruppen und Navigation.
+ * @returns {string}
+ */
+function renderGruppenKopf() {
+    const projekt = appState.currentProjekt;
+    if (!projekt) return '';
+
+    const gruppen = getGruppen();
+    const index = gruppen.findIndex(g => g.code === aktiveGruppe);
+    const fertig = gruppen.filter(g => leseGruppenStatus(g.code).abgeschlossen).length;
+    const zustandText = { fertig: 'abgeschlossen', entfaellt: 'nicht benötigt', befuellt: 'in Arbeit', offen: 'offen' };
+
+    const segmente = gruppen.map(g => {
+        const zustand = getGruppenZustand(g);
+        const aktiv = g.code === aktiveGruppe ? ' aktiv' : '';
+        const titel = `${g.code} ${g.bezeichnung} – ${zustandText[zustand]}`;
+        return `<button type="button" class="gk-seg ${zustand}${aktiv}" title="${escapeAttr(titel)}"
+                        aria-label="${escapeAttr(titel)}" onclick="selectGruppe('${jsArg(g.code)}')"></button>`;
+    }).join('');
+
+    return `
+        <button type="button" class="gk-projekt" onclick="showView('uebersicht')" title="Zur Projektübersicht">
+            <span class="gk-label">Projekt ${escapeHtml(projekt.projektnummer || '')}</span>
+            <strong>${escapeHtml(projekt.name || 'Ohne Namen')}</strong>
+        </button>
+        <div class="gk-fortschritt">
+            <div class="gk-segmente">${segmente}</div>
+            <div class="gk-fortschritt-text">
+                <span>${escapeHtml(gruppen[0]?.code || '')}</span>
+                <span class="gk-akzent">Gruppe ${index + 1} / ${gruppen.length} · ${fertig} abgeschlossen</span>
+                <span>${escapeHtml(gruppen[gruppen.length - 1]?.code || '')}</span>
+            </div>
+        </div>
+        <nav class="gk-kopf-aktionen">
+            <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">Übersicht</button>
+            <button type="button" class="btn btn-secondary" onclick="showView('stueckliste')">Stückliste</button>
+        </nav>
+    `;
+}
+
+
+/**
+ * Linke Spalte: aktuelle Gruppe groß, Hinweise, CAD und die nächsten Gruppen.
+ * @returns {string}
+ */
+function renderGruppeLinks() {
+    const gruppe = getGruppe(aktiveGruppe);
+    if (!gruppe) return '';
+
+    const gesperrt = istSchreibgeschuetzt();
+    const status = leseGruppenStatus(gruppe.code);
+    const vorgaben = getGruppenVorgaben(gruppe);
+    const gruppen = getGruppen();
+    const index = gruppen.findIndex(g => g.code === gruppe.code);
+    const naechste = gruppen.slice(index + 1, index + 6);
+
+    const cad = (appState.currentProjekt?.cadLinks || []).filter(l => l?.url).map(link => {
+        const label = (link.label || '').trim() || 'CAD öffnen';
+        return `<a href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer"
+                   title="${escapeAttr(link.url)}">${escapeHtml(label)}</a>`;
+    });
+
+    return `
+        <p class="gk-label gk-akzent">Aktuelle Gruppe${status.abgeschlossen ? ' · abgeschlossen ✓' : ''}</p>
+        <div class="gk-code">${escapeHtml(gruppe.code)}</div>
+        <h2 class="gk-name">${escapeHtml(gruppe.bezeichnung)}</h2>
+        ${gruppe.custom ? '<span class="gruppen-badge zusaetzlich">Zusatzgruppe</span>' : ''}
+        ${vorgaben.hinweis ? `<p class="gk-meta">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
+        ${cad.length ? `<p class="gk-meta">CAD: ${cad.join(' · ')}</p>` : ''}
+
+        <div class="gk-optionen">
+            <label class="gk-schalter">
+                <input type="checkbox" ${status.nichtBenoetigt ? 'checked' : ''}${gesperrt ? ' disabled' : ''}
+                       onchange="toggleGruppeNichtBenoetigt(this.checked)">
+                Nicht benötigt
+            </label>
+            ${!gesperrt && gruppe.custom ? `<button type="button" class="gk-link gk-link-gefahr"
+                    onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
+        </div>
+
+        ${naechste.length ? `
+            <p class="gk-label gk-naechste-label">Als Nächstes</p>
+            <ol class="gk-naechste">
+                ${naechste.map(g => `
+                    <li>
+                        <button type="button" class="${getGruppenZustand(g)}" onclick="selectGruppe('${jsArg(g.code)}')">
+                            <span class="gk-naechste-code">${escapeHtml(g.code)}</span>
+                            <span>${escapeHtml(g.bezeichnung)}</span>
+                        </button>
+                    </li>
+                `).join('')}
+            </ol>
+        ` : ''}
+    `;
+}
+
+
+/**
+ * Rechte Spalte: Kennzahlen, Bauteile der Gruppe und Abschluss.
+ * @returns {string}
+ */
+function renderGruppeRechts() {
+    const gruppe = getGruppe(aktiveGruppe);
+    if (!gruppe) return '';
+
+    const gesperrt = istSchreibgeschuetzt();
+    const vorgaben = getGruppenVorgaben(gruppe);
+    const leitungen = getLeitungenDerGruppe(gruppe.code);
+    const bauteile = getBauteileDerGruppe(gruppe.code);
+    const bauteilVorschlaege = getOffeneBauteilVorschlaege(gruppe.code);
+    const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
+
+    const stueck = liste => liste.reduce((summe, e) => summe + (Number(e.anzahl) || 1), 0);
+    const gesamtLaenge = leitungen.reduce((summe, l) => summe + (Number(l.laenge) || 0) * (Number(l.anzahl) || 1), 0);
+    const offen = getOffeneLeitungVorschlaege(gruppe.code).length + bauteilVorschlaege.length;
+
+    return `
+        <p class="gk-label">Stückliste ${escapeHtml(gruppe.code)}</p>
+        <div class="gk-stats">
+            <div><strong>${stueck(leitungen)}</strong><span>Leitungen</span></div>
+            <div><strong>${formatLaenge(Math.round(gesamtLaenge * 10) / 10) || 0}<small>m</small></strong><span>Gesamtlänge</span></div>
+            <div><strong>${stueck(bauteile)}</strong><span>Bauteile</span></div>
+            <div class="${offen ? 'gk-akzent' : ''}"><strong>${offen}</strong><span>Vorschläge offen</span></div>
+        </div>
+
+        ${zeigeBauteile ? `
+            <p class="gk-label">Bauteile</p>
+            <div id="gruppen-bauteile-tabelle">${renderBauteilListe(bauteile, gesperrt ? [] : bauteilVorschlaege)}</div>
+            ${gesperrt ? '' : `<button type="button" class="gk-link" onclick="gruppeOpenPicker('bauteil')">+ Bauteil</button>`}
+        ` : ''}
+
+        <div class="gk-abschluss">${renderGruppenAbschluss(gruppe, gesperrt)}</div>
+    `;
+}
+
+
+/**
+ * „Gruppe abschließen“ bzw. – wenn schon erledigt – weiter zur nächsten Gruppe.
+ * @param {object} gruppe
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderGruppenAbschluss(gruppe, gesperrt) {
+    const gruppen = getGruppen();
+    const naechste = gruppen[gruppen.findIndex(g => g.code === gruppe.code) + 1];
+    const weiterText = naechste
+        ? `weiter zu ${escapeHtml(naechste.code)} ${escapeHtml(naechste.bezeichnung)}`
+        : 'Das ist die letzte Gruppe';
+
+    if (leseGruppenStatus(gruppe.code).abgeschlossen) {
+        return `
+            <p class="gk-erledigt">✓ ${escapeHtml(gruppe.code)} ist abgeschlossen
+                ${gesperrt ? '' : '<button type="button" class="gk-link" onclick="gruppeWiederOeffnen()">wieder öffnen</button>'}
+            </p>
+            ${naechste ? `<button type="button" class="gk-abschliessen" onclick="gruppeWechseln(1)">
+                Weiter zu ${escapeHtml(naechste.code)} →</button>` : ''}
+        `;
+    }
+
+    return `
+        <button type="button" class="gk-abschliessen" onclick="gruppeAbschliessen()"${gesperrt ? ' disabled' : ''}>
+            Gruppe abschließen <kbd>⌘ ⏎</kbd>
+        </button>
+        <p class="gk-weiter">${weiterText}</p>
+    `;
+}
+
+
+/**
+ * Markiert die aktive Gruppe als abgeschlossen und springt zur nächsten.
+ * @returns {void}
+ */
+export function gruppeAbschliessen() {
+    if (!assertCanEdit('Gruppen abschließen')) return;
+    const gruppen = getGruppen();
+    const index = gruppen.findIndex(g => g.code === aktiveGruppe);
+    if (index === -1) return;
+
+    getGruppenStatus(aktiveGruppe).abgeschlossen = true;
+    persistCurrentProjekt();
+
+    const naechste = gruppen[index + 1];
+    if (naechste) {
+        selectGruppe(naechste.code);
+        return;
+    }
+    renderGruppenListe();
+    renderGruppenPanel();
+}
+
+
+/**
+ * @returns {void}
+ */
+export function gruppeWiederOeffnen() {
+    if (!assertCanEdit('Gruppen ändern')) return;
+    getGruppenStatus(aktiveGruppe).abgeschlossen = false;
+    persistCurrentProjekt();
+    renderGruppenListe();
+    renderGruppenPanel();
+}
+
+
+/**
+ * Tastenkürzel des Arbeitsbereichs: / Suche, J/K Gruppe wechseln, ⌘/Strg+Enter abschließen.
+ * @param {KeyboardEvent} event
+ * @returns {void}
+ */
+function gruppeTastenkuerzel(event) {
+    if (!document.getElementById('view-gruppen')?.classList.contains('active')) return;
+    if (document.querySelector('.editor-overlay, .picker-overlay, #modal-overlay.active, #bauteil-edit-overlay.active')) return;
+
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+        event.preventDefault();
+        if (leseGruppenStatus(aktiveGruppe).abgeschlossen) gruppeWechseln(1);
+        else gruppeAbschliessen();
+        return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+
+    if (event.key === '/') {
+        event.preventDefault();
+        gruppeOpenPicker('leitung');
+    } else if (event.key === 'j' || event.key === 'J') {
+        gruppeWechseln(1);
+    } else if (event.key === 'k' || event.key === 'K') {
+        gruppeWechseln(-1);
+    }
+}
+
+
+let gruppenTastenAktiv = false;
+
+/**
+ * Tastenkürzel und „Klick daneben schließt die Suche“ einmalig registrieren.
+ * @returns {void}
+ */
+function registriereGruppenEreignisse() {
+    if (gruppenTastenAktiv) return;
+    gruppenTastenAktiv = true;
+    document.addEventListener('keydown', gruppeTastenkuerzel);
+    document.addEventListener('mousedown', event => {
+        if (pickerState?.art === 'leitung' && !event.target.closest?.('#gk-suche')) gruppeClosePicker();
+    });
+}
+
+
+/**
+ * Suchfeld über der Leitungstabelle; die Treffer klappen darunter auf.
+ * @returns {string}
+ */
+function renderLeitungSuche() {
+    return `
+        <div class="gk-suche" id="gk-suche">
+            <label class="gk-suche-feld">
+                <span class="gk-suche-slash" aria-hidden="true">/</span>
+                <input type="search" id="gk-suche-input" autocomplete="off" spellcheck="false"
+                       placeholder="Leitung suchen: M12 offen, ZK1090, Ölflex …"
+                       aria-label="Leitung suchen und hinzufügen"
+                       onfocus="gruppeSucheOeffnen()"
+                       oninput="gruppeOnPickerSuche(this.value)"
+                       onkeydown="gruppeOnPickerTaste(event)">
+                <span class="gk-suche-treffer" id="gk-treffer"></span>
+            </label>
+            <div class="gk-dropdown" id="gk-dropdown" hidden>
+                <div class="picker-filter" id="gk-filter"></div>
+                <div class="picker-ergebnisse" id="gk-ergebnisse" onkeydown="gruppeOnPickerListeTaste(event)"></div>
+                <div class="gk-dropdown-fuss">
+                    <span class="picker-tipp">Länge anklicken = sofort übernehmen · ↑↓ ⏎ · Esc</span>
+                    <button type="button" class="btn btn-secondary btn-small"
+                            onclick="gruppeAddLeitungMitKategorie()">Selbst zusammenstellen</button>
+                    <button type="button" class="btn btn-secondary btn-small"
+                            onclick="gruppeOpenLeitungFormular('', '')">+ Neu im Katalog</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+/**
+ * Öffnet bzw. aktualisiert die Trefferliste unter dem Suchfeld.
+ * @returns {void}
+ */
+function aktualisiereLeitungDropdown() {
+    const dropdown = document.getElementById('gk-dropdown');
+    if (!dropdown) return;
+
+    const offen = pickerState?.art === 'leitung';
+    dropdown.hidden = !offen;
+    document.getElementById('gk-suche')?.classList.toggle('offen', offen);
+    const treffer = document.getElementById('gk-treffer');
+    if (!offen) {
+        if (treffer) treffer.textContent = '';
+        return;
+    }
+
+    const filter = document.getElementById('gk-filter');
+    if (filter) filter.innerHTML = renderPickerFilter();
+    const ergebnisse = document.getElementById('gk-ergebnisse');
+    if (ergebnisse) ergebnisse.innerHTML = renderPickerErgebnisse();
+
+    if (treffer) {
+        const anzahl = ergebnisse ? ergebnisse.querySelectorAll('.picker-eintrag').length : 0;
+        treffer.textContent = pickerState.suche.trim() || pickerState.kategorie
+            ? `${anzahl} Treffer`
+            : '';
+    }
+}
+
+
+/**
+ * Fokus im Suchfeld: Trefferliste öffnen.
+ * @returns {void}
+ */
+export function gruppeSucheOeffnen() {
+    if (istSchreibgeschuetzt()) return;
+    if (pickerState?.art !== 'leitung') {
+        const input = document.getElementById('gk-suche-input');
+        pickerState = { art: 'leitung', suche: input?.value || '', kategorie: '' };
+    }
+    aktualisiereLeitungDropdown();
+}
+
+
+/**
+ * Vorschläge der Gruppe als Pillen unter der Tabelle – ein Klick übernimmt.
+ * @param {object} gruppe
+ * @returns {string}
+ */
+function renderLeitungVorschlaege(gruppe) {
+    const vorschlaege = getOffeneLeitungVorschlaege(gruppe.code);
+    const ausgeblendet = renderLeitungVorschlaegeAktion();
+    if (!vorschlaege.length && !ausgeblendet) return '';
+
+    const pillen = vorschlaege.map(preset => {
+        const id = jsArg(preset.id);
+        // Ohne Katalog-Längen (Meterware) braucht es das Fenster für Typ und Länge.
+        const imFenster = !getPresetLaengen(preset).length && istMeterwareKategorie(preset.kategorie);
+        const laenge = Number(preset.laenge) > 0 ? ` · ${formatLaenge(preset.laenge)} m` : '';
+        return `
+            <span class="gk-vorschlag">
+                <button type="button" title="${escapeAttr(getPresetBeschreibung(preset))}"
+                        onclick="${imFenster ? `gruppeAddLeitung('${id}')` : `gruppeVorschlagUebernehmen('${id}', '')`}">
+                    + ${escapeHtml(preset.label)}${laenge}
+                </button>
+                <button type="button" class="gk-vorschlag-weg" title="Vorschlag in diesem Projekt ausblenden"
+                        aria-label="Vorschlag ausblenden" onclick="gruppeVorschlagAusblenden('${id}')">×</button>
+            </span>
+        `;
+    }).join('');
+
+    return `
+        <div class="gk-vorschlaege">
+            <span class="gk-label">Typisch für ${escapeHtml(gruppe.bezeichnung)}</span>
+            ${pillen}
+            ${vorschlaege.length > 1 ? `<button type="button" class="gk-link"
+                    onclick="gruppeAlleVorschlaegeUebernehmen()">Alle übernehmen</button>` : ''}
+            ${ausgeblendet}
+        </div>
     `;
 }
 
@@ -642,6 +997,7 @@ export function toggleGruppeNichtBenoetigt(checked) {
     getGruppenStatus(aktiveGruppe).nichtBenoetigt = Boolean(checked);
     persistCurrentProjekt();
     renderGruppenListe();
+    renderGruppenRahmen();
 }
 
 
@@ -706,55 +1062,8 @@ export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
 }
 
 
-/**
- * Projektweite CAD-Links zum Öffnen der Konstruktion (überall dieselben).
- * @returns {string}
- */
-function renderGruppenCadLinks() {
-    const links = (appState.currentProjekt?.cadLinks || []).filter(l => l?.url);
-    if (!links.length) return '';
-
-    const buttons = links.map(link => {
-        const label = (link.label || '').trim() || 'CAD öffnen';
-        const url = escapeHtml(link.url).replace(/"/g, '&quot;');
-        return `<a class="btn btn-secondary btn-small" href="${url}"
-                   target="_blank" rel="noopener noreferrer"
-                   title="${url}">${escapeHtml(label)}</a>`;
-    }).join('');
-
-    return `
-        <div class="gruppen-cad-links">
-            <span class="gruppen-cad-links-label">Konstruktion:</span>
-            <div class="gruppen-cad-links-aktionen">${buttons}</div>
-        </div>
-    `;
-}
 
 
-/**
- * „+ Bauteil“ / „+ Leitung“ fest oben rechts im Panel-Kopf.
- * @param {boolean} zeigeBauteile
- * @param {boolean} zeigeLeitungen
- * @returns {string}
- */
-function renderGruppenAddButtons(zeigeBauteile, zeigeLeitungen) {
-    if (!zeigeBauteile && !zeigeLeitungen) return '';
-
-    return `<div class="gruppen-add-buttons gruppen-add-buttons-kopf">
-        ${zeigeBauteile ? `
-            <button type="button" class="btn btn-success btn-small"
-                    onclick="gruppeOpenPicker('bauteil')" title="Bauteil suchen oder neu anlegen">
-                + Bauteil
-            </button>
-        ` : ''}
-        ${zeigeLeitungen ? `
-            <button type="button" class="btn btn-success btn-small"
-                    onclick="gruppeOpenPicker('leitung')" title="Leitung suchen oder neu anlegen">
-                + Leitung
-            </button>
-        ` : ''}
-    </div>`;
-}
 
 
 /**
@@ -788,57 +1097,6 @@ function getOffeneBauteilVorschlaege(code) {
 }
 
 
-/**
- * Vorschlagszeilen unterhalb der erfassten Bauteile.
- * @param {string[]} typen
- * @returns {string}
- */
-function renderBauteilVorschlagZeilen(typen) {
-    const laengen = getGruppenVorgaben(getGruppe(aktiveGruppe)).bauteilLaengen || [];
-
-    return typen.map(typ => {
-        const id = escapeHtml(typ);
-        const artikelliste = getArtikelAuswahlFuerGruppe(typ);
-        const artikel = artikelliste[0] || null;
-        const mehrere = artikelliste.length > 1;
-        const meta = mehrere
-            ? `${artikelliste.length} Artikel im Katalog – beim Übernehmen auswählen`
-            : (artikel
-                ? `${artikel.beschreibung || ''}${artikel.hersteller ? ` · ${artikel.hersteller}` : ''}`
-                : 'Noch kein Katalogartikel – wird beim Übernehmen angelegt');
-
-        const artikelFeld = laengen.length
-            ? `<select class="vorschlag-laenge" aria-label="Länge wählen und übernehmen"
-                       onchange="gruppeBauteilVorschlagUebernehmen('${id}', this.value)">
-                    ${optionen([{ value: '', label: 'Länge…' },
-                        ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], '')}
-               </select>`
-            : (mehrere
-                ? `${artikelliste.length} Artikel`
-                : escapeHtml(artikel?.artikelnummer || '–'));
-
-        return `
-            <tr class="vorschlag-zeile">
-                <td class="leitung-tabelle-nr">+</td>
-                <td>
-                    <span class="leitung-tabelle-verwendung">${escapeHtml(getBauteilTypName(typ))}</span>
-                    <span class="leitung-tabelle-typ">${escapeHtml(meta)}</span>
-                </td>
-                <td class="leitung-tabelle-artikel">${artikelFeld}</td>
-                <td class="leitung-tabelle-anzahl">1×</td>
-                <td class="leitung-tabelle-aktionen">
-                    <div class="table-actions">
-                        <button type="button" class="btn btn-success btn-small"
-                                onclick="gruppeBauteilVorschlagUebernehmen('${id}', '')">${mehrere ? 'Auswählen…' : 'Übernehmen'}</button>
-                        <button type="button" class="btn btn-secondary btn-small btn-icon"
-                                title="Vorschlag in diesem Projekt ausblenden"
-                                onclick="toggleBauteilTypSchnellwahl('${id}', false)">✕</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
 
 
 /**
@@ -1087,99 +1345,56 @@ function getBauteilLabel(bauteil) {
 
 
 /**
- * Übersicht aller Bauteile der Gruppe als Tabelle.
+ * Bauteile der Gruppe als schlichte Liste (rechte Spalte); ein Klick öffnet das Bauteil.
+ * Darunter die offenen Standardbauteile – mit Längen-Chips, falls die Gruppe welche vorgibt.
  * @param {object[]} bauteile
+ * @param {string[]} [vorschlaege]
  * @returns {string}
  */
-function renderBauteilTabelle(bauteile, vorschlaege = []) {
+function renderBauteilListe(bauteile, vorschlaege = []) {
     if (!bauteile.length && !vorschlaege.length) {
-        return '<p class="text-muted gruppen-leer">Noch keine Bauteile. Unten „+ Bauteil“ wählen.</p>';
+        return '<p class="gk-leer-klein">Noch keine Bauteile.</p>';
     }
 
-    const gesperrt = istSchreibgeschuetzt();
-    const zeilen = bauteile.map((bauteil, index) => {
-        const id = escapeHtml(bauteil.id);
-        const typName = getBauteilTypName(bauteil.typ);
-        const zusatz = [typName, bauteil.notiz].filter(Boolean).join(' · ');
-        const klassen = [];
-        if (bauteil.id === aktivesBauteilId) klassen.push('aktiv');
-        if (!bauteil.artikelnummer) klassen.push('unvollstaendig');
+    const laengen = getGruppenVorgaben(getGruppe(aktiveGruppe)).bauteilLaengen || [];
+    const erfasst = bauteile.map(bauteil => `
+        <li>
+            <button type="button" class="gk-bauteil${bauteil.artikelnummer ? '' : ' unvollstaendig'}${bauteil.id === aktivesBauteilId ? ' aktiv' : ''}"
+                    title="${escapeAttr([getBauteilTypName(bauteil.typ), bauteil.artikelnummer || 'Artikel offen'].filter(Boolean).join(' · '))}"
+                    onclick="gruppeEditBauteil('${jsArg(bauteil.id)}')">
+                <span>${escapeHtml(getBauteilLabel(bauteil))}</span>
+                <span class="gk-bauteil-anzahl">${Math.max(1, Number(bauteil.anzahl) || 1)}×</span>
+            </button>
+        </li>
+    `).join('');
 
+    const offen = vorschlaege.map(typ => {
+        const id = jsArg(typ);
+        const chips = laengen.map(l => renderChip({
+            label: `${formatLaenge(l)} m`,
+            onclick: `gruppeBauteilVorschlagUebernehmen('${id}', '${l}')`,
+            klasse: 'chip-klein chip-laenge'
+        })).join('');
         return `
-            <tr class="${klassen.join(' ')}" title="Doppelklick zum Bearbeiten"
-                ondblclick="gruppeEditBauteil('${id}')">
-                <td class="leitung-tabelle-nr">${index + 1}</td>
-                <td>
-                    <span class="leitung-tabelle-verwendung">${escapeHtml(getBauteilLabel(bauteil))}</span>
-                    ${zusatz ? `<span class="leitung-tabelle-typ">${escapeHtml(zusatz)}</span>` : ''}
-                </td>
-                <td class="leitung-tabelle-artikel">${escapeHtml(bauteil.artikelnummer || 'offen')}</td>
-                <td class="leitung-tabelle-anzahl">${renderAnzahlStepper('bauteil', bauteil.id, bauteil.anzahl, gesperrt)}</td>
-                <td class="leitung-tabelle-aktionen">
-                    <div class="table-actions">
-                    <button type="button" class="btn btn-secondary btn-small btn-icon" title="Bauteil bearbeiten"
-                            onclick="gruppeEditBauteil('${id}')">✏️</button>
-                    ${gesperrt ? '' : `
-                        <button type="button" class="btn btn-danger btn-small btn-icon" title="Bauteil entfernen"
-                                onclick="gruppeDeleteBauteil('${id}')">🗑️</button>
-                    `}
-                    </div>
-                </td>
-            </tr>
+            <li class="gk-bauteil-vorschlag">
+                <button type="button" onclick="gruppeBauteilVorschlagUebernehmen('${id}', '')">+ ${escapeHtml(getBauteilTypName(typ))}</button>
+                ${chips}
+                <button type="button" class="gk-vorschlag-weg" title="Vorschlag in diesem Projekt ausblenden"
+                        aria-label="Vorschlag ausblenden" onclick="toggleBauteilTypSchnellwahl('${id}', false)">×</button>
+            </li>
         `;
     }).join('');
 
-    const gesamt = bauteile.reduce((summe, b) => summe + (b.anzahl || 1), 0);
-
-    const vorschlagBlock = vorschlaege.length
-        ? `<tbody class="vorschlag-block">
-                <tr class="vorschlag-kopf">
-                    <td colspan="5">Standardbauteile dieser Gruppe – übernehmen oder ausblenden.</td>
-                </tr>
-                ${renderBauteilVorschlagZeilen(vorschlaege)}
-           </tbody>`
-        : '';
-
-    return `
-        <div class="table-container gruppen-tabelle-container">
-            <table class="leitung-table leitung-tabelle">
-                <thead>
-                    <tr>
-                        <th>Nr.</th>
-                        <th>Bauteil / Verwendung</th>
-                        <th>Artikelnr.</th>
-                        <th>Anz.</th>
-                        <th class="leitung-tabelle-aktionen">Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody>${zeilen}</tbody>
-                ${vorschlagBlock}
-                ${bauteile.length ? `
-                <tfoot>
-                    <tr>
-                        <td colspan="3">Gesamt</td>
-                        <td class="leitung-tabelle-anzahl">${gesamt}×</td>
-                        <td class="leitung-tabelle-aktionen"></td>
-                    </tr>
-                </tfoot>
-                ` : ''}
-            </table>
-        </div>
-    `;
+    return `<ul class="gk-bauteile">${erfasst}${offen}</ul>`;
 }
 
 
 /**
- * Zeichnet nur die Bauteilübersicht neu.
+ * Bauteile stehen in der rechten Spalte – die wird samt Kennzahlen neu gezeichnet.
  * @returns {void}
  */
 function aktualisiereBauteilTabelle() {
-    const container = document.getElementById('gruppen-bauteile-tabelle');
-    if (!container) return;
-    container.innerHTML = renderBauteilTabelle(
-        getBauteileDerGruppe(aktiveGruppe),
-        getOffeneBauteilVorschlaege(aktiveGruppe)
-    );
+    renderGruppenRahmen();
 }
 
 
@@ -1631,12 +1846,83 @@ export async function gruppeDeleteBauteil(id) {
  * @returns {string}
  */
 function renderPickerEintrag(eintrag) {
-    return `
+    const knopf = `
         <button type="button" class="picker-eintrag" onclick="${eintrag.onclick}">
-            <span class="picker-eintrag-titel">${escapeHtml(eintrag.titel)}${eintrag.marke || ''}</span>
+            <span class="picker-eintrag-titel">${markiereSuche(eintrag.titel, pickerState?.suche)}${eintrag.marke || ''}</span>
             <span class="picker-eintrag-meta">${escapeHtml(eintrag.meta)}</span>
         </button>
     `;
+    if (!eintrag.laengen?.length) return knopf;
+
+    // Ein Klick auf eine Länge übernimmt die Leitung sofort – ohne Bearbeitungsfenster.
+    const chips = eintrag.laengen.map(l => renderChip({
+        label: escapeHtml(l.label),
+        onclick: l.onclick,
+        title: l.title || '',
+        klasse: `chip-klein chip-laenge${l.standard ? ' chip-standard' : ''}`
+    })).join('');
+    return `<div class="picker-zeile">${knopf}<div class="picker-laengen">${chips}</div></div>`;
+}
+
+
+/**
+ * Text escapen und die Suchbegriffe darin hervorheben.
+ * @param {string} text
+ * @param {string} [suche]
+ * @returns {string}
+ */
+function markiereSuche(text, suche) {
+    const sicher = escapeHtml(text || '');
+    const woerter = String(suche || '').trim().split(/\s+/).filter(w => w.length >= 2);
+    if (!woerter.length) return sicher;
+    const muster = woerter
+        .map(w => escapeHtml(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|');
+    return sicher.replace(new RegExp(`(${muster})`, 'gi'), '<mark>$1</mark>');
+}
+
+
+/**
+ * Wenige Längen für den Schnellzugriff im Auswahlfenster: die üblichen Katalog-
+ * Standardlängen plus die Vorgabe des Presets. Alles Weitere über das Fenster.
+ * @param {number[]} laengen
+ * @param {number} [vorgabe]
+ * @returns {number[]}
+ */
+function waehleSchnellLaengen(laengen, vorgabe) {
+    if (laengen.length <= 5) return laengen;
+
+    const ueblich = appState.katalog?.standardlaengen?.length
+        ? appState.katalog.standardlaengen
+        : [1, 2, 3, 5, 10, 15, 20];
+    const auswahl = new Set(laengen.filter(l => ueblich.includes(l)));
+    if (vorgabe && laengen.includes(Number(vorgabe))) auswahl.add(Number(vorgabe));
+
+    const sortiert = Array.from(auswahl).sort((a, b) => a - b).slice(0, 5);
+    return sortiert.length ? sortiert : laengen.slice(0, 5);
+}
+
+
+/**
+ * Längen-Chips eines Picker-Eintrags inkl. „…“ für alle übrigen Längen.
+ * @param {number[]} laengen
+ * @param {(laenge: number) => string} onclick
+ * @param {string} weitereOnclick - Öffnet die Leitung im Fenster mit allen Längen.
+ * @param {number} [vorgabe]
+ * @returns {{label: string, onclick: string, standard?: boolean, title?: string}[]}
+ */
+function bildeLaengenChips(laengen, onclick, weitereOnclick, vorgabe) {
+    const schnell = waehleSchnellLaengen(laengen, vorgabe);
+    const chips = schnell.map(l => ({
+        label: `${formatLaenge(l)} m`,
+        onclick: onclick(l),
+        standard: Number(vorgabe) === l,
+        title: Number(vorgabe) === l ? 'Standardlänge' : `${formatLaenge(l)} m übernehmen`
+    }));
+    if (laengen.length > schnell.length) {
+        chips.push({ label: '…', onclick: weitereOnclick, title: `Alle ${laengen.length} Längen` });
+    }
+    return chips;
 }
 
 
@@ -1663,7 +1949,9 @@ function renderPickerSektion(titel, eintraege) {
  */
 function passtZurSuche(text, suche) {
     if (!suche) return true;
-    return String(text || '').toLowerCase().includes(suche);
+    // Jedes Wort muss vorkommen – „m12 off“ findet „M12 Buchse → offenes Ende“.
+    const heuhaufen = String(text || '').toLowerCase();
+    return suche.toLowerCase().split(/\s+/).filter(Boolean).every(wort => heuhaufen.includes(wort));
 }
 
 
@@ -1790,48 +2078,126 @@ function formatKatalogReihenLabel(prefix, artikel) {
  * Katalogtreffer nach Leitungsreihe zusammenfassen – sonst unterscheiden sich
  * die Einträge nur in der Länge und die Liste wird unlesbar.
  * @param {string} suche
+ * @param {string} [kategorie]
  * @returns {string[]}
  */
-function renderKatalogReihen(suche) {
+function renderKatalogReihen(suche, kategorie = '') {
     const reihen = new Map();
 
-    getKonfektionierteKatalogArtikel({ suche, limit: 400 }).forEach(artikel => {
+    getKonfektionierteKatalogArtikel({ suche, kategorie, limit: 600 }).forEach(artikel => {
         const prefix = deriveArtikelPrefix(artikel.artikelnummer) || artikel.artikelnummer;
         if (!reihen.has(prefix)) reihen.set(prefix, []);
         reihen.get(prefix).push(artikel);
     });
 
-    return Array.from(reihen.entries()).slice(0, 20).map(([prefix, artikel]) => {
+    return Array.from(reihen.entries()).slice(0, 30).map(([prefix, artikel]) => {
         const erste = artikel[0];
         const { titel, meta } = formatKatalogReihenLabel(prefix, artikel);
 
         if (artikel.length === 1) {
             return renderPickerEintrag({
-                onclick: `gruppeAddLeitungAusArtikel('${escapeHtml(erste.artikelnummer)}')`,
+                onclick: `gruppeAddLeitungAusArtikel('${jsArg(erste.artikelnummer)}')`,
                 titel,
                 meta
             });
         }
 
+        const reiheOeffnen = `gruppeAddLeitungAusReihe('${jsArg(prefix)}', '${jsArg(erste.artikelnummer)}')`;
+        const nachLaenge = new Map(artikel.filter(a => a.laenge > 0).map(a => [Number(a.laenge), a]));
         return renderPickerEintrag({
-            onclick: `gruppeAddLeitungAusReihe('${escapeHtml(prefix)}', '${escapeHtml(erste.artikelnummer)}')`,
+            onclick: reiheOeffnen,
             titel,
-            meta
+            meta,
+            laengen: bildeLaengenChips(
+                Array.from(nachLaenge.keys()).sort((a, b) => a - b),
+                l => `gruppeAddKatalogArtikelDirekt('${jsArg(nachLaenge.get(l).artikelnummer)}')`,
+                reiheOeffnen
+            )
         });
     });
 }
 
 
 /**
- * Trefferliste für Leitungen: erst die Vorgaben der Gruppe, dann der Katalog.
+ * Leitungen, die in diesem Projekt zuletzt erfasst wurden – je Ausführung einmal.
+ * In Anlagen wiederholen sich dieselben Leitungen ständig.
+ * @param {number} [anzahl]
+ * @returns {object[]}
+ */
+function getZuletztVerwendeteLeitungen(anzahl = 5) {
+    const alle = appState.currentProjekt?.leitungen || [];
+    const gesehen = new Set();
+    const ergebnis = [];
+
+    for (let i = alle.length - 1; i >= 0 && ergebnis.length < anzahl; i--) {
+        const leitung = alle[i];
+        const artikelnummer = leitung.artikelCustom || leitung.artikelnummer;
+        if (!artikelnummer) continue;
+
+        const schluessel = istMeterwareKategorie(leitung.kategorie) || leitung.artikelCustom
+            ? artikelnummer
+            : [leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix].join('|');
+        if (gesehen.has(schluessel)) continue;
+        gesehen.add(schluessel);
+        ergebnis.push(leitung);
+    }
+    return ergebnis;
+}
+
+
+/**
+ * @param {object} leitung
+ * @returns {number[]}
+ */
+function getLaengenFuerLeitung(leitung) {
+    if (istMeterwareKategorie(leitung.kategorie) || leitung.artikelCustom) return [];
+    if (!leitung.artikelPrefix && !(leitung.steckerA && leitung.steckerB)) return [];
+    return getLaengenOptionen(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+    );
+}
+
+
+/**
+ * Kategorien, nach denen im Auswahlfenster gefiltert werden kann.
+ * @returns {object[]}
+ */
+function getPickerKategorien() {
+    const vorhanden = new Set((appState.katalog?.artikel || []).map(a => a.kategorie));
+    return getKategorien().filter(k => vorhanden.has(k.id));
+}
+
+
+/**
+ * Filter-Chips über der Trefferliste.
+ * @returns {string}
+ */
+function renderPickerFilter() {
+    if (!pickerState || pickerState.art !== 'leitung') return '';
+    const aktiv = pickerState.kategorie || '';
+
+    return [{ id: '', name: 'Alle', icon: '' }, ...getPickerKategorien()].map(k => renderChip({
+        label: `${k.icon ? `${escapeHtml(k.icon)} ` : ''}${escapeHtml(k.name)}`,
+        onclick: `gruppePickerKategorie('${jsArg(k.id)}')`,
+        aktiv: aktiv === k.id,
+        klasse: 'chip-klein'
+    })).join('');
+}
+
+
+/**
+ * Trefferliste für Leitungen: Standard der Gruppe, zuletzt verwendet, weitere
+ * übliche Leitungen, Katalog. Ein Klick auf eine Länge übernimmt sofort.
  * @param {string} suche
  * @returns {string}
  */
 function renderPickerLeitungen(suche) {
     const vorgaben = getGruppenVorgaben(getGruppe(aktiveGruppe));
     const erfasst = getLeitungenDerGruppe(aktiveGruppe);
+    const kategorie = pickerState?.kategorie || '';
 
     const presetEintrag = preset => {
+        const id = jsArg(preset.id);
         const anzahl = erfasst.filter(l => {
             if (l.presetId === preset.id) return true;
             return preset.artikelPrefix && l.artikelPrefix === preset.artikelPrefix;
@@ -1843,14 +2209,20 @@ function renderPickerLeitungen(suche) {
             meta += ' · bereits erfasst';
         }
         return renderPickerEintrag({
-            onclick: `gruppeAddLeitung('${escapeHtml(preset.id)}')`,
+            onclick: `gruppeAddLeitung('${id}')`,
             titel: preset.label,
             meta,
-            marke: preset.custom ? ' <span class="picker-marke">★ eigener Standard</span>' : ''
+            marke: preset.custom ? ' <span class="picker-marke">★ eigener Standard</span>' : '',
+            laengen: bildeLaengenChips(
+                getPresetLaengen(preset),
+                l => `gruppeVorschlagUebernehmen('${id}', '${l}')`,
+                `gruppeAddLeitung('${id}')`,
+                preset.laenge
+            )
         });
     };
 
-    const filter = preset => passtZurSuche(
+    const filter = preset => (!kategorie || preset.kategorie === kategorie) && passtZurSuche(
         `${preset.label} ${preset.bezeichnung || ''} ${getPresetBeschreibung(preset)} ${preset.artikelnummer || ''}`,
         suche
     );
@@ -1858,15 +2230,53 @@ function renderPickerLeitungen(suche) {
     const standard = vorgaben.standardLeitungen.filter(filter).map(presetEintrag);
     const weitere = vorgaben.weitereLeitungen.filter(filter).map(presetEintrag);
 
-    const katalog = suche.length >= 2 ? renderKatalogReihen(suche) : [];
+    const zuletzt = getZuletztVerwendeteLeitungen()
+        .filter(l => !kategorie || l.kategorie === kategorie)
+        .filter(l => passtZurSuche(
+            `${l.bezeichnung || ''} ${getLeitungAusfuehrung(l)} ${l.artikelnummer || ''} ${l.artikelCustom || ''}`,
+            suche
+        ))
+        .map(l => {
+            const id = jsArg(l.id);
+            const laenge = Number(l.laenge) || 0;
+            return renderPickerEintrag({
+                onclick: `gruppeAddLeitungWie('${id}', '')`,
+                titel: l.bezeichnung || getLeitungAusfuehrung(l),
+                meta: [getLeitungAusfuehrung(l), laenge ? `zuletzt ${formatLaenge(laenge)} m` : '', l.gruppe]
+                    .filter(Boolean).join(' · '),
+                laengen: bildeLaengenChips(
+                    getLaengenFuerLeitung(l),
+                    wert => `gruppeAddLeitungWie('${id}', '${wert}')`,
+                    `gruppeAddLeitungWie('${id}', '', true)`,
+                    laenge
+                )
+            });
+        });
+
+    // Eigene Zusammenstellung: für die gefilterte Kategorie bzw. passende Suchbegriffe.
+    const zusammenstellen = getKategorien()
+        .filter(k => kategorie
+            ? k.id === kategorie
+            : suche.length >= 2 && passtZurSuche(`${k.name} ${k.id}`, suche))
+        .map(k => renderPickerEintrag({
+            onclick: `gruppeAddLeitungMitKategorie('${jsArg(k.id)}')`,
+            titel: `${k.icon || ''} ${k.name} selbst zusammenstellen`.trim(),
+            meta: istMeterwareKategorie(k.id)
+                ? 'Typ / Querschnitt und Länge wählen'
+                : 'Stecker A, Stecker B und Länge wählen'
+        }));
+
+    const katalog = suche.length >= 2 || kategorie ? renderKatalogReihen(suche, kategorie) : [];
 
     const treffer = renderPickerSektion(`Standard in ${aktiveGruppe}`, standard)
+        + renderPickerSektion('Zuletzt im Projekt verwendet', zuletzt)
         + renderPickerSektion('Weitere übliche Leitungen', weitere)
+        + renderPickerSektion('Selbst zusammenstellen', zusammenstellen)
         + renderPickerSektion('Aus dem Katalog', katalog);
 
     if (treffer) return treffer;
 
-    return `<p class="picker-leer">Kein Treffer für „${escapeHtml(suche)}“.
+    return `<p class="picker-leer">Kein Treffer${suche ? ` für „${escapeHtml(suche)}“` : ''}.
             Lege die Leitung unten neu im Katalog an.</p>`;
 }
 
@@ -1968,19 +2378,15 @@ function renderPickerErgebnisse() {
  * @returns {string}
  */
 function renderPicker() {
-    if (!pickerState) return '';
+    // Leitungen werden über das Suchfeld über der Tabelle gewählt (siehe renderLeitungSuche).
+    if (pickerState?.art !== 'bauteil') return '';
 
-    const istBauteil = pickerState.art === 'bauteil';
-    const typFilter = istBauteil ? pickerState.typFilter : '';
+    const typFilter = pickerState.typFilter || '';
     const gruppe = getGruppe(aktiveGruppe);
-    const titel = typFilter
-        ? `${getBauteilTypName(typFilter)} wählen`
-        : (istBauteil ? 'Bauteil hinzufügen' : 'Leitung hinzufügen');
+    const titel = typFilter ? `${getBauteilTypName(typFilter)} wählen` : 'Bauteil hinzufügen';
     const suchePlaceholder = typFilter
         ? 'Artikel suchen: Nummer, Bezeichnung…'
-        : (istBauteil
-            ? 'Bauteil suchen: Typ, Artikelnummer, Hersteller…'
-            : 'Leitung suchen: Bezeichnung, Artikelnummer, Stecker…');
+        : 'Bauteil suchen: Typ, Artikelnummer, Hersteller…';
 
     return `
         <div class="picker-overlay" onclick="gruppeClosePicker()">
@@ -2001,19 +2407,13 @@ function renderPicker() {
                        placeholder="${suchePlaceholder}"
                        oninput="gruppeOnPickerSuche(this.value)"
                        onkeydown="gruppeOnPickerTaste(event)">
-                <div class="picker-ergebnisse" id="picker-ergebnisse">${renderPickerErgebnisse()}</div>
+                <div class="picker-ergebnisse" id="picker-ergebnisse"
+                     onkeydown="gruppeOnPickerListeTaste(event)">${renderPickerErgebnisse()}</div>
                 <div class="picker-fuss">
-                    ${istBauteil ? `
-                        <button type="button" class="btn btn-secondary btn-small"
-                                onclick="gruppeAddBauteil('')">Leeres Bauteil</button>
-                        <button type="button" class="btn btn-primary btn-small"
-                                onclick="gruppeOpenBauteilFormular('', '${escapeHtml(typFilter || '')}')">➕ Neu im Katalog anlegen</button>
-                    ` : `
-                        <button type="button" class="btn btn-secondary btn-small"
-                                onclick="gruppeAddLeitung('')">Leere Leitung</button>
-                        <button type="button" class="btn btn-primary btn-small"
-                                onclick="gruppeOpenLeitungFormular('', '')">➕ Neu im Katalog anlegen</button>
-                    `}
+                    <button type="button" class="btn btn-secondary btn-small"
+                            onclick="gruppeAddBauteil('')">Leeres Bauteil</button>
+                    <button type="button" class="btn btn-primary btn-small"
+                            onclick="gruppeOpenBauteilFormular('', '${jsArg(typFilter)}')">+ Neu im Katalog anlegen</button>
                 </div>
             </div>
         </div>
@@ -2027,7 +2427,15 @@ function renderPicker() {
  */
 export function gruppeOpenPicker(art) {
     if (!assertCanEdit('Positionen hinzufügen')) return;
-    pickerState = { art: art === 'bauteil' ? 'bauteil' : 'leitung', suche: '' };
+    if (art !== 'bauteil') {
+        const input = document.getElementById('gk-suche-input');
+        if (!input) return;
+        input.focus();
+        input.select();
+        gruppeSucheOeffnen();
+        return;
+    }
+    pickerState = { art: 'bauteil', suche: '' };
     renderGruppenPanel();
     document.getElementById('picker-suche')?.focus();
 }
@@ -2038,8 +2446,28 @@ export function gruppeOpenPicker(art) {
  */
 export function gruppeClosePicker() {
     if (!pickerState) return;
+    if (pickerState.art === 'leitung') {
+        // Die Suche steht fest über der Tabelle – nur die Trefferliste schließen.
+        pickerState = null;
+        const input = document.getElementById('gk-suche-input');
+        if (input) {
+            input.value = '';
+            input.blur();
+        }
+        aktualisiereLeitungDropdown();
+        return;
+    }
     pickerState = null;
     renderGruppenPanel();
+}
+
+
+/**
+ * Container der Trefferliste – Suchfeld über der Tabelle bzw. Bauteil-Dialog.
+ * @returns {HTMLElement|null}
+ */
+function getPickerErgebnisse() {
+    return document.getElementById(pickerState?.art === 'leitung' ? 'gk-ergebnisse' : 'picker-ergebnisse');
 }
 
 
@@ -2086,9 +2514,14 @@ export function gruppePickerZurueck() {
  * @returns {void}
  */
 export function gruppeOnPickerSuche(wert) {
+    if (!pickerState) gruppeSucheOeffnen();
     if (!pickerState) return;
     pickerState.suche = wert;
-    const container = document.getElementById('picker-ergebnisse');
+    if (pickerState.art === 'leitung') {
+        aktualisiereLeitungDropdown();
+        return;
+    }
+    const container = getPickerErgebnisse();
     if (container) container.innerHTML = renderPickerErgebnisse();
 }
 
@@ -2110,8 +2543,65 @@ export function gruppeOnPickerTaste(event) {
     }
     if (event.key === 'Enter') {
         event.preventDefault();
-        document.querySelector('#picker-ergebnisse .picker-eintrag')?.click();
+        getPickerErgebnisse()?.querySelector('.picker-eintrag')?.click();
+        return;
     }
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        getPickerErgebnisse()?.querySelector('.picker-eintrag')?.focus();
+    }
+}
+
+
+/**
+ * Pfeiltasten in der Trefferliste: hoch/runter zwischen den Einträgen,
+ * links/rechts zu den Längen-Chips. Ganz oben geht es zurück ins Suchfeld.
+ * @param {KeyboardEvent} event
+ * @returns {void}
+ */
+export function gruppeOnPickerListeTaste(event) {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        gruppeClosePicker();
+        return;
+    }
+
+    const container = event.currentTarget;
+    if (!container || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const zeile = event.target.closest('.picker-zeile');
+        if (!zeile) return;
+        const knoepfe = Array.from(zeile.querySelectorAll('button'));
+        const index = knoepfe.indexOf(event.target);
+        knoepfe[index + (event.key === 'ArrowRight' ? 1 : -1)]?.focus();
+        return;
+    }
+
+    const eintraege = Array.from(container.querySelectorAll('.picker-eintrag'));
+    const aktuell = event.target.closest('.picker-zeile')?.querySelector('.picker-eintrag') || event.target;
+    const index = eintraege.indexOf(aktuell);
+    const ziel = eintraege[index + (event.key === 'ArrowDown' ? 1 : -1)];
+    if (ziel) ziel.focus();
+    else if (event.key === 'ArrowUp') {
+        document.getElementById(pickerState?.art === 'leitung' ? 'gk-suche-input' : 'picker-suche')?.focus();
+    }
+}
+
+
+/**
+ * Filtert das Auswahlfenster auf eine Leitungskategorie (erneuter Klick hebt auf).
+ * @param {string} kategorie
+ * @returns {void}
+ */
+export function gruppePickerKategorie(kategorie) {
+    if (!pickerState || pickerState.art !== 'leitung') return;
+    pickerState.kategorie = pickerState.kategorie === kategorie ? '' : kategorie;
+    aktualisiereLeitungDropdown();
+    const ergebnisse = document.getElementById('gk-ergebnisse');
+    if (ergebnisse) ergebnisse.scrollTop = 0;
+    document.getElementById('gk-suche-input')?.focus();
 }
 
 
@@ -3031,53 +3521,6 @@ function getPresetBeschreibung(preset) {
 }
 
 
-/**
- * Vorschlagszeilen unterhalb der erfassten Leitungen.
- * @param {object[]} vorschlaege
- * @returns {string}
- */
-function renderLeitungVorschlagZeilen(vorschlaege) {
-    return vorschlaege.map(preset => {
-        const id = escapeHtml(preset.id);
-        const laengen = getPresetLaengen(preset);
-        const standardLaenge = laengen.find(l => Number(l) === Number(preset.laenge));
-
-        const laengeFeld = laengen.length
-            ? `<select class="vorschlag-laenge" aria-label="Länge wählen und übernehmen"
-                       onchange="gruppeVorschlagUebernehmen('${id}', this.value)">
-                    ${optionen([
-                        { value: '', label: 'Länge…' },
-                        ...laengen.map(l => ({
-                            value: l,
-                            label: `${formatLaenge(l)} m${Number(l) === Number(preset.laenge) ? ' · Standard' : ''}`
-                        }))
-                    ], standardLaenge ?? '')}
-               </select>`
-            : '<span class="text-muted">im Formular</span>';
-
-        return `
-            <tr class="vorschlag-zeile">
-                <td class="leitung-tabelle-nr">+</td>
-                <td>
-                    <span class="leitung-tabelle-verwendung">${escapeHtml(preset.label)}${preset.custom ? ' ★' : ''}</span>
-                    <span class="leitung-tabelle-typ">${escapeHtml(getPresetBeschreibung(preset))}</span>
-                </td>
-                <td class="leitung-tabelle-laenge">${laengeFeld}</td>
-                <td class="leitung-tabelle-artikel">${escapeHtml(preset.artikelPrefix || preset.artikelnummer || '–')}</td>
-                <td class="leitung-tabelle-anzahl">1×</td>
-                <td class="leitung-tabelle-aktionen">
-                    <div class="table-actions">
-                        <button type="button" class="btn btn-success btn-small"
-                                onclick="gruppeVorschlagUebernehmen('${id}', '')">Übernehmen</button>
-                        <button type="button" class="btn btn-secondary btn-small btn-icon"
-                                title="Vorschlag in diesem Projekt ausblenden"
-                                onclick="gruppeVorschlagAusblenden('${id}')">✕</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
 
 
 /**
@@ -3190,93 +3633,87 @@ function renderLaengeZelle(leitung, gesperrt) {
 
 
 /**
- * Übersicht aller Leitungen der Gruppe als Tabelle, gefolgt von den offenen Standardleitungen.
- * @param {object[]} leitungen
- * @param {object[]} [vorschlaege]
+ * Stecker kurz für die Spalte „Verbindung“ (z. B. „M12 Buchse“, „offen“).
+ * @param {string} stecker
  * @returns {string}
  */
-function renderLeitungTabelle(leitungen, vorschlaege = []) {
-    if (!leitungen.length && !vorschlaege.length) {
-        return '<p class="text-muted gruppen-leer">Noch keine Leitungen. Unten „+ Leitung“ wählen.</p>';
+function formatSteckerTag(stecker) {
+    if (!stecker) return '?';
+    if (stecker === 'offen') return 'offen';
+    return formatSteckerKurz(stecker).replace(/\s+gewinkelt$/, ' ↳');
+}
+
+
+/**
+ * Steckerpaar als zwei Etiketten: A gefüllt, B gestrichelt.
+ * @param {object} leitung
+ * @returns {string}
+ */
+function renderVerbindung(leitung) {
+    const meterware = istMeterwareKategorie(leitung.kategorie);
+    const a = meterware ? 'offen' : formatSteckerTag(leitung.steckerA);
+    const b = meterware ? 'offen' : formatSteckerTag(leitung.steckerB);
+    const klasse = wert => (wert === '?' ? ' fehlt' : '');
+    return `
+        <span class="gk-stecker gk-stecker-a${klasse(a)}">${escapeHtml(a)}</span>
+        <span class="gk-stecker-strich" aria-hidden="true">–</span>
+        <span class="gk-stecker gk-stecker-b${klasse(b)}">${escapeHtml(b)}</span>
+    `;
+}
+
+
+/**
+ * Leitungen der Gruppe: Verbindung, Leitung, Länge, Stück. Ein Klick auf die Zeile öffnet sie.
+ * @param {object[]} leitungen
+ * @returns {string}
+ */
+function renderLeitungTabelle(leitungen) {
+    if (!leitungen.length) {
+        return `<p class="gk-tabelle-leer">Noch keine Leitungen in ${escapeHtml(aktiveGruppe)}.
+                ${istSchreibgeschuetzt() ? '' : 'Oben suchen oder unten einen Vorschlag übernehmen.'}</p>`;
     }
 
     const gesperrt = istSchreibgeschuetzt();
-    const zeilen = leitungen.map((leitung, index) => {
+    const zeilen = leitungen.map(leitung => {
         aktualisiereArtikel(leitung);
-        const id = escapeHtml(leitung.id);
+        const id = jsArg(leitung.id);
         const artikelnummer = leitung.artikelnummer || leitung.artikelCustom;
-        const klassen = [];
+        const klassen = ['gk-zeile'];
         if (leitung.id === aktiveLeitungId) klassen.push('aktiv');
         if (!artikelnummer) klassen.push('unvollstaendig');
+        const name = leitung.bezeichnung || getLeitungAusfuehrung(leitung);
+        const meta = [leitung.hersteller, artikelnummer || 'Artikel offen'].filter(Boolean).join(' · ');
 
         return `
-            <tr class="${klassen.join(' ')}" title="Doppelklick zum Bearbeiten"
-                ondblclick="gruppeEditLeitung('${id}')">
-                <td class="leitung-tabelle-nr">${index + 1}</td>
-                <td>
-                    <span class="leitung-tabelle-verwendung">${escapeHtml(leitung.bezeichnung || '— ohne Verwendung —')}</span>
-                    <span class="leitung-tabelle-typ">${escapeHtml(getLeitungAusfuehrung(leitung))}</span>
+            <tr class="${klassen.join(' ')}" title="Klicken zum Bearbeiten" onclick="gruppeEditLeitung('${id}')">
+                <td class="gk-verbindung">${renderVerbindung(leitung)}</td>
+                <td class="gk-leitung">
+                    <span class="gk-leitung-name">${escapeHtml(name)}</span>
+                    <span class="gk-leitung-meta">${escapeHtml(meta)}</span>
                 </td>
-                <td class="leitung-tabelle-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
-                <td class="leitung-tabelle-artikel">${escapeHtml(artikelnummer || 'offen')}</td>
-                <td class="leitung-tabelle-anzahl">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
-                <td class="leitung-tabelle-aktionen">
-                    <div class="table-actions">
-                    <button type="button" class="btn btn-secondary btn-small btn-icon" title="Leitung bearbeiten"
-                            onclick="gruppeEditLeitung('${id}')">✏️</button>
-                    ${gesperrt ? '' : `
-                        <button type="button" class="btn btn-danger btn-small btn-icon" title="Leitung löschen"
-                                onclick="gruppeDeleteLeitung('${id}')">🗑️</button>
-                    `}
-                    </div>
+                <td class="gk-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
+                <td class="gk-stueck">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
+                <td class="gk-aktion">${gesperrt ? '' : `
+                    <button type="button" class="gk-loeschen" title="Leitung löschen" aria-label="Leitung löschen"
+                            onclick="event.stopPropagation(); gruppeDeleteLeitung('${id}')">×</button>`}
                 </td>
             </tr>
         `;
     }).join('');
 
-    const gesamt = leitungen.reduce((summe, l) => summe + (l.anzahl || 1), 0);
-
-    const vorschlagBlock = vorschlaege.length
-        ? `<tbody class="vorschlag-block">
-                <tr class="vorschlag-kopf">
-                    <td colspan="6">
-                        <div class="vorschlag-kopf-inhalt">
-                            <span>Standardleitungen dieser Gruppe – Länge wählen, dann steht die Leitung in der Liste.</span>
-                            ${vorschlaege.length > 1 ? `
-                                <button type="button" class="btn btn-secondary btn-small"
-                                        onclick="gruppeAlleVorschlaegeUebernehmen()">Alle übernehmen</button>
-                            ` : ''}
-                        </div>
-                    </td>
-                </tr>
-                ${renderLeitungVorschlagZeilen(vorschlaege)}
-           </tbody>`
-        : '';
-
     return `
-        <div class="table-container gruppen-tabelle-container">
-            <table class="leitung-table leitung-tabelle">
+        <div class="table-container gk-tabelle-wrap">
+            <table class="gk-tabelle">
                 <thead>
                     <tr>
-                        <th>Nr.</th>
-                        <th>Verwendung / Ausführung</th>
-                        <th>Länge</th>
-                        <th>Artikelnr.</th>
-                        <th>Anz.</th>
-                        <th class="leitung-tabelle-aktionen">Aktionen</th>
+                        <th>Verbindung</th>
+                        <th>Leitung</th>
+                        <th class="gk-laenge">Länge</th>
+                        <th class="gk-stueck">Stück</th>
+                        <th class="gk-aktion"><span class="sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
                 <tbody>${zeilen}</tbody>
-                ${vorschlagBlock}
-                ${leitungen.length ? `
-                <tfoot>
-                    <tr>
-                        <td colspan="4">Gesamt</td>
-                        <td class="leitung-tabelle-anzahl">${gesamt}×</td>
-                        <td class="leitung-tabelle-aktionen"></td>
-                    </tr>
-                </tfoot>
-                ` : ''}
             </table>
         </div>
     `;
@@ -3284,16 +3721,16 @@ function renderLeitungTabelle(leitungen, vorschlaege = []) {
 
 
 /**
- * Zeichnet nur die Übersichtstabelle neu.
+ * Zeichnet Leitungstabelle, Vorschläge und Rahmen neu (Suche bleibt unangetastet).
  * @returns {void}
  */
 function aktualisiereLeitungsTabelle() {
     const container = document.getElementById('gruppen-leitungen-tabelle');
-    if (!container) return;
-    container.innerHTML = renderLeitungTabelle(
-        getLeitungenDerGruppe(aktiveGruppe),
-        getOffeneLeitungVorschlaege(aktiveGruppe)
-    );
+    if (container) container.innerHTML = renderLeitungTabelle(getLeitungenDerGruppe(aktiveGruppe));
+    const vorschlaege = document.getElementById('gk-vorschlaege');
+    const gruppe = getGruppe(aktiveGruppe);
+    if (vorschlaege && gruppe) vorschlaege.innerHTML = renderLeitungVorschlaege(gruppe);
+    renderGruppenRahmen();
 }
 
 
@@ -3360,10 +3797,21 @@ function aktualisiereArtikel(leitung) {
         return { text: `Artikelnummer: ${leitung.artikelnummer}`, klasse: 'manuell' };
     }
 
+    if (!leitung.artikelPrefix && leitung.kategorie && !(leitung.steckerA && leitung.steckerB)
+        && getSteckerVarianten(leitung.kategorie, leitung.hersteller).length) {
+        return {
+            text: leitung.steckerA || leitung.steckerB ? 'Bitte den zweiten Stecker wählen' : 'Bitte Stecker A und B wählen',
+            klasse: 'laenge-fehlt'
+        };
+    }
+
     const laengen = treffer?.verfuegbareLaengen || [];
     if (laengen.length) {
         // Die Leitung steht im Katalog, es fehlt nur die Länge – kein Fall für „neu anlegen“.
-        return { text: `Bitte Länge wählen (${laengen.map(formatLaenge).join(', ')} m)`, klasse: 'laenge-fehlt' };
+        const bereich = laengen.length > 6
+            ? `${formatLaenge(laengen[0])}–${formatLaenge(laengen[laengen.length - 1])} m`
+            : `${laengen.map(formatLaenge).join(', ')} m`;
+        return { text: `Bitte Länge wählen (${bereich})`, klasse: 'laenge-fehlt' };
     }
     return { text: 'Kein Katalogartikel – Artikelnummer manuell eintragen', klasse: 'no-match' };
 }
@@ -3380,22 +3828,24 @@ function renderLeitungKarte(leitung) {
     const meterware = istMeterwareKategorie(leitung.kategorie);
     const artikelInfo = aktualisiereArtikel(leitung);
 
-    const kategorieOptionen = [
-        { value: '', label: '-- Leitungstyp --' },
-        ...getKategorien().map(k => ({ value: k.id, label: `${k.icon} ${k.name}` }))
-    ];
-    const herstellerOptionen = [
-        { value: '', label: '-- Hersteller --' },
-        ...getHerstellerFuerKategorie(leitung.kategorie).map(h => ({ value: h, label: h }))
-    ];
-
     const nummer = getLeitungenDerGruppe(leitung.gruppe).findIndex(l => l.id === leitung.id) + 1;
     const zusatzOffen = leitung.artikelCustom || leitung.notiz ? ' open' : '';
+    const typFrei = !(leitung.artikelPrefix || leitung.festLeitungstyp);
 
     return `
         <div class="gruppen-karte leitung-karte" id="leitung-karte-${id}">
             <div class="leitung-karte-kopf">
                 <span class="leitung-karte-nummer">Leitung ${nummer} bearbeiten</span>
+            </div>
+
+            <div class="artikel-vorschlag gruppen-karte-artikel-box leitung-ergebnis ${artikelInfo.klasse}">
+                <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
+                ${!gesperrt && artikelInfo.klasse === 'no-match' ? `
+                    <button type="button" class="btn btn-secondary btn-small"
+                            onclick="gruppeOpenLeitungFormularAusLeitung('${id}')">
+                        Im Katalog anlegen…
+                    </button>
+                ` : ''}
             </div>
 
             <div class="form-group">
@@ -3406,43 +3856,21 @@ function renderLeitungKarte(leitung) {
                        oninput="gruppeUpdateLeitungText('${id}', 'bezeichnung', this.value)">
             </div>
 
-            <div class="gruppen-karte-grid">
-                ${(leitung.artikelPrefix || leitung.festLeitungstyp) ? '' : `
-                <div class="form-group">
-                    <label>Leitungstyp</label>
-                    <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'kategorie', this.value)">
-                        ${optionen(kategorieOptionen, leitung.kategorie)}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Hersteller</label>
-                    <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'hersteller', this.value)">
-                        ${optionen(herstellerOptionen, leitung.hersteller)}
-                    </select>
-                </div>
-                `}
+            <div class="leitung-auswahl">
+                ${typFrei ? renderKategorieChips(leitung, disabled) : ''}
+                ${typFrei && leitung.kategorie ? renderHerstellerChips(leitung, disabled) : ''}
                 ${meterware
                     ? renderMeterwareFelder(leitung, disabled)
                     : (leitung.artikelPrefix
                         ? renderPresetLeitungFelder(leitung, disabled)
-                        : renderSteckerFelder(leitung, disabled))}
-                <div class="form-group gruppen-karte-anzahl">
-                    <label>Anzahl</label>
+                        : (leitung.kategorie ? renderSteckerFelder(leitung, disabled) : ''))}
+                <div class="chip-feld">
+                    <span class="chip-feld-label">Anzahl</span>
                     ${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}
                 </div>
             </div>
 
             ${gesperrt ? '' : renderStandardAngebot(leitung)}
-
-            <div class="artikel-vorschlag gruppen-karte-artikel-box ${artikelInfo.klasse}">
-                <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
-                ${!gesperrt && artikelInfo.klasse === 'no-match' ? `
-                    <button type="button" class="btn btn-secondary btn-small"
-                            onclick="gruppeOpenLeitungFormularAusLeitung('${id}')">
-                        Im Katalog anlegen…
-                    </button>
-                ` : ''}
-            </div>
 
             <details class="gruppen-karte-details"${zusatzOffen}>
                 <summary>Artikelnummer überschreiben / Notiz</summary>
@@ -3559,13 +3987,188 @@ export function gruppeCloseLeitungEditor() {
 
 
 /**
+ * Text für ein HTML-Attribut – anders als escapeHtml auch mit Anführungszeichen.
+ * @param {string} wert
+ * @returns {string}
+ */
+function escapeAttr(wert) {
+    return String(wert ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+
+/**
+ * Wert als String-Argument in einem onclick-Attribut (`fn('…')`). Stecker wie
+ * „7/8" 5-polig“ enthalten Anführungszeichen, die sonst das Attribut beenden.
+ * @param {string} wert
+ * @returns {string}
+ */
+function jsArg(wert) {
+    return escapeAttr(String(wert ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+}
+
+
+/**
+ * Eine beschriftete Reihe anklickbarer Chips.
+ * @param {string} label
+ * @param {string} inhalt - Bereits gerenderte Chips bzw. Hinweis.
+ * @returns {string}
+ */
+function renderChipFeld(label, inhalt) {
+    return `
+        <div class="chip-feld">
+            <span class="chip-feld-label">${escapeHtml(label)}</span>
+            <div class="chip-liste">${inhalt}</div>
+        </div>
+    `;
+}
+
+
+/**
+ * @param {{label: string, onclick: string, aktiv?: boolean, gesperrt?: boolean, title?: string, klasse?: string}} chip
+ *        `label` wird unverändert übernommen und muss bereits escaped sein.
+ * @returns {string}
+ */
+function renderChip(chip) {
+    const klassen = ['chip', chip.klasse, chip.aktiv ? 'aktiv' : ''].filter(Boolean).join(' ');
+    return `<button type="button" class="${klassen}"${chip.gesperrt ? ' disabled' : ''}
+                    ${chip.title ? `title="${escapeAttr(chip.title)}"` : ''}
+                    ${'aktiv' in chip ? `aria-pressed="${chip.aktiv ? 'true' : 'false'}"` : ''}
+                    onclick="${chip.onclick}">${chip.label}</button>`;
+}
+
+
+/**
+ * @param {object} leitung
+ * @param {string} disabled
+ * @returns {string}
+ */
+function renderKategorieChips(leitung, disabled) {
+    const id = escapeHtml(leitung.id);
+    const chips = getKategorien().map(k => renderChip({
+        label: `${escapeHtml(k.icon || '')} ${escapeHtml(k.name)}`,
+        onclick: `gruppeUpdateLeitung('${id}', 'kategorie', '${jsArg(k.id)}')`,
+        aktiv: leitung.kategorie === k.id,
+        gesperrt: Boolean(disabled)
+    })).join('');
+    return renderChipFeld('Leitungstyp', chips);
+}
+
+
+/**
+ * Hersteller nur anbieten, wenn es überhaupt eine Wahl gibt.
+ * @param {object} leitung
+ * @param {string} disabled
+ * @returns {string}
+ */
+function renderHerstellerChips(leitung, disabled) {
+    const hersteller = getHerstellerFuerKategorie(leitung.kategorie);
+    if (hersteller.length < 2) return '';
+
+    const id = escapeHtml(leitung.id);
+    const chips = [{ value: '', label: 'Alle' }, ...hersteller.map(h => ({ value: h, label: h }))]
+        .map(h => renderChip({
+            label: escapeHtml(h.label),
+            onclick: `gruppeUpdateLeitung('${id}', 'hersteller', '${jsArg(h.value)}')`,
+            aktiv: (leitung.hersteller || '') === h.value,
+            gesperrt: Boolean(disabled)
+        })).join('');
+    return renderChipFeld('Hersteller', chips);
+}
+
+
+/**
+ * Alle Steckervarianten (inkl. gerade/gewinkelt) im Katalog-Pool. Mit `gegenstecker`
+ * nur die Stecker, die es zusammen mit diesem Gegenstecker als Artikel gibt.
+ * @param {string} kategorie
+ * @param {string} hersteller
+ * @param {string} [gegenstecker]
+ * @returns {string[]}
+ */
+function getSteckerVarianten(kategorie, hersteller, gegenstecker = '') {
+    const erlaubt = new Set(getSteckerAOptionen(kategorie, hersteller));
+    const varianten = new Set();
+
+    getPassendeArtikel(kategorie, hersteller, gegenstecker, '', '').forEach(a => {
+        if (!gegenstecker) {
+            [a.steckerA, a.steckerB].forEach(s => s && varianten.add(s));
+            return;
+        }
+        if (a.steckerA === gegenstecker && a.steckerB) varianten.add(a.steckerB);
+        if (a.steckerB === gegenstecker && a.steckerA) varianten.add(a.steckerA);
+    });
+
+    return Array.from(varianten)
+        .filter(s => erlaubt.has(getBaseSteckerTyp(s)))
+        .sort((a, b) => {
+            if (a === 'offen') return 1;
+            if (b === 'offen') return -1;
+            return a.localeCompare(b, 'de');
+        });
+}
+
+
+/**
+ * Chip-Beschriftung eines Steckers – die Ausrichtung als Symbol, damit es kein
+ * eigenes Umschaltfeld mehr braucht.
+ * @param {string} stecker
+ * @returns {string}
+ */
+function formatSteckerChip(stecker) {
+    if (!stecker || stecker === 'offen') return 'offenes Ende';
+    const { basis, ausrichtung } = zerlegeStecker(stecker);
+    const kurz = escapeHtml(basis.replace(/-polig\b/, '-pol'));
+    if (!hasAusrichtung(basis)) return kurz;
+    return ausrichtung === 'gewinkelt'
+        ? `${kurz} <span class="chip-sub">↳ gewinkelt</span>`
+        : `${kurz} <span class="chip-sub">↑ gerade</span>`;
+}
+
+
+/**
+ * Längen als Chips plus Feld für eine abweichende Wunschlänge.
+ * Eine Wunschlänge ohne Katalogartikel führt zur nächstgrößeren Katalog-Länge.
+ * @param {object} leitung
+ * @param {number[]} laengen
+ * @param {string} disabled
+ * @returns {string}
+ */
+function renderLaengenChips(leitung, laengen, disabled) {
+    const id = escapeHtml(leitung.id);
+    const aktuell = Number(leitung.laenge) || 0;
+    const imKatalog = laengen.includes(aktuell);
+
+    const chips = laengen.map(l => renderChip({
+        label: `${formatLaenge(l)} m`,
+        onclick: `gruppeUpdateLeitung('${id}', 'laenge', '${l}')`,
+        aktiv: aktuell === l,
+        gesperrt: Boolean(disabled),
+        klasse: 'chip-laenge'
+    })).join('');
+
+    const eingabe = `
+        <span class="chip-eingabe${aktuell && !imKatalog ? ' aktiv' : ''}">
+            <input type="number" min="0" step="0.1" placeholder="${laengen.length ? 'andere' : 'Meter'}"
+                   value="${aktuell && !imKatalog ? aktuell : ''}" aria-label="Länge in Metern"${disabled}
+                   onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">
+            <span>m</span>
+        </span>
+    `;
+    return renderChipFeld('Länge', chips + eingabe);
+}
+
+
+/**
  * Felder für vorgegebene Leitungsreihen (=011 Bremse): nur Länge wählen.
  * @param {object} leitung
  * @param {string} disabled
  * @returns {string}
  */
 function renderPresetLeitungFelder(leitung, disabled) {
-    const id = escapeHtml(leitung.id);
     const prefix = leitung.artikelPrefix || '';
     const laengen = getLaengenOptionen(
         leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, prefix
@@ -3578,114 +4181,69 @@ function renderPresetLeitungFelder(leitung, disabled) {
         : prefix;
 
     return `
-        <div class="form-group gruppen-karte-breit">
-            <label>Leitung</label>
-            <p class="gruppen-preset-info text-muted">${escapeHtml(typLabel)} · ${escapeHtml(leitung.hersteller || '')}</p>
-        </div>
-        <div class="form-group">
-            <label>Länge</label>
-            <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">
-                ${optionen([{ value: '', label: '-- Länge --' },
-                    ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], leitung.laenge || '')}
-            </select>
-        </div>
+        ${renderChipFeld('Leitung', `<span class="chip-info">${escapeHtml(typLabel)} · ${escapeHtml(leitung.hersteller || '')}</span>`)}
+        ${renderLaengenChips(leitung, laengen, disabled)}
     `;
 }
 
 
 /**
- * Felder für konfektionierte Leitungen mit Steckern.
+ * Stecker A, Stecker B und Länge für konfektionierte Leitungen. Nicht kombinierbare
+ * Stecker bleiben sichtbar, sind aber gesperrt – so sieht man, was es gibt.
  * @param {object} leitung
  * @param {string} disabled
  * @returns {string}
  */
 function renderSteckerFelder(leitung, disabled) {
     const id = escapeHtml(leitung.id);
-    const a = zerlegeStecker(leitung.steckerA);
-    const b = zerlegeStecker(leitung.steckerB);
+    const alle = getSteckerVarianten(leitung.kategorie, leitung.hersteller);
+    const passendZuA = leitung.steckerA
+        ? new Set(getSteckerVarianten(leitung.kategorie, leitung.hersteller, leitung.steckerA))
+        : null;
+    const passendZuB = leitung.steckerB
+        ? new Set(getSteckerVarianten(leitung.kategorie, leitung.hersteller, leitung.steckerB))
+        : null;
 
-    const steckerAListe = getSteckerAOptionen(leitung.kategorie, leitung.hersteller);
-    const steckerBListe = getSteckerBOptionen(leitung.kategorie, leitung.hersteller, leitung.steckerA);
-    const laengen = getLaengenOptionen(
-        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
-    );
-    const freieLaenge = freieLaengeIds.has(leitung.id) || !laengen.length
-        || (leitung.laenge > 0 && !laengen.includes(leitung.laenge));
+    const steckerChips = (seite, aktuell, passend) => {
+        // Gespeicherte Stecker, die nicht (mehr) im Katalog stehen, trotzdem anzeigen.
+        const liste = aktuell && !alle.includes(aktuell) ? [aktuell, ...alle] : alle;
+        if (!liste.length) return '<span class="chip-hinweis">Keine Stecker im Katalog</span>';
+        return liste.map(stecker => renderChip({
+            label: formatSteckerChip(stecker),
+            onclick: `gruppeWaehleStecker('${id}', '${seite}', '${jsArg(stecker)}')`,
+            aktiv: aktuell === stecker,
+            gesperrt: Boolean(disabled) || (passend && aktuell !== stecker && !passend.has(stecker)),
+            title: passend && !passend.has(stecker) ? 'Mit dem anderen Stecker nicht im Katalog' : ''
+        })).join('');
+    };
 
-    // Artikel ohne feste Länge (Meterware, Konfektion nach Maß) lassen sich nicht über
+    const beideGewaehlt = Boolean(leitung.steckerA && leitung.steckerB);
+    const laengen = beideGewaehlt
+        ? getLaengenOptionen(leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, '')
+        : [];
+
+    // Artikel ohne feste Länge (Konfektion nach Maß) lassen sich nicht über
     // die Länge unterscheiden – dann braucht es eine eigene Auswahl.
-    const ausfuehrungen = (leitung.steckerA && leitung.steckerB && !laengen.length)
-        ? getPassendeArtikel(
-            leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
-        )
+    const ausfuehrungen = beideGewaehlt && !laengen.length
+        ? getPassendeArtikel(leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, '')
         : [];
     const ausfuehrungFeld = ausfuehrungen.length > 1
-        ? `<div class="form-group gruppen-karte-breit">
-                <label>Ausführung</label>
-                <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'artikelnummer', this.value)">
-                    ${optionen(ausfuehrungen.map(artikel => ({
-                        value: artikel.artikelnummer,
-                        label: `${artikel.beschreibung} (${artikel.artikelnummer})`
-                    })), leitung.artikelnummer)}
-                </select>
-           </div>`
+        ? renderChipFeld('Ausführung', ausfuehrungen.map(artikel => renderChip({
+            label: escapeHtml(artikel.beschreibung || artikel.artikelnummer),
+            title: artikel.artikelnummer,
+            onclick: `gruppeUpdateLeitung('${id}', 'artikelnummer', '${jsArg(artikel.artikelnummer)}')`,
+            aktiv: leitung.artikelnummer === artikel.artikelnummer,
+            gesperrt: Boolean(disabled)
+        })).join(''))
         : '';
 
-    const laengeFeld = freieLaenge
-        ? `<input type="number" min="0" step="0.1" value="${leitung.laenge || ''}" placeholder="Meter"${disabled}
-                  onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">`
-        : `<select${disabled} onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">
-                ${optionen([{ value: '', label: '-- Länge --' },
-                    ...laengen.map(l => ({ value: l, label: `${formatLaenge(l)} m` }))], leitung.laenge || '')}
-           </select>`;
-
     return `
-        <div class="form-group">
-            <label>Stecker A</label>
-            <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'steckerA', this.value)">
-                ${optionen([{ value: '', label: '-- Stecker A --' }, ...steckerAListe], a.basis)}
-            </select>
-            ${renderAusrichtung(leitung.id, 'A', a)}
-        </div>
-        <div class="form-group">
-            <label>Stecker B</label>
-            <select${disabled} onchange="gruppeUpdateLeitung('${id}', 'steckerB', this.value)">
-                ${optionen([{ value: '', label: '-- Stecker B --' }, ...steckerBListe], b.basis)}
-            </select>
-            ${renderAusrichtung(leitung.id, 'B', b)}
-        </div>
+        ${renderChipFeld('Stecker A', steckerChips('A', leitung.steckerA, passendZuB))}
+        ${renderChipFeld('Stecker B', steckerChips('B', leitung.steckerB, passendZuA))}
         ${ausfuehrungFeld}
-        <div class="form-group">
-            <label>
-                Länge
-                ${laengen.length ? `<button type="button" class="gruppen-laenge-toggle"
-                    onclick="gruppeToggleFreieLaenge('${id}')">${freieLaenge ? 'aus Katalog' : 'frei eingeben'}</button>` : ''}
-            </label>
-            ${laengeFeld}
-        </div>
-    `;
-}
-
-
-/**
- * @param {string} leitungId
- * @param {string} seite
- * @param {{basis: string, ausrichtung: string}} stecker
- * @returns {string}
- */
-function renderAusrichtung(leitungId, seite, stecker) {
-    if (!hasAusrichtung(stecker.basis)) return '';
-    const gewinkelt = stecker.ausrichtung === 'gewinkelt';
-    const disabled = istSchreibgeschuetzt() ? ' disabled' : '';
-
-    return `
-        <div class="ausrichtung-toggle">
-            <button type="button" class="toggle-btn${gewinkelt ? ' gewinkelt' : ''}"${disabled}
-                    onclick="gruppeToggleAusrichtung('${escapeHtml(leitungId)}', '${seite}')">
-                <span class="toggle-icon">${gewinkelt ? '↳' : '↑'}</span>
-                <span class="toggle-text">${gewinkelt ? 'gewinkelt' : 'gerade'}</span>
-            </button>
-        </div>
+        ${beideGewaehlt
+            ? renderLaengenChips(leitung, laengen, disabled)
+            : renderChipFeld('Länge', '<span class="chip-hinweis">Erst beide Stecker wählen</span>')}
     `;
 }
 
@@ -3714,15 +4272,11 @@ function renderMeterwareFelder(leitung, disabled) {
                   oninput="gruppeUpdateLeitungText('${id}', 'artikelCustom', this.value)">`;
 
     return `
-        <div class="form-group gruppen-karte-breit">
-            <label>Leitungstyp / Querschnitt</label>
-            ${typFeld}
+        <div class="chip-feld">
+            <span class="chip-feld-label">Typ / Querschnitt</span>
+            <div class="chip-feld-eingabe">${typFeld}</div>
         </div>
-        <div class="form-group">
-            <label>Länge (Meter)</label>
-            <input type="number" min="0" step="0.1" value="${leitung.laenge || ''}" placeholder="z. B. 12,5"${disabled}
-                   onchange="gruppeUpdateLeitung('${id}', 'laenge', this.value)">
-        </div>
+        ${renderLaengenChips(leitung, [], disabled)}
     `;
 }
 
@@ -3730,8 +4284,9 @@ function renderMeterwareFelder(leitung, disabled) {
 /**
  * Legt eine neue Leitung anhand eines Presets an.
  * @param {string} presetId
- * @param {{laenge?: number, direkt?: boolean, stillsam?: boolean}} [options]
- *        `direkt` übernimmt ohne Editor, `stillsam` unterdrückt das Neuzeichnen (Sammelaktion).
+ * @param {{laenge?: number, direkt?: boolean, stillsam?: boolean, kategorie?: string}} [options]
+ *        `direkt` übernimmt ohne Editor, `stillsam` unterdrückt das Neuzeichnen (Sammelaktion),
+ *        `kategorie` gibt einer Leitung ohne Preset den Leitungstyp vor.
  * @returns {void}
  */
 export function gruppeAddLeitung(presetId, options = {}) {
@@ -3740,14 +4295,18 @@ export function gruppeAddLeitung(presetId, options = {}) {
     pickerState = null;
 
     const preset = getLeitungPreset(presetId) || {};
+    const kategorie = preset.kategorie || options.kategorie || '';
+    const einzigerHersteller = !preset.kategorie && kategorie
+        ? getHerstellerFuerKategorie(kategorie)
+        : [];
     const leitung = {
         id: generateId('ltg'),
         position: appState.currentProjekt.leitungen.length + 1,
         presetId: presetId || '',
         bezeichnung: preset.bezeichnung || preset.label || '',
-        kategorie: preset.kategorie || '',
+        kategorie,
         gruppe: aktiveGruppe,
-        hersteller: preset.hersteller || '',
+        hersteller: preset.hersteller || (einzigerHersteller.length === 1 ? einzigerHersteller[0] : ''),
         artikelnummer: preset.artikelnummer || '',
         artikelPrefix: preset.artikelPrefix || '',
         artikelWhitelist: preset.artikelWhitelist || null,
@@ -3812,11 +4371,83 @@ export async function gruppeAddLeitungAusReihe(prefix, referenzArtikelnummer) {
 
 
 /**
+ * Längen-Chip einer Katalogreihe im Auswahlfenster: Artikel sofort übernehmen.
  * @param {string} artikelnummer
- * @param {string} reihenPrefix - Gesetzt, wenn nur die Reihe feststeht und die Länge noch fehlt.
  * @returns {Promise<void>}
  */
-async function addLeitungAusKatalog(artikelnummer, reihenPrefix) {
+export async function gruppeAddKatalogArtikelDirekt(artikelnummer) {
+    await addLeitungAusKatalog(artikelnummer, '', { direkt: true });
+}
+
+
+/**
+ * Neue Leitung eines Leitungstyps, die im Fenster per Chips zusammengestellt wird.
+ * @param {string} [kategorie] - Ohne Angabe gilt der Filter im Auswahlfenster.
+ * @returns {void}
+ */
+export function gruppeAddLeitungMitKategorie(kategorie) {
+    gruppeAddLeitung('', { kategorie: kategorie ?? pickerState?.kategorie ?? '' });
+}
+
+
+/**
+ * Legt eine Kopie einer bereits erfassten Leitung in der aktiven Gruppe an.
+ * @param {string} quelleId
+ * @param {string|number} laenge - Leer: Länge der Vorlage übernehmen.
+ * @param {boolean} [imFenster] - Kopie im Bearbeitungsfenster öffnen statt direkt übernehmen.
+ * @returns {void}
+ */
+export function gruppeAddLeitungWie(quelleId, laenge, imFenster = false) {
+    if (!assertCanEdit('Leitungen hinzufügen')) return;
+    const quelle = findLeitung(quelleId);
+    if (!quelle) return;
+
+    const neueLaenge = parseFloat(String(laenge ?? '').replace(',', '.'));
+    const laengeGeaendert = neueLaenge > 0 && neueLaenge !== Number(quelle.laenge);
+    // Bei anderer Länge muss der Katalog den Artikel neu bestimmen (außer Meterware).
+    const artikelNeu = laengeGeaendert && !istMeterwareKategorie(quelle.kategorie);
+
+    const leitung = {
+        id: generateId('ltg'),
+        position: appState.currentProjekt.leitungen.length + 1,
+        presetId: quelle.presetId || '',
+        bezeichnung: quelle.bezeichnung || '',
+        kategorie: quelle.kategorie || '',
+        gruppe: aktiveGruppe,
+        hersteller: quelle.hersteller || '',
+        artikelnummer: artikelNeu ? '' : (quelle.artikelnummer || ''),
+        artikelPrefix: quelle.artikelPrefix || '',
+        artikelWhitelist: quelle.artikelWhitelist || null,
+        artikelCustom: artikelNeu ? '' : (quelle.artikelCustom || ''),
+        laenge: laengeGeaendert ? neueLaenge : (Number(quelle.laenge) || 0),
+        steckerA: quelle.steckerA || '',
+        steckerB: quelle.steckerB || '',
+        festLeitungstyp: quelle.festLeitungstyp === true,
+        notiz: '',
+        anzahl: 1,
+        erledigt: false
+    };
+
+    pickerState = null;
+    appState.currentProjekt.leitungen.push(leitung);
+    aktualisiereArtikel(leitung);
+    renumberLeitungen();
+    persistCurrentProjekt();
+
+    if (imFenster) aktiveLeitungId = leitung.id;
+    renderGruppenListe();
+    renderGruppenPanel();
+    if (imFenster) fokussiereLeitungEditor();
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @param {string} reihenPrefix - Gesetzt, wenn nur die Reihe feststeht und die Länge noch fehlt.
+ * @param {{direkt?: boolean}} [options] - `direkt` übernimmt ohne Bearbeitungsfenster.
+ * @returns {Promise<void>}
+ */
+async function addLeitungAusKatalog(artikelnummer, reihenPrefix, options = {}) {
     if (!assertCanEdit('Leitungen hinzufügen')) return;
 
     const artikel = getArtikelByNummer(artikelnummer);
@@ -3831,7 +4462,7 @@ async function addLeitungAusKatalog(artikelnummer, reihenPrefix) {
         id: generateId('ltg'),
         position: appState.currentProjekt.leitungen.length + 1,
         presetId: '',
-        bezeichnung: nurReihe
+        bezeichnung: nurReihe || options.direkt
             ? ohneLaengenangabe(artikel.beschreibung) || artikel.artikelnummer
             : (artikel.beschreibung || artikel.artikelnummer),
         kategorie: artikel.kategorie || '',
@@ -3853,6 +4484,12 @@ async function addLeitungAusKatalog(artikelnummer, reihenPrefix) {
     appState.currentProjekt.leitungen.push(leitung);
     renumberLeitungen();
     persistCurrentProjekt();
+
+    if (options.direkt) {
+        renderGruppenListe();
+        renderGruppenPanel();
+        return;
+    }
 
     standardAngebotIds.add(leitung.id);
     aktiveLeitungId = leitung.id;
@@ -3915,11 +4552,17 @@ export function gruppeUpdateLeitung(id, feld, wert) {
         leitung.artikelnummer = '';
         leitung.artikelPrefix = '';
         leitung.laenge = 0;
-        freieLaengeIds.delete(id);
     } else if (feld === 'hersteller') {
         leitung.hersteller = wert;
         leitung.artikelnummer = '';
         leitung.artikelPrefix = '';
+        // Stecker, die es bei diesem Hersteller nicht gibt, verwerfen.
+        if (!istMeterwareKategorie(leitung.kategorie)) {
+            const varianten = getSteckerVarianten(leitung.kategorie, wert);
+            if (!varianten.includes(leitung.steckerA)) leitung.steckerA = '';
+            if (!varianten.includes(leitung.steckerB)) leitung.steckerB = '';
+            passeLaengeAn(leitung);
+        }
     } else if (feld === 'steckerA') {
         const ausrichtung = zerlegeStecker(leitung.steckerA).ausrichtung;
         leitung.steckerA = getFullSteckerTyp(wert, ausrichtung);
@@ -3943,6 +4586,58 @@ export function gruppeUpdateLeitung(id, feld, wert) {
     } else if (feld === 'artikelnummer') {
         leitung.artikelnummer = wert;
     }
+
+    aktualisiereArtikel(leitung);
+    persistCurrentProjekt();
+    ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
+    aktualisiereLeitungsTabelle();
+}
+
+
+/**
+ * Behält die Länge nur, wenn es sie für die neue Steckerkombination gibt.
+ * Gibt es genau eine Länge, wird sie gleich gesetzt.
+ * @param {object} leitung
+ * @returns {void}
+ */
+function passeLaengeAn(leitung) {
+    if (!leitung.steckerA || !leitung.steckerB) {
+        leitung.laenge = 0;
+        return;
+    }
+    const laengen = getLaengenOptionen(
+        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+    );
+    if (laengen.length === 1) leitung.laenge = laengen[0];
+    else if (laengen.length && !laengen.includes(Number(leitung.laenge))) leitung.laenge = 0;
+}
+
+
+/**
+ * Stecker-Chip angeklickt. Ein zweiter Klick hebt die Auswahl auf. Passt der andere
+ * Stecker nicht mehr, wird er verworfen; gibt es nur einen Gegenstecker, wird er gesetzt.
+ * @param {string} id
+ * @param {string} seite - 'A' oder 'B'.
+ * @param {string} stecker - Vollständiger Steckertyp inkl. Ausrichtung.
+ * @returns {void}
+ */
+export function gruppeWaehleStecker(id, seite, stecker) {
+    const leitung = findLeitung(id);
+    if (!leitung || istSchreibgeschuetzt()) return;
+
+    const feld = seite === 'A' ? 'steckerA' : 'steckerB';
+    const anderes = seite === 'A' ? 'steckerB' : 'steckerA';
+    leitung[feld] = leitung[feld] === stecker ? '' : stecker;
+
+    if (leitung[feld]) {
+        const passend = getSteckerVarianten(leitung.kategorie, leitung.hersteller, leitung[feld]);
+        if (leitung[anderes] && !passend.includes(leitung[anderes])) leitung[anderes] = '';
+        if (!leitung[anderes] && passend.length === 1) leitung[anderes] = passend[0];
+    }
+
+    leitung.artikelnummer = '';
+    leitung.artikelPrefix = '';
+    passeLaengeAn(leitung);
 
     aktualisiereArtikel(leitung);
     persistCurrentProjekt();
@@ -3980,43 +4675,6 @@ export function gruppeUpdateLeitungText(id, feld, wert) {
 
 /**
  * @param {string} id
- * @param {string} seite - 'A' oder 'B'.
- * @returns {void}
- */
-export function gruppeToggleAusrichtung(id, seite) {
-    const leitung = findLeitung(id);
-    if (!leitung || istSchreibgeschuetzt()) return;
-
-    const feld = seite === 'A' ? 'steckerA' : 'steckerB';
-    const { basis, ausrichtung } = zerlegeStecker(leitung[feld]);
-    leitung[feld] = getFullSteckerTyp(basis, ausrichtung === 'gewinkelt' ? 'gerade' : 'gewinkelt');
-    leitung.laenge = 0;
-    leitung.artikelnummer = '';
-
-    aktualisiereArtikel(leitung);
-    persistCurrentProjekt();
-    ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
-    aktualisiereLeitungsTabelle();
-}
-
-
-/**
- * @param {string} id
- * @returns {void}
- */
-export function gruppeToggleFreieLaenge(id) {
-    const leitung = findLeitung(id);
-    if (!leitung) return;
-
-    if (freieLaengeIds.has(id)) freieLaengeIds.delete(id);
-    else freieLaengeIds.add(id);
-
-    ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
-}
-
-
-/**
- * @param {string} id
  * @returns {Promise<void>}
  */
 export async function gruppeDeleteLeitung(id) {
@@ -4034,7 +4692,6 @@ export async function gruppeDeleteLeitung(id) {
     if (liste[index]?.id !== id) return;
 
     liste.splice(index, 1);
-    freieLaengeIds.delete(id);
     if (aktiveLeitungId === id) aktiveLeitungId = '';
     renumberLeitungen();
     persistCurrentProjekt();
