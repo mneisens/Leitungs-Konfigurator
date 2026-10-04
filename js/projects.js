@@ -768,23 +768,35 @@ export async function loadProjects() {
     }
 
     const projects = getProjects();
+    const toolbar = document.querySelector('#view-home .resource-toolbar');
     if (projects.length === 0) {
         liste.innerHTML = '';
         liste.style.display = 'none';
         empty.style.display = 'block';
+        if (toolbar) toolbar.hidden = true;
+        const countEl = document.getElementById('projekt-count');
+        if (countEl) countEl.textContent = '';
         return;
     }
 
-    liste.style.display = 'grid';
+    if (toolbar) toolbar.hidden = false;
+    liste.style.display = 'block';
     empty.style.display = 'none';
     liste.innerHTML = '';
     projects.forEach(p => {
         const fragment = cloneTemplate('project-card');
         const card = fragment.querySelector('.projekt-card');
         card.dataset.projektId = p.id;
+        card.dataset.search = [
+            p.projektnummer,
+            p.name,
+            p.kunde,
+            p.ownerEmail,
+            getProjectOwnerLabel(p)
+        ].filter(Boolean).join(' ').toLowerCase();
         setText(fragment, '[data-field="nummer"]', p.projektnummer);
         setText(fragment, '[data-field="name"]', p.name);
-        setText(fragment, '[data-field="leitungen-count"]', `Leitungen: ${p.leitungen ? p.leitungen.length : 0}`);
+        setText(fragment, '[data-field="leitungen-count"]', `${p.leitungen ? p.leitungen.length : 0} Leitungen`);
 
         const role = getProjectRole(p);
         const badgeEl = fragment.querySelector('[data-field="role-badge"]');
@@ -821,6 +833,34 @@ export async function loadProjects() {
         deleteBtn?.addEventListener('click', e => { e.stopPropagation(); deleteProjekt(p.id); });
         liste.appendChild(fragment);
     });
+    filterProjektListe();
+}
+
+
+/**
+ * Filtert die Projektliste nach Suchbegriff.
+ * @returns {void}
+ */
+export function filterProjektListe() {
+    const input = document.getElementById('projekt-suche');
+    const liste = document.getElementById('projekt-liste');
+    const countEl = document.getElementById('projekt-count');
+    if (!liste) return;
+
+    const query = (input?.value || '').trim().toLowerCase();
+    const cards = [...liste.querySelectorAll('.projekt-card')];
+    let visible = 0;
+    cards.forEach(card => {
+        const haystack = card.dataset.search || '';
+        const match = !query || haystack.includes(query);
+        card.hidden = !match;
+        if (match) visible += 1;
+    });
+    if (countEl) {
+        countEl.textContent = cards.length
+            ? `${visible} von ${cards.length}`
+            : '';
+    }
 }
 
 

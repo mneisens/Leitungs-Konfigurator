@@ -19,6 +19,8 @@ import {
     onKatalogKategorieChange,
     onKatalogSearch,
     onKatalogHerstellerChange,
+    openKatalogLeitungModal,
+    closeKatalogLeitungModal,
     addKatalogArtikel,
     deleteKatalogArtikel,
     setKatalogTab,
@@ -34,6 +36,7 @@ import {
 } from './js/katalog-view.js';
 import {
     loadProjects,
+    filterProjektListe,
     openNewProjektForm,
     saveProjekt,
     shareProjectWithUser,
@@ -44,23 +47,9 @@ import {
     addCadLinkZeile,
     removeCadLinkZeile
 } from './js/projects.js';
-import { showView } from './js/navigation.js';
+import { showView, toggleSidebar, closeSidebar } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
 import { exportAllProjects, importProjects, exportCSV, exportPDF } from './js/export.js';
-import { onOelflexChange } from './js/oelflex.js';
-import {
-    backToOverview,
-    saveLeitungAndNotify,
-    addNewLeitung,
-    prevLeitung,
-    nextLeitung,
-    saveLeitung,
-    onKategorieFilterChange,
-    onHerstellerChange,
-    onSteckerChange,
-    onLaengeChange,
-    toggleAusrichtung
-} from './js/konfigurator.js';
 import {
     filterGruppenListe,
     selectGruppe,
@@ -219,6 +208,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 Object.assign(window, {
     showView,
+    toggleSidebar,
+    closeSidebar,
     logoutUser,
     registerUser,
     loginUser,
@@ -226,6 +217,7 @@ Object.assign(window, {
     resetPassword,
     exportAllProjects,
     importProjects,
+    filterProjektListe,
     openNewProjektForm,
     saveProjekt,
     shareProjectWithUser,
@@ -238,6 +230,8 @@ Object.assign(window, {
     onKatalogKategorieChange,
     onKatalogSearch,
     onKatalogHerstellerChange,
+    openKatalogLeitungModal,
+    closeKatalogLeitungModal,
     addKatalogArtikel,
     deleteKatalogArtikel,
     setKatalogTab,
@@ -250,18 +244,6 @@ Object.assign(window, {
     editKatalogBauteil,
     cancelEditKatalogBauteil,
     revertKatalogBauteil,
-    backToOverview,
-    onKategorieFilterChange,
-    onHerstellerChange,
-    onSteckerChange,
-    toggleAusrichtung,
-    onOelflexChange,
-    onLaengeChange,
-    prevLeitung,
-    nextLeitung,
-    saveLeitungAndNotify,
-    addNewLeitung,
-    saveLeitung,
     filterGruppenListe,
     selectGruppe,
     gruppeWechseln,

@@ -291,12 +291,27 @@ export function renderGruppenKonfigurator() {
         titel.textContent = `Gruppen-Konfigurator – ${projekt.projektnummer || ''} ${projekt.name || ''}`.trim();
     }
 
-    if (!getGruppe(aktiveGruppe)) {
+    const pendingCode = appState.pendingGruppenCode || '';
+    const pendingLeitungId = appState.pendingGruppenEditLeitungId || '';
+    appState.pendingGruppenCode = '';
+    appState.pendingGruppenEditLeitungId = '';
+
+    if (pendingCode && getGruppe(pendingCode)) {
+        aktiveGruppe = pendingCode;
+    } else if (!getGruppe(aktiveGruppe)) {
         aktiveGruppe = getGruppen()[0]?.code || '';
     }
 
     renderGruppenListe();
     renderGruppenPanel();
+
+    if (pendingLeitungId) {
+        setTimeout(() => {
+            if (findLeitung(pendingLeitungId)) {
+                gruppeEditLeitung(pendingLeitungId);
+            }
+        }, 0);
+    }
 }
 
 

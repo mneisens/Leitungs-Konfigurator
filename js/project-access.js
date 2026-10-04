@@ -314,15 +314,16 @@ export function updateReadOnlyBanner() {
  */
 export function updateSharingButton() {
     const btn = document.getElementById('btn-projekt-freigabe');
+    const navBtn = document.getElementById('nav-freigabe');
     const projekt = appState.currentProjekt;
-    if (!btn) return;
 
     const show = appState.firebaseReady
         && appState.currentUser
         && projekt
         && canManageSharing(projekt);
 
-    btn.hidden = !show;
+    if (btn) btn.hidden = !show;
+    navBtn?.classList.toggle('hidden', !show);
 }
 
 
@@ -408,9 +409,7 @@ export function updateVisibilityToggle() {
 export function applyReadOnlyUI() {
     const canEdit = appState.currentProjekt ? canEditProject(appState.currentProjekt) : true;
     const selector = [
-        '.uebersicht-actions button:not([data-allow-readonly])',
-        '#view-konfigurator .btn-success',
-        '#view-konfigurator .btn-danger'
+        '.uebersicht-actions button:not([data-allow-readonly])'
     ].join(',');
 
     document.querySelectorAll(selector).forEach(el => {

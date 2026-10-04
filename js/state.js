@@ -12,6 +12,8 @@ export const appState = {
     leitungGruppen: [],
     currentProjekt: null,
     currentLeitungIndex: 0,
+    pendingGruppenCode: '',
+    pendingGruppenEditLeitungId: '',
     currentArtikelVorschlag: null,
     modalResolve: null,
     projectsCache: [],

@@ -214,6 +214,29 @@ function resetKatalogForm() {
 
 
 /**
+ * Öffnet das Popup zum Nachtragen einer Leitung.
+ * @returns {void}
+ */
+export function openKatalogLeitungModal() {
+    populateKatalogFormOptions();
+    resetKatalogForm();
+    const overlay = document.getElementById('katalog-leitung-overlay');
+    if (overlay) overlay.classList.add('active');
+    document.getElementById('katalog-form-artikelnummer')?.focus();
+}
+
+
+/**
+ * Schließt das Popup zum Nachtragen einer Leitung.
+ * @returns {void}
+ */
+export function closeKatalogLeitungModal() {
+    const overlay = document.getElementById('katalog-leitung-overlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+
+/**
  * @returns {Promise<void>}
  */
 export async function addKatalogArtikel() {
@@ -275,6 +298,7 @@ export async function addKatalogArtikel() {
         resetKatalogForm();
         populateKatalogFormOptions();
         renderKatalogListe();
+        closeKatalogLeitungModal();
         showModal(`Leitung ${artikelnummer} wurde nachgetragen und steht ab sofort zur Verfügung.`, {
             type: 'success',
             title: 'Gespeichert'
@@ -335,6 +359,9 @@ export function setKatalogTab(tab) {
     }
     if (panelLeitungen) panelLeitungen.hidden = isBauteile;
     if (panelBauteile) panelBauteile.hidden = !isBauteile;
+
+    const addLeitungBtn = document.getElementById('katalog-leitung-add-btn');
+    if (addLeitungBtn) addLeitungBtn.hidden = isBauteile;
 
     if (isBauteile) {
         renderKatalogBauteileListe();

@@ -3,6 +3,31 @@
  */
 import { appState } from './state.js';
 
+const PROJECT_VIEWS = new Set([
+    'uebersicht',
+    'gruppen',
+    'stueckliste',
+    'topologie',
+    'projekt-freigabe',
+    'projekt-form'
+]);
+
+const VIEW_TITLES = {
+    auth: 'Anmeldung',
+    home: 'Projekte',
+    katalog: 'Katalog',
+    'projekt-form': 'Projekt',
+    gruppen: 'Gruppen',
+    uebersicht: 'Übersicht',
+    'projekt-freigabe': 'Freigaben',
+    stueckliste: 'Stückliste',
+    topologie: 'Topologie'
+};
+
+const NAV_ALIAS = {
+    'projekt-form': 'home'
+};
+
 
 /**
  * Wechselt zur angegebenen Ansicht.
@@ -14,15 +39,68 @@ export function showView(viewName) {
         viewName = 'auth';
     }
 
-    const konfiguratorActive = document.getElementById('view-konfigurator')?.classList.contains('active');
-    if (konfiguratorActive && viewName !== 'konfigurator') {
-        import('./konfigurator-stecker.js').then(m => m.handleLeaveKonfigurator());
-    }
-
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const view = document.getElementById('view-' + viewName);
     if (view) view.classList.add('active');
+
+    updateShellNav(viewName);
+    closeSidebar();
     runViewHandler(viewName);
+}
+
+
+/**
+ * Aktualisiert Sidebar-Active-State, Projekt-Sektion und Topbar.
+ * @param {string} viewName
+ * @returns {void}
+ */
+export function updateShellNav(viewName) {
+    const isAuth = viewName === 'auth';
+    document.body.classList.toggle('auth-layout', isAuth);
+
+    const topbarTitle = document.getElementById('topbar-title');
+    if (topbarTitle) {
+        topbarTitle.textContent = VIEW_TITLES[viewName] || 'Leitungskonfigurator';
+    }
+
+    const projectSection = document.getElementById('nav-project-section');
+    const projectName = document.getElementById('nav-project-name');
+    const showProjectNav = !isAuth && !!appState.currentProjekt && PROJECT_VIEWS.has(viewName);
+    projectSection?.classList.toggle('hidden', !showProjectNav);
+
+    if (projectName && appState.currentProjekt) {
+        const nummer = appState.currentProjekt.projektnummer || '';
+        const name = appState.currentProjekt.name || '';
+        projectName.textContent = [nummer, name].filter(Boolean).join(' · ');
+    }
+
+    import('./project-access.js').then(m => m.updateSharingButton());
+
+    const activeNav = NAV_ALIAS[viewName] || viewName;
+    document.querySelectorAll('.sidebar-link[data-nav]').forEach(link => {
+        const isActive = link.dataset.nav === activeNav;
+        link.classList.toggle('active', isActive);
+        if (isActive) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+    });
+}
+
+
+/**
+ * Öffnet/schließt die mobile Sidebar.
+ * @returns {void}
+ */
+export function toggleSidebar() {
+    document.body.classList.toggle('sidebar-open');
+}
+
+
+/**
+ * Schließt die mobile Sidebar.
+ * @returns {void}
+ */
+export function closeSidebar() {
+    document.body.classList.remove('sidebar-open');
 }
 
 
@@ -38,7 +116,6 @@ function runViewHandler(viewName) {
         katalog: () => import('./katalog-view.js').then(m => m.renderKatalogView()),
         'projekt-form': () => {},
         gruppen: () => import('./gruppen-konfigurator.js').then(m => m.renderGruppenKonfigurator()),
-        konfigurator: () => import('./konfigurator-core.js').then(m => m.initKonfigurator()),
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),
         'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
         stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),

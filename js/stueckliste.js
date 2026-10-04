@@ -7,7 +7,7 @@ import { escapeHtml } from './utils.js';
 import { showView } from './navigation.js';
 import { getArtikelByNummer, getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
-import { isLeitungMeaningful, getLeitungStueckzahl } from './konfigurator-stecker.js';
+import { isLeitungMeaningful, getLeitungStueckzahl } from './leitung-utils.js';
 import { istMeterwareKategorie, getKategorien, getKategorieName } from './leitung-optionen.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';

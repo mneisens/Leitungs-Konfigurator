@@ -597,12 +597,23 @@ export function deleteBauteil(bauteilId) {
 
 
 /**
- * editLeitung.
+ * Öffnet eine Leitung im Gruppen-Konfigurator.
+ * @param {number} index
  * @returns {void}
  */
 export function editLeitung(index) {
+    const leitung = appState.currentProjekt?.leitungen?.[index];
+    if (!leitung?.id) return;
+
     appState.currentLeitungIndex = index;
-    showView('konfigurator');
+    appState.pendingGruppenCode = leitung.gruppe || '';
+    appState.pendingGruppenEditLeitungId = leitung.id;
+    // Window-API nutzen: zuverlässig nach Auth/Projektwechsel verdrahtet
+    if (typeof window.showView === 'function') {
+        window.showView('gruppen');
+    } else {
+        showView('gruppen');
+    }
 }
 
 

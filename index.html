@@ -6,20 +6,68 @@
     <title>Leitungs-Konfigurator | Anlagenbau</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <header class="app-header">
-        <div class="header-content">
-            <h1 class="logo" onclick="showView('home')">synchropress <span>Leitungskonfigurator</span></h1>
-            <nav class="main-nav">
-                <button class="nav-btn" onclick="showView('home')">Projekte</button>
-                <button class="nav-btn hidden" id="nav-katalog" onclick="showView('katalog')">Katalog</button>
-                <span class="nav-user hidden" id="nav-user"></span>
-                <button class="nav-btn hidden" id="nav-logout" onclick="logoutUser()">Logout</button>
-            </nav>
-        </div>
-    </header>
+<body class="auth-layout">
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
-    <main class="app-main">
+    <div class="app-shell">
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-brand" onclick="showView('home')" title="Zur Projektliste">
+                <span class="sidebar-brand-mark">sp</span>
+                <div class="sidebar-brand-text">
+                    <strong>synchropress</strong>
+                    <span>Leitungskonfigurator</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Hauptnavigation">
+                <div class="sidebar-section">
+                    <p class="sidebar-section-label">Arbeitsbereich</p>
+                    <button type="button" class="sidebar-link" data-nav="home" id="nav-home" onclick="showView('home')">
+                        Projekte
+                    </button>
+                    <button type="button" class="sidebar-link hidden" data-nav="katalog" id="nav-katalog" onclick="showView('katalog')">
+                        Katalog
+                    </button>
+                </div>
+
+                <div class="sidebar-section hidden" id="nav-project-section">
+                    <p class="sidebar-section-label">Aktuelles Projekt</p>
+                    <p class="sidebar-project-name" id="nav-project-name"></p>
+                    <button type="button" class="sidebar-link" data-nav="uebersicht" id="nav-uebersicht" onclick="showView('uebersicht')">
+                        Übersicht
+                    </button>
+                    <button type="button" class="sidebar-link" data-nav="gruppen" id="nav-gruppen" onclick="showView('gruppen')">
+                        Gruppen
+                    </button>
+                    <button type="button" class="sidebar-link" data-nav="stueckliste" id="nav-stueckliste" onclick="showView('stueckliste')">
+                        Stückliste
+                    </button>
+                    <button type="button" class="sidebar-link" data-nav="topologie" id="nav-topologie" onclick="showView('topologie')">
+                        Topologie
+                    </button>
+                    <button type="button" class="sidebar-link hidden" data-nav="projekt-freigabe" id="nav-freigabe" onclick="openProjectSharing()">
+                        Freigaben
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="nav-user hidden" id="nav-user"></span>
+                <button type="button" class="sidebar-link sidebar-logout hidden" id="nav-logout" onclick="logoutUser()">
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <div class="app-body">
+            <header class="app-topbar">
+                <button type="button" class="btn btn-secondary btn-small sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menü öffnen">
+                    Menü
+                </button>
+                <div class="topbar-title" id="topbar-title">Projekte</div>
+            </header>
+
+            <main class="app-main">
         <!-- View: Login / Registrierung -->
         <section id="view-auth" class="view">
             <div class="auth-wrapper">
@@ -84,13 +132,13 @@
         <!-- View: Startseite / Projektliste -->
         <section id="view-home" class="view">
             <div class="view-header">
-                <h2>Meine Projekte</h2>
+                <h2>Projekte</h2>
                 <div class="header-actions">
                     <button class="btn btn-secondary btn-small" onclick="exportAllProjects()">
-                        💾 Projekte speichern
+                        Speichern
                     </button>
                     <label class="btn btn-secondary btn-small" style="cursor: pointer;">
-                        📂 Projekte laden
+                        Laden
                         <input type="file" id="import-file" accept=".json" onchange="importProjects(event)" style="display: none;">
                     </label>
                     <button class="btn btn-primary" onclick="openNewProjektForm()">
@@ -98,24 +146,37 @@
                     </button>
                 </div>
             </div>
-            <div id="projekt-liste" class="projekt-liste">
-                <!-- Projekte werden hier dynamisch eingefügt -->
-            </div>
-            <div id="keine-projekte" class="empty-state">
-                <div class="empty-icon">📋</div>
-                <h3>Keine Projekte vorhanden</h3>
-                <p>Erstellen Sie Ihr erstes Projekt, um mit der Leitungskonfiguration zu beginnen.</p>
-                <button class="btn btn-primary" onclick="openNewProjektForm()">
-                    Projekt anlegen
-                </button>
+            <div class="resource-card">
+                <div class="resource-toolbar">
+                    <div class="form-group resource-search-group">
+                        <label for="projekt-suche" class="sr-only">Projekte suchen</label>
+                        <input type="search" id="projekt-suche" placeholder="Projekte suchen…" oninput="filterProjektListe()">
+                    </div>
+                    <span class="katalog-count" id="projekt-count"></span>
+                </div>
+                <div id="projekt-liste" class="projekt-liste">
+                    <!-- Projekte werden hier dynamisch eingefügt -->
+                </div>
+                <div id="keine-projekte" class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h3>Keine Projekte vorhanden</h3>
+                    <p>Erstellen Sie Ihr erstes Projekt, um mit der Leitungskonfiguration zu beginnen.</p>
+                    <button class="btn btn-primary" onclick="openNewProjektForm()">
+                        Projekt anlegen
+                    </button>
+                </div>
             </div>
         </section>
 
         <!-- View: Katalog (Leitungen / Bauteile) -->
         <section id="view-katalog" class="view">
             <div class="view-header">
-                <button class="btn btn-back" onclick="showView('home')">← Zurück</button>
                 <h2>Katalog</h2>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-primary" id="katalog-leitung-add-btn" onclick="openKatalogLeitungModal()">
+                        + Leitung nachtragen
+                    </button>
+                </div>
             </div>
 
             <div class="katalog-tabs" role="tablist">
@@ -126,7 +187,7 @@
             <div id="katalog-panel-leitungen" class="katalog-panel">
                 <div class="form-card">
                     <p class="text-muted">
-                        Alle verfügbaren Leitungen nach Kategorie. Neue Leitungen hier nachtragen – sie stehen danach in Assistent und Konfigurator zur Verfügung.
+                        Alle verfügbaren Leitungen nach Kategorie. Neue Leitungen über „Leitung nachtragen“ ergänzen – sie stehen danach im Gruppen-Konfigurator zur Verfügung.
                     </p>
 
                     <div class="katalog-toolbar">
@@ -160,58 +221,6 @@
                             <tbody id="katalog-tabelle-body"></tbody>
                         </table>
                     </div>
-                </div>
-
-                <div class="form-card katalog-add-card">
-                    <h3>Leitung nachtragen</h3>
-                    <form id="katalog-add-form" onsubmit="event.preventDefault(); addKatalogArtikel();">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="katalog-form-kategorie">Kategorie *</label>
-                                <select id="katalog-form-kategorie" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label for="katalog-form-hersteller">Hersteller *</label>
-                                <select id="katalog-form-hersteller" onchange="onKatalogHerstellerChange()" required></select>
-                            </div>
-                            <div class="form-group" id="katalog-hersteller-custom-group" hidden>
-                                <label for="katalog-form-hersteller-custom">Neuer Hersteller *</label>
-                                <input type="text" id="katalog-form-hersteller-custom" placeholder="z. B. Harting">
-                            </div>
-                            <div class="form-group">
-                                <label for="katalog-form-artikelnummer">Artikelnummer *</label>
-                                <input type="text" id="katalog-form-artikelnummer" placeholder="z. B. ZK1090-…" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="katalog-form-beschreibung">Beschreibung *</label>
-                            <input type="text" id="katalog-form-beschreibung" placeholder="Kurzbeschreibung der Leitung" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="katalog-form-stecker-a">Stecker Seite A *</label>
-                                <input type="text" id="katalog-form-stecker-a" list="katalog-stecker-vorschlaege" placeholder="z. B. M8 4-polig gerade" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="katalog-form-stecker-b">Stecker Seite B *</label>
-                                <input type="text" id="katalog-form-stecker-b" list="katalog-stecker-vorschlaege" placeholder="z. B. RJ45" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="katalog-form-laenge">Länge (m) *</label>
-                                <input type="number" id="katalog-form-laenge" min="0" step="0.01" placeholder="z. B. 5">
-                            </div>
-                            <div class="form-group katalog-meterware-group">
-                                <label class="admin-check">
-                                    <input type="checkbox" id="katalog-form-meterware">
-                                    Meterware (Länge frei wählbar)
-                                </label>
-                            </div>
-                        </div>
-                        <datalist id="katalog-stecker-vorschlaege"></datalist>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">+ Leitung speichern</button>
-                        </div>
-                    </form>
                 </div>
             </div>
 
@@ -413,162 +422,6 @@
             </div>
         </section>
 
-        <!-- View: Leitungs-Konfigurator -->
-        <section id="view-konfigurator" class="view">
-            <div class="view-header">
-                <button class="btn btn-back" onclick="backToOverview()">← Zur Übersicht</button>
-                <h2 id="konfig-projekt-titel">Leitungen konfigurieren</h2>
-            </div>
-            
-            <div class="konfigurator-container">
-                <div class="konfigurator-layout">
-                    <div class="konfigurator-main">
-                        <div class="konfig-progress">
-                            <span id="konfig-position">Leitung 1</span>
-                            <span class="progress-divider">von</span>
-                            <span id="konfig-total">1</span>
-                        </div>
-                        
-                        <form id="leitung-form" class="form-card" onsubmit="saveLeitung(event)">
-                            <input type="hidden" id="leitung-id">
-                            <input type="hidden" id="leitung-position">
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="leitung-bezeichnung">Bezeichnung / Beschreibung *</label>
-                                    <input type="text" id="leitung-bezeichnung" required 
-                                           placeholder="z.B. Motor M1 zu SPS Klemme X1">
-                                </div>
-                                <div class="form-group">
-                                    <label for="leitung-kategorie">Kategorie</label>
-                                    <select id="leitung-kategorie" onchange="onKategorieFilterChange()">
-                                        <option value="">-- Bitte wählen --</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="leitung-gruppe">Gruppe</label>
-                                <input type="text" id="leitung-gruppe" list="leitung-gruppen-vorschlaege" placeholder="Aus Liste wählen oder eigene Bezeichnung eingeben…">
-                                <datalist id="leitung-gruppen-vorschlaege"></datalist>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="leitung-hersteller">1. Hersteller wählen</label>
-                                <select id="leitung-hersteller" onchange="onHerstellerChange()">
-                                    <option value="">-- Bitte wählen --</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-row" id="stecker-row">
-                                <div class="form-group">
-                                    <label for="leitung-stecker-a">2. Stecker Seite A</label>
-                                    <select id="leitung-stecker-a" onchange="onSteckerChange()">
-                                        <option value="">-- Bitte wählen --</option>
-                                    </select>
-                                    <div class="ausrichtung-toggle">
-                                        <button type="button" id="ausrichtung-a" class="toggle-btn" onclick="toggleAusrichtung('a')">
-                                            <span class="toggle-icon">↑</span>
-                                            <span class="toggle-text">gerade</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="leitung-stecker-b">3. Stecker Seite B</label>
-                                    <select id="leitung-stecker-b" onchange="onSteckerChange()">
-                                        <option value="">-- Bitte wählen --</option>
-                                    </select>
-                                    <div class="ausrichtung-toggle">
-                                        <button type="button" id="ausrichtung-b" class="toggle-btn" onclick="toggleAusrichtung('b')">
-                                            <span class="toggle-icon">↑</span>
-                                            <span class="toggle-text">gerade</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-row" id="oelflex-row" style="display: none;">
-                                <div class="form-group">
-                                    <label for="oelflex-adern">2. Aderzahl</label>
-                                    <select id="oelflex-adern" onchange="onOelflexChange()">
-                                        <option value="">-- Bitte wählen --</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="oelflex-querschnitt">3. Querschnitt</label>
-                                    <select id="oelflex-querschnitt" onchange="onOelflexChange()">
-                                        <option value="">-- Bitte wählen --</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="leitung-laenge">4. Länge (Meter) *</label>
-                                    <select id="leitung-laenge-select" onchange="onLaengeChange()">
-                                        <option value="">-- Länge wählen --</option>
-                                    </select>
-                                    <input type="number" id="leitung-laenge" 
-                                           min="0.1" step="0.1" placeholder="Oder Länge eingeben..."
-                                           style="margin-top: 0.5rem;" onchange="onLaengeChange()">
-                                </div>
-                                <div class="form-group">
-                                    <label for="leitung-artikel">5. Artikelnummer (automatisch)</label>
-                                    <div class="artikel-vorschlag" id="artikel-vorschlag">
-                                        <span class="artikel-label">Kein Artikel gefunden</span>
-                                    </div>
-                                    <input type="text" id="leitung-artikel-custom" 
-                                           placeholder="Oder manuell eingeben..." 
-                                           style="margin-top: 0.5rem;">
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="leitung-notiz">Notiz</label>
-                                <textarea id="leitung-notiz" rows="2" placeholder="Optionale Bemerkung..."></textarea>
-                            </div>
-                            
-                            <div class="form-actions konfig-actions">
-                                <div class="konfig-nav">
-                                    <button type="button" class="btn btn-secondary" id="btn-prev" onclick="prevLeitung()">
-                                        ← Vorherige
-                                    </button>
-                                    <button type="button" class="btn btn-secondary" id="btn-next" onclick="nextLeitung()">
-                                        Nächste →
-                                    </button>
-                                </div>
-                                <div class="konfig-main-actions">
-                                    <button type="button" class="btn btn-success" onclick="saveLeitungAndNotify()">
-                                        💾 Speichern
-                                    </button>
-                                    <div class="konfig-add-row">
-                                        <div class="form-group konfig-anzahl-group">
-                                            <label for="konfig-leitung-anzahl">Anzahl</label>
-                                            <input type="number" id="konfig-leitung-anzahl" min="1" step="1" value="1">
-                                        </div>
-                                        <button type="button" class="btn btn-secondary" onclick="addNewLeitung()">
-                                            + Neue Leitung
-                                        </button>
-                                    </div>
-                                    <button type="button" class="btn btn-primary" onclick="backToOverview()">
-                                        Zur Übersicht
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <aside class="form-card konfig-list-card">
-                        <h3>Leitungen nach Gruppe</h3>
-                        <p>Sortiert nach Gruppe, mit Artikelnummer und Anzahl.</p>
-                        <div id="konfig-gruppenliste">
-                            <!-- Live-Gruppenliste wird hier eingefügt -->
-                        </div>
-                    </aside>
-                </div>
-            </div>
-        </section>
-
         <!-- View: Projektübersicht -->
         <section id="view-uebersicht" class="view">
             <div class="view-header">
@@ -587,27 +440,24 @@
             <div class="uebersicht-actions">
                 <div class="uebersicht-add-row">
                     <button class="btn btn-primary" onclick="showView('gruppen')">
-                        🧩 Gruppen-Konfigurator
+                        Gruppen-Konfigurator
                     </button>
                     <button class="btn btn-secondary" onclick="showView('topologie')">
-                        EtherCAT-Topologie
-                    </button>
-                    <button class="btn btn-secondary" onclick="addNewLeitung()">
-                        + Neue Leitung anlegen
+                        Topologie
                     </button>
                 </div>
                 <div class="export-buttons">
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
-                        📦 Stückliste
+                        Stückliste
                     </button>
                     <button class="btn btn-secondary" id="btn-projekt-freigabe" onclick="openProjectSharing()" hidden>
-                        👥 Freigaben
+                        Freigaben
                     </button>
                     <button class="btn btn-success" data-allow-readonly onclick="exportCSV()">
-                        📊 Export CSV
+                        Export CSV
                     </button>
                     <button class="btn btn-success" data-allow-readonly onclick="exportPDF()">
-                        📄 Export PDF
+                        Export PDF
                     </button>
                 </div>
             </div>
@@ -695,7 +545,7 @@
                 <button class="btn btn-back no-print" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
                 <h2 id="stueckliste-titel">Stückliste</h2>
                 <button type="button" class="btn btn-secondary no-print" onclick="printStueckliste()" title="Stückliste drucken">
-                    🖨 Drucken
+                    Drucken
                 </button>
             </div>
 
@@ -754,7 +604,13 @@
                 </div>
             </div>
         </section>
-    </main>
+            </main>
+
+            <footer class="app-footer">
+                <p>Leitungs-Konfigurator für Anlagenbau | Daten werden lokal im Browser gespeichert</p>
+            </footer>
+        </div>
+    </div>
 
     <!-- Modal Dialog -->
     <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
@@ -770,6 +626,66 @@
                 <button class="btn btn-secondary" id="modal-cancel" onclick="closeModal(false)">Abbrechen</button>
                 <button class="btn btn-primary" id="modal-confirm" onclick="closeModal(true)">OK</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Leitung nachtragen -->
+    <div id="katalog-leitung-overlay" class="modal-overlay" onclick="closeKatalogLeitungModal()">
+        <div class="modal-container modal-container-wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Leitung nachtragen</h3>
+            </div>
+            <form id="katalog-add-form" onsubmit="event.preventDefault(); addKatalogArtikel();">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="katalog-form-kategorie">Kategorie *</label>
+                            <select id="katalog-form-kategorie" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-hersteller">Hersteller *</label>
+                            <select id="katalog-form-hersteller" onchange="onKatalogHerstellerChange()" required></select>
+                        </div>
+                        <div class="form-group" id="katalog-hersteller-custom-group" hidden>
+                            <label for="katalog-form-hersteller-custom">Neuer Hersteller *</label>
+                            <input type="text" id="katalog-form-hersteller-custom" placeholder="z. B. Harting">
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-artikelnummer">Artikelnummer *</label>
+                            <input type="text" id="katalog-form-artikelnummer" placeholder="z. B. ZK1090-…" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="katalog-form-beschreibung">Beschreibung *</label>
+                        <input type="text" id="katalog-form-beschreibung" placeholder="Kurzbeschreibung der Leitung" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="katalog-form-stecker-a">Stecker Seite A *</label>
+                            <input type="text" id="katalog-form-stecker-a" list="katalog-stecker-vorschlaege" placeholder="z. B. M8 4-polig gerade" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-stecker-b">Stecker Seite B *</label>
+                            <input type="text" id="katalog-form-stecker-b" list="katalog-stecker-vorschlaege" placeholder="z. B. RJ45" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="katalog-form-laenge">Länge (m) *</label>
+                            <input type="number" id="katalog-form-laenge" min="0" step="0.01" placeholder="z. B. 5">
+                        </div>
+                        <div class="form-group katalog-meterware-group">
+                            <label class="admin-check">
+                                <input type="checkbox" id="katalog-form-meterware">
+                                Meterware (Länge frei wählbar)
+                            </label>
+                        </div>
+                    </div>
+                    <datalist id="katalog-stecker-vorschlaege"></datalist>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeKatalogLeitungModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">+ Leitung speichern</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -812,10 +728,6 @@
         </div>
     </div>
 
-    <footer class="app-footer">
-        <p>Leitungs-Konfigurator für Anlagenbau | Daten werden lokal im Browser gespeichert</p>
-    </footer>
-
     <!-- jsPDF für PDF-Export (via CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -824,6 +736,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=20261004-2"></script>
 </body>
 </html>
