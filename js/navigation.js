@@ -41,7 +41,8 @@ function runViewHandler(viewName) {
         konfigurator: () => import('./konfigurator-core.js').then(m => m.initKonfigurator()),
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),
         'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
-        stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste())
+        stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),
+        topologie: () => import('./topologie.js').then(m => m.renderTopologie())
     };
     handlers[viewName]?.();
 }

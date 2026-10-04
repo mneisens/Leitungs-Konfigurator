@@ -40,7 +40,9 @@ import {
     removeProjectShare,
     openProjectSharing,
     toggleProjectVisibility,
-    onProjektVorlageChange
+    onProjektVorlageChange,
+    addCadLinkZeile,
+    removeCadLinkZeile
 } from './js/projects.js';
 import { showView } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
@@ -125,6 +127,15 @@ import {
 import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 import { stuecklisteUpdateStatus, stuecklisteSetKategorieFilter, printStueckliste } from './js/stueckliste.js';
+import {
+    topoSetSchritt,
+    topoAendereModulAnzahl,
+    topoDreheModul,
+    topoVerbindungAbbrechen,
+    topoSchliesseLeitungEditor,
+    topoUpdateLeitung,
+    topoLoescheLeitung
+} from './js/topologie.js';
 document.addEventListener('keydown', e => {
     const bauteilOverlay = document.getElementById('bauteil-edit-overlay');
     if (bauteilOverlay?.classList.contains('active')) {
@@ -222,6 +233,8 @@ Object.assign(window, {
     openProjectSharing,
     toggleProjectVisibility,
     onProjektVorlageChange,
+    addCadLinkZeile,
+    removeCadLinkZeile,
     onKatalogKategorieChange,
     onKatalogSearch,
     onKatalogHerstellerChange,
@@ -323,5 +336,12 @@ Object.assign(window, {
     filterBauteilEditHersteller,
     stuecklisteUpdateStatus,
     stuecklisteSetKategorieFilter,
-    printStueckliste
+    printStueckliste,
+    topoSetSchritt,
+    topoAendereModulAnzahl,
+    topoDreheModul,
+    topoVerbindungAbbrechen,
+    topoSchliesseLeitungEditor,
+    topoUpdateLeitung,
+    topoLoescheLeitung
 });

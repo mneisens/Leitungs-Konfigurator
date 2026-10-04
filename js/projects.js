@@ -2,7 +2,7 @@
  * @file projects.js
  */
 import { appState } from './state.js';
-import { generateId, formatDate } from './utils.js';
+import { generateId, formatDate, escapeHtml } from './utils.js';
 import { showModal } from './modal.js';
 import { showView } from './navigation.js';
 import { cloneTemplate, setText } from './templates.js';
@@ -214,6 +214,104 @@ export function ensureWizardAnswers(projekt) {
     if (!Array.isArray(projekt.zusaetzlicheGruppen)) {
         projekt.zusaetzlicheGruppen = [];
     }
+    if (!Array.isArray(projekt.cadLinks)) {
+        projekt.cadLinks = [];
+    }
+    if (!projekt.ethercatTopologie || typeof projekt.ethercatTopologie !== 'object') {
+        projekt.ethercatTopologie = { module: [], verbindungen: [] };
+    }
+}
+
+
+/**
+ * Ergänzt fehlendes http(s)-Schema an CAD-URLs.
+ * @param {string} url
+ * @returns {string}
+ */
+export function normalizeCadLinkUrl(url) {
+    const wert = String(url || '').trim();
+    if (!wert) return '';
+    if (/^[a-z][a-z0-9+.-]*:/i.test(wert)) return wert;
+    return `https://${wert}`;
+}
+
+
+/**
+ * @param {string} [label]
+ * @param {string} [url]
+ * @returns {string}
+ */
+function cadLinkZeileMarkup(label = '', url = '') {
+    const esc = wert => escapeHtml(wert).replace(/"/g, '&quot;');
+    return `
+        <div class="cad-link-zeile">
+            <input type="text" class="cad-link-label" placeholder="Bezeichnung (optional)"
+                   value="${esc(label)}" aria-label="CAD-Link Bezeichnung">
+            <input type="text" class="cad-link-url" placeholder="https://cad-server/…"
+                   value="${esc(url)}" aria-label="CAD-Link URL">
+            <button type="button" class="btn btn-secondary btn-small btn-icon" title="Link entfernen"
+                    onclick="removeCadLinkZeile(this)">✕</button>
+        </div>
+    `;
+}
+
+
+/**
+ * Rendert die CAD-Link-Felder im Projektformular.
+ * @param {Array<{label?: string, url?: string}>} [links]
+ * @returns {void}
+ */
+export function renderCadLinksForm(links = []) {
+    const liste = document.getElementById('projekt-cad-links');
+    if (!liste) return;
+    const eintraege = Array.isArray(links) && links.length ? links : [{ label: '', url: '' }];
+    liste.innerHTML = eintraege.map(l => cadLinkZeileMarkup(l.label || '', l.url || '')).join('');
+}
+
+
+/**
+ * Fügt eine leere CAD-Link-Zeile hinzu.
+ * @returns {void}
+ */
+export function addCadLinkZeile() {
+    const liste = document.getElementById('projekt-cad-links');
+    if (!liste) return;
+    liste.insertAdjacentHTML('beforeend', cadLinkZeileMarkup());
+    const letzte = liste.querySelector('.cad-link-zeile:last-child .cad-link-url');
+    letzte?.focus();
+}
+
+
+/**
+ * Entfernt eine CAD-Link-Zeile; behält mindestens eine leere Zeile.
+ * @param {HTMLElement} button
+ * @returns {void}
+ */
+export function removeCadLinkZeile(button) {
+    const liste = document.getElementById('projekt-cad-links');
+    const zeile = button?.closest?.('.cad-link-zeile');
+    if (!liste || !zeile) return;
+    zeile.remove();
+    if (!liste.querySelector('.cad-link-zeile')) {
+        liste.innerHTML = cadLinkZeileMarkup();
+    }
+}
+
+
+/**
+ * Liest gültige CAD-Links aus dem Projektformular.
+ * @returns {Array<{id: string, label: string, url: string}>}
+ */
+export function collectCadLinksFromForm() {
+    const liste = document.getElementById('projekt-cad-links');
+    if (!liste) return [];
+
+    return Array.from(liste.querySelectorAll('.cad-link-zeile')).map(zeile => {
+        const label = zeile.querySelector('.cad-link-label')?.value?.trim() || '';
+        const url = normalizeCadLinkUrl(zeile.querySelector('.cad-link-url')?.value || '');
+        if (!url) return null;
+        return { id: generateId('cad'), label, url };
+    }).filter(Boolean);
 }
 
 
@@ -225,6 +323,7 @@ export function resetProjektForm() {
     document.getElementById('projekt-form-titel').textContent = 'Neues Projekt anlegen';
     document.getElementById('projekt-form').reset();
     document.getElementById('projekt-id').value = '';
+    renderCadLinksForm([]);
     fillProjektVorlagen();
 }
 
@@ -340,6 +439,7 @@ export function saveProjekt(event) {
         kunde: document.getElementById('kunde').value.trim(),
         liefertermin: document.getElementById('liefertermin').value,
         notiz: document.getElementById('projekt-notiz').value.trim(),
+        cadLinks: collectCadLinksFromForm(),
         erstellt: isNew ? new Date().toISOString() : undefined,
         leitungen: [],
         bauteile: [],
@@ -357,6 +457,8 @@ export function saveProjekt(event) {
         projekt.gruppenStatus = projects[existingIndex].gruppenStatus || {};
         projekt.zusaetzlicheGruppen = projects[existingIndex].zusaetzlicheGruppen || [];
         projekt.stuecklisteStatus = projects[existingIndex].stuecklisteStatus || { leitungen: {}, bauteile: {} };
+        projekt.cadLinks = collectCadLinksFromForm();
+        projekt.ethercatTopologie = projects[existingIndex].ethercatTopologie || { module: [], verbindungen: [] };
         projekt.ownerId = projects[existingIndex].ownerId;
         projekt.ownerEmail = projects[existingIndex].ownerEmail;
         projekt.members = projects[existingIndex].members;
@@ -425,6 +527,7 @@ export function editProjekt(id) {
         document.getElementById('kunde').value = projekt.kunde || '';
         document.getElementById('liefertermin').value = projekt.liefertermin || '';
         document.getElementById('projekt-notiz').value = projekt.notiz || '';
+        renderCadLinksForm(projekt.cadLinks || []);
         fillProjektVorlagen(false);
 
         appState.currentProjekt = projekt;

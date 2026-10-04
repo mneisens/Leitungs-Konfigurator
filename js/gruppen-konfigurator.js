@@ -572,6 +572,8 @@ function renderGruppenPanel() {
                 </div>
             </div>
 
+            ${renderGruppenCadLinks()}
+
             ${vorgaben.hinweis ? `<p class="gruppen-hinweis">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
 
             ${zeigeBauteile ? `
@@ -686,6 +688,31 @@ export function toggleBauteilTypSchnellwahl(typ, sichtbar) {
     status.ausgeblendeteBauteilTypen = ausgeblendet;
     persistCurrentProjekt();
     renderGruppenPanel();
+}
+
+
+/**
+ * Projektweite CAD-Links zum Öffnen der Konstruktion (überall dieselben).
+ * @returns {string}
+ */
+function renderGruppenCadLinks() {
+    const links = (appState.currentProjekt?.cadLinks || []).filter(l => l?.url);
+    if (!links.length) return '';
+
+    const buttons = links.map(link => {
+        const label = (link.label || '').trim() || 'CAD öffnen';
+        const url = escapeHtml(link.url).replace(/"/g, '&quot;');
+        return `<a class="btn btn-secondary btn-small" href="${url}"
+                   target="_blank" rel="noopener noreferrer"
+                   title="${url}">${escapeHtml(label)}</a>`;
+    }).join('');
+
+    return `
+        <div class="gruppen-cad-links">
+            <span class="gruppen-cad-links-label">Konstruktion:</span>
+            <div class="gruppen-cad-links-aktionen">${buttons}</div>
+        </div>
+    `;
 }
 
 

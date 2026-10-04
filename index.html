@@ -344,6 +344,18 @@
                     <textarea id="projekt-notiz" rows="3" placeholder="Optionale Notizen zum Projekt..."></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label>CAD-Links (Konstruktion)</label>
+                    <p class="text-muted cad-links-hinweis">
+                        Links zum CAD-Server, um die Konstruktion zum Nachmessen zu öffnen.
+                        Dieselben Links stehen in jeder Gruppe zur Verfügung.
+                    </p>
+                    <div id="projekt-cad-links" class="cad-links-liste"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addCadLinkZeile()">
+                        + Link hinzufügen
+                    </button>
+                </div>
+
                 <div class="form-group vorlage-group" id="projekt-vorlage-group">
                     <label for="projekt-vorlage">Startpunkt</label>
                     <select id="projekt-vorlage" onchange="onProjektVorlageChange()">
@@ -577,6 +589,9 @@
                     <button class="btn btn-primary" onclick="showView('gruppen')">
                         🧩 Gruppen-Konfigurator
                     </button>
+                    <button class="btn btn-secondary" onclick="showView('topologie')">
+                        EtherCAT-Topologie
+                    </button>
                     <button class="btn btn-secondary" onclick="addNewLeitung()">
                         + Neue Leitung anlegen
                     </button>
@@ -663,6 +678,15 @@
                 </div>
                 <div id="share-members-list"></div>
             </div>
+        </section>
+
+        <!-- View: EtherCAT-Topologie -->
+        <section id="view-topologie" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="topologie-titel">EtherCAT-Topologie</h2>
+            </div>
+            <div id="topologie-root"></div>
         </section>
 
         <!-- View: Stückliste -->
