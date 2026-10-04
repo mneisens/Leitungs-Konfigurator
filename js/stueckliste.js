@@ -12,6 +12,7 @@ import { istMeterwareKategorie, getKategorien, getKategorieName } from './leitun
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
 import { showModal } from './modal.js';
+import { syncTopologieLeitungen } from './topologie-sync.js';
 
 
 /** Aktiver Leitungstyp-Filter in der Stückliste ('' = alle). */
@@ -770,6 +771,8 @@ export function renderStueckliste() {
         showView('home');
         return;
     }
+    // Verbindungen aus der EtherCAT-Topologie als Leitungen in =004 führen.
+    if (syncTopologieLeitungen()) persistCurrentProjekt();
 
     const projekt = appState.currentProjekt;
     if (stuecklisteFilterProjektId !== projekt.id) {

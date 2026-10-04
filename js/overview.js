@@ -8,6 +8,7 @@ import { showView } from './navigation.js';
 import { getBauteilTypName } from './catalog.js';
 import { getProjects, saveProjects, persistCurrentProjekt } from './projects.js';
 import { openBauteilEdit } from './bauteil-edit.js';
+import { syncTopologieLeitungen } from './topologie-sync.js';
 import {
     canEditProject,
     getProjectRole,
@@ -45,6 +46,8 @@ export function renderUebersicht() {
         showView('home');
         return;
     }
+    // Verbindungen aus der EtherCAT-Topologie als Leitungen in =004 führen.
+    if (syncTopologieLeitungen()) persistCurrentProjekt();
     
     document.getElementById('uebersicht-titel').textContent = 
         `${appState.currentProjekt.projektnummer} - ${appState.currentProjekt.name}`;

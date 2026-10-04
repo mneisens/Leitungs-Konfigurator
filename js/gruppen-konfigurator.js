@@ -41,6 +41,7 @@ import {
 import { addBauteilZumKatalog, addLeitungZumKatalog, bauteilnummerVergeben, leitungsnummerVergeben, bildePlatzhalterNummer } from './katalog-additions.js';
 import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } from './overview.js';
 import { showModal } from './modal.js';
+import { syncTopologieLeitungen, uebernehmeLeitungInTopologie } from './topologie-sync.js';
 
 /** Code der aktuell geöffneten Gruppe. */
 let aktiveGruppe = '';
@@ -283,6 +284,8 @@ export function renderGruppenKonfigurator() {
     if (!projekt.leitungen) projekt.leitungen = [];
     if (!projekt.bauteile) projekt.bauteile = [];
     if (!Array.isArray(projekt.zusaetzlicheGruppen)) projekt.zusaetzlicheGruppen = [];
+    // Verbindungen aus der EtherCAT-Topologie stehen als Leitungen in =004.
+    if (syncTopologieLeitungen(projekt)) persistCurrentProjekt();
 
     const pendingCode = appState.pendingGruppenCode || '';
     const pendingLeitungId = appState.pendingGruppenEditLeitungId || '';
@@ -3682,7 +3685,8 @@ function renderLeitungTabelle(leitungen) {
         if (leitung.id === aktiveLeitungId) klassen.push('aktiv');
         if (!artikelnummer) klassen.push('unvollstaendig');
         const name = leitung.bezeichnung || getLeitungAusfuehrung(leitung);
-        const meta = [leitung.hersteller, artikelnummer || 'Artikel offen'].filter(Boolean).join(' · ');
+        const meta = [leitung.hersteller, artikelnummer || 'Artikel offen', leitung.topoVerbindungId ? 'aus Topologie' : '']
+            .filter(Boolean).join(' · ');
 
         return `
             <tr class="${klassen.join(' ')}" title="Klicken zum Bearbeiten" onclick="gruppeEditLeitung('${id}')">
@@ -4588,6 +4592,7 @@ export function gruppeUpdateLeitung(id, feld, wert) {
     }
 
     aktualisiereArtikel(leitung);
+    uebernehmeLeitungInTopologie(leitung);
     persistCurrentProjekt();
     ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
     aktualisiereLeitungsTabelle();
@@ -4640,6 +4645,7 @@ export function gruppeWaehleStecker(id, seite, stecker) {
     passeLaengeAn(leitung);
 
     aktualisiereArtikel(leitung);
+    uebernehmeLeitungInTopologie(leitung);
     persistCurrentProjekt();
     ersetzeKarte(`leitung-karte-${id}`, renderLeitungKarte(leitung));
     aktualisiereLeitungsTabelle();
@@ -4662,6 +4668,7 @@ export function gruppeUpdateLeitungText(id, feld, wert) {
         // Ohne manuelle Nummer soll wieder der Katalog entscheiden.
         if (!wert) leitung.artikelnummer = '';
         const info = aktualisiereArtikel(leitung);
+        uebernehmeLeitungInTopologie(leitung);
         const box = document.querySelector(`#leitung-karte-${CSS.escape(id)} .gruppen-karte-artikel-box`);
         if (box) {
             box.className = `artikel-vorschlag gruppen-karte-artikel-box ${info.klasse}`;
@@ -4684,8 +4691,11 @@ export async function gruppeDeleteLeitung(id) {
     if (index === -1) return;
 
     const bezeichnung = liste[index].bezeichnung;
+    const frage = bezeichnung ? `Leitung „${bezeichnung}“ wirklich löschen?` : 'Diese Leitung wirklich löschen?';
     const confirmed = await showModal(
-        bezeichnung ? `Leitung „${bezeichnung}“ wirklich löschen?` : 'Diese Leitung wirklich löschen?',
+        liste[index].topoVerbindungId
+            ? `${frage}\n\nDie Verbindung in der EtherCAT-Topologie wird dabei ebenfalls entfernt.`
+            : frage,
         { type: 'danger', title: 'Leitung löschen', showCancel: true, confirmText: 'Löschen', cancelText: 'Abbrechen' }
     );
     if (!confirmed) return;
@@ -4694,6 +4704,8 @@ export async function gruppeDeleteLeitung(id) {
     liste.splice(index, 1);
     if (aktiveLeitungId === id) aktiveLeitungId = '';
     renumberLeitungen();
+    // Stammt die Leitung aus der Topologie, entfällt dort auch die Verbindung.
+    syncTopologieLeitungen();
     persistCurrentProjekt();
     renderGruppenListe();
     renderGruppenPanel();

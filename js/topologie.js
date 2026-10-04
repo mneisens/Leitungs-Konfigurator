@@ -12,6 +12,7 @@ import { deriveArtikelPrefix, getKonfektionierteKatalogArtikel } from './leitung
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
 import { showModal } from './modal.js';
+import { getVerbindungenInKette, syncTopologieLeitungen } from './topologie-sync.js';
 
 
 /** @type {'auswahl'|'anordnen'|'leitungen'} */
@@ -65,6 +66,16 @@ function migriereModulRotationZuTransform(topo) {
         }
     }
     topo.boxRotationMode = 'transform';
+    persistCurrentProjekt();
+}
+
+
+/**
+ * Speichert das Projekt und legt die Verbindungen als Leitungen in =004 an bzw. gleicht sie ab.
+ * @returns {void}
+ */
+function speichereTopologie() {
+    syncTopologieLeitungen();
     persistCurrentProjekt();
 }
 
@@ -153,6 +164,8 @@ export function renderTopologie() {
     }
 
     getTopo();
+    // Bestehende Verbindungen einmalig als Leitungen in =004 übernehmen.
+    if (syncTopologieLeitungen()) persistCurrentProjekt();
     if (!getTopo().module.length) schritt = 'auswahl';
     else if (schritt === 'auswahl' && getTopo().module.length) schritt = 'anordnen';
 
@@ -314,7 +327,7 @@ export function topoAendereModulAnzahl(artikelnummer, delta) {
         );
     }
 
-    persistCurrentProjekt();
+    speichereTopologie();
     renderTopologieInhalt();
 }
 
@@ -721,7 +734,7 @@ function onModulClick(event) {
         };
         topo.verbindungen.push(verbindung);
         aktiveVerbindungId = verbindung.id;
-        persistCurrentProjekt();
+        speichereTopologie();
     }
 
     verbindungsModus = { vonId: null };
@@ -738,38 +751,6 @@ const SPUR = 12;
 const STUMMEL = 34;
 /** Sicherheitsabstand der Leitungen zu den Modulen. */
 const MODUL_ABSTAND = 8;
-
-
-/**
- * Verbindungen in Kettenreihenfolge: vom ersten Modul (ohne Eingang) entlang OUT → IN.
- * So bekommt jede Leitung eine Nummer, die dem Busverlauf folgt.
- * @param {object} topo
- * @returns {object[]}
- */
-function getVerbindungenInKette(topo) {
-    const ausgehend = new Map();
-    const hatEingang = new Set();
-    topo.verbindungen.forEach(v => {
-        if (!ausgehend.has(v.vonModulId)) ausgehend.set(v.vonModulId, []);
-        ausgehend.get(v.vonModulId).push(v);
-        hatEingang.add(v.nachModulId);
-    });
-
-    const reihenfolge = [];
-    const erledigt = new Set();
-    const folge = start => {
-        let aktuell = start;
-        while (aktuell && !erledigt.has(aktuell.id)) {
-            erledigt.add(aktuell.id);
-            reihenfolge.push(aktuell);
-            aktuell = (ausgehend.get(aktuell.nachModulId) || []).find(n => !erledigt.has(n.id));
-        }
-    };
-
-    topo.verbindungen.filter(v => !hatEingang.has(v.vonModulId)).forEach(folge);
-    topo.verbindungen.forEach(folge);
-    return reihenfolge;
-}
 
 
 /**
@@ -1437,7 +1418,7 @@ export function topoUpdateLeitung(verbindungId, feld, wert) {
         verbindung.artikelnummer = findeArtikelZuReiheLaenge(verbindung.reihe, laenge) || '';
     }
 
-    persistCurrentProjekt();
+    speichereTopologie();
     renderTopologieInhalt();
 }
 
@@ -1465,6 +1446,6 @@ export function topoLoescheLeitung(verbindungId) {
     const topo = getTopo();
     topo.verbindungen = topo.verbindungen.filter(v => v.id !== verbindungId);
     if (aktiveVerbindungId === verbindungId) aktiveVerbindungId = null;
-    persistCurrentProjekt();
+    speichereTopologie();
     renderTopologieInhalt();
 }
