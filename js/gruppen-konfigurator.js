@@ -42,9 +42,22 @@ import { addBauteilZumKatalog, addLeitungZumKatalog, bauteilnummerVergeben, leit
 import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } from './overview.js';
 import { showModal } from './modal.js';
 import { syncTopologieLeitungen, uebernehmeLeitungInTopologie } from './topologie-sync.js';
+import { isLeitungMeaningful } from './leitung-utils.js';
+import {
+    beschaffungStatusOptionen,
+    getPositionsBeschaffung,
+    getStuecklisteStatusInfo,
+    setPositionsBeschaffung
+} from './stueckliste.js';
 
 /** Code der aktuell geöffneten Gruppe. */
 let aktiveGruppe = '';
+/** Prüfliste über alle Gruppen ist geöffnet. */
+let prueflisteOffen = false;
+/** Filter der Prüfliste: alle, offen, kommentar oder klaerung. */
+let prueflisteFilter = 'klaerung';
+/** Projekt, für das Filter und Prüfliste gelten. */
+let prueflisteProjektId = null;
 /** Suchtext der Gruppenliste. */
 let gruppenSuche = '';
 /** Leitung, die gerade im Formular unter der Übersicht bearbeitet wird. */
@@ -296,6 +309,12 @@ export function renderGruppenKonfigurator() {
         aktiveGruppe = pendingCode;
     } else if (!getGruppe(aktiveGruppe)) {
         aktiveGruppe = getGruppen()[0]?.code || '';
+    }
+
+    if (prueflisteProjektId !== projekt.id) {
+        prueflisteOffen = false;
+        prueflisteFilter = 'alle';
+        prueflisteProjektId = projekt.id;
     }
 
     renderGruppenListe();
@@ -574,6 +593,8 @@ function renderGruppenPanel() {
     `;
 
     renderGruppenRahmen();
+    renderPruefliste();
+    passeKommentarHoeheAn(document.getElementById('view-gruppen'));
     if (pickerState?.art === 'leitung') {
         const input = document.getElementById('gk-suche-input');
         if (input) input.value = pickerState.suche || '';
@@ -656,6 +677,11 @@ function renderGruppenKopf() {
         </div>
         <nav class="gk-kopf-aktionen">
             <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">Übersicht</button>
+            <button type="button" class="btn btn-secondary" onclick="gruppeOeffnePruefliste('klaerung')"
+                    title="Leitungen und Bauteile mit Kommentar, die noch nicht verbaut sind">
+                In Klärung${prueflisteHinweis() ? `<span class="stueckliste-nav-badge">${prueflisteHinweis()}</span>` : ''}
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="gruppeTogglePruefliste()">Prüfliste</button>
             <button type="button" class="btn btn-secondary" onclick="showView('stueckliste')">Stückliste</button>
         </nav>
     `;
@@ -825,12 +851,256 @@ export function gruppeWiederOeffnen() {
 
 
 /**
+ * Alle erfassten Leitungen und Bauteile mit Stand und Kommentar.
+ * @returns {Array<object>}
+ */
+function sammlePruefpositionen() {
+    const projekt = appState.currentProjekt;
+    if (!projekt) return [];
+
+    const leitungen = (projekt.leitungen || []).filter(isLeitungMeaningful).map(leitung => {
+        const stand = getPositionsBeschaffung('leitungen', leitung);
+        return {
+            art: 'leitungen',
+            artLabel: 'Leitung',
+            id: leitung.id,
+            gruppe: leitung.gruppe || '',
+            name: leitung.bezeichnung || getLeitungAusfuehrung(leitung),
+            status: stand.status,
+            kommentar: stand.kommentar
+        };
+    });
+    const bauteile = (projekt.bauteile || []).map(bauteil => {
+        const stand = getPositionsBeschaffung('bauteile', bauteil);
+        return {
+            art: 'bauteile',
+            artLabel: 'Bauteil',
+            id: bauteil.id,
+            gruppe: bauteil.gruppe || '',
+            name: getBauteilLabel(bauteil),
+            status: stand.status,
+            kommentar: stand.kommentar
+        };
+    });
+
+    return [...leitungen, ...bauteile].sort((a, b) =>
+        compareGruppenCode(a.gruppe, b.gruppe)
+        || a.art.localeCompare(b.art)
+        || a.name.localeCompare(b.name, 'de')
+    );
+}
+
+
+/**
+ * @param {object} position
+ * @returns {boolean}
+ */
+function istInKlaerung(position) {
+    return Boolean(position.kommentar) && position.status !== 'verbaut';
+}
+
+
+/**
+ * @param {object} position
+ * @returns {boolean}
+ */
+function pruefpositionSichtbar(position) {
+    if (prueflisteFilter === 'klaerung') return istInKlaerung(position);
+    if (prueflisteFilter === 'kommentar') return Boolean(position.kommentar);
+    if (prueflisteFilter === 'offen') return position.status !== 'verbaut';
+    return true;
+}
+
+
+/**
+ * Anzahl der Kommentare, sonst der noch nicht verbauten Positionen.
+ * @returns {string}
+ */
+function prueflisteHinweis() {
+    const anzahl = sammlePruefpositionen().filter(istInKlaerung).length;
+    return anzahl ? String(anzahl) : '';
+}
+
+
+/**
+ * Öffnet oder schließt die Prüfliste.
+ * @param {boolean} [offen]
+ * @returns {void}
+ */
+export function gruppeTogglePruefliste(offen) {
+    prueflisteOffen = typeof offen === 'boolean' ? offen : !prueflisteOffen;
+    renderPruefliste();
+    renderGruppenRahmen();
+}
+
+
+/**
+ * @param {string} filter
+ * @returns {void}
+ */
+export function gruppeSetPrueflisteFilter(filter) {
+    const erlaubt = new Set(['alle', 'offen', 'kommentar', 'klaerung']);
+    prueflisteFilter = erlaubt.has(filter) ? filter : 'alle';
+    renderPruefliste();
+}
+
+
+/**
+ * Öffnet die Prüfliste direkt mit einem Filter.
+ * @param {string} filter
+ * @returns {void}
+ */
+export function gruppeOeffnePruefliste(filter) {
+    const erlaubt = new Set(['alle', 'offen', 'kommentar', 'klaerung']);
+    prueflisteFilter = erlaubt.has(filter) ? filter : 'klaerung';
+    prueflisteOffen = true;
+    renderPruefliste();
+    renderGruppenRahmen();
+}
+
+
+/**
+ * Springt zur Position und öffnet sie.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} id
+ * @returns {void}
+ */
+export function gruppeZeigePosition(art, id) {
+    const item = art === 'leitungen' ? findLeitung(id) : findBauteil(id);
+    if (!item?.gruppe) return;
+    prueflisteOffen = false;
+    renderPruefliste();
+    selectGruppe(item.gruppe);
+    if (art === 'leitungen') gruppeEditLeitung(id);
+    else gruppeEditBauteil(id);
+}
+
+
+/**
+ * Speichert Status oder Kommentar einer Position.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} id
+ * @param {'status'|'kommentar'} feld
+ * @param {string} wert
+ * @returns {void}
+ */
+export function gruppeSetBeschaffung(art, id, feld, wert) {
+    if (istSchreibgeschuetzt()) return;
+    const item = art === 'leitungen' ? findLeitung(id) : findBauteil(id);
+    if (!item) return;
+
+    setPositionsBeschaffung(art, item, feld, wert);
+    persistCurrentProjekt();
+
+    if (art === 'leitungen') aktualisiereLeitungsTabelle();
+    else aktualisiereBauteilTabelle();
+
+    const editorOffen = (art === 'leitungen' && aktiveLeitungId === id)
+        || (art === 'bauteile' && aktivesBauteilId === id);
+    if (feld === 'status' && editorOffen) renderGruppenPanel();
+    else renderPruefliste();
+}
+
+
+/**
+ * @returns {void}
+ */
+function renderPruefliste() {
+    const box = document.getElementById('gk-pruefliste');
+    if (!box) return;
+    if (!prueflisteOffen) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+    }
+
+    const alle = sammlePruefpositionen();
+    const sichtbar = alle.filter(pruefpositionSichtbar);
+    const klaerung = alle.filter(istInKlaerung).length;
+    const kommentare = alle.filter(p => p.kommentar).length;
+    const nichtVerbaut = alle.filter(p => p.status !== 'verbaut').length;
+    const leertext = prueflisteFilter === 'klaerung'
+        ? 'Keine Positionen in Klärung. Ein Kommentar an einer noch nicht verbauten Leitung oder einem Bauteil erscheint hier.'
+        : 'Nichts für diesen Filter.';
+    const filterButton = (id, label) => `
+        <button type="button" class="btn btn-secondary btn-small${prueflisteFilter === id ? ' active' : ''}"
+                aria-pressed="${prueflisteFilter === id}"
+                onclick="gruppeSetPrueflisteFilter('${id}')">${label}</button>`;
+
+    let letzteGruppe = null;
+    const zeilen = sichtbar.map(position => {
+        const gruppe = getGruppe(position.gruppe);
+        const gruppenzeile = position.gruppe !== letzteGruppe
+            ? `<tr class="gk-pruef-gruppe"><td colspan="4">${escapeHtml(position.gruppe || '–')} ${escapeHtml(gruppe?.bezeichnung || '')}</td></tr>`
+            : '';
+        letzteGruppe = position.gruppe;
+        const info = getStuecklisteStatusInfo({ status: position.status, lieferdatum: '' });
+        return `
+            ${gruppenzeile}
+            <tr class="${info.klasse}${position.kommentar ? ' hat-kommentar' : ''}">
+                <td>${escapeHtml(position.artLabel)}</td>
+                <td>${escapeHtml(position.name)}</td>
+                <td>${renderStandSelect(position.art, position.id, position.status, istSchreibgeschuetzt())}</td>
+                <td><button type="button" class="gk-link" onclick="gruppeZeigePosition('${position.art}', '${jsArg(position.id)}')">In der Gruppe</button></td>
+            </tr>
+            <tr class="gk-kommentar-zeile">
+                <td colspan="4">${renderStandKommentar(position.art, position.id, position.kommentar, istSchreibgeschuetzt())}</td>
+            </tr>
+        `;
+    }).join('');
+
+    box.hidden = false;
+    box.innerHTML = `
+        <div class="gk-pruef-overlay" onclick="gruppeTogglePruefliste(false)">
+            <div class="gk-pruef-dialog" role="dialog" aria-modal="true" aria-labelledby="gk-pruef-titel"
+                 onclick="event.stopPropagation()">
+                <header class="gk-pruef-kopf">
+                    <div>
+                        <h2 id="gk-pruef-titel">${prueflisteFilter === 'klaerung' ? 'In Klärung' : 'Prüfliste'}</h2>
+                        <p class="text-muted">${klaerung} in Klärung · ${kommentare} mit Kommentar · ${nichtVerbaut} nicht verbaut</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="gruppeTogglePruefliste(false)">Schließen</button>
+                </header>
+                <div class="gk-pruef-filter">
+                    ${filterButton('klaerung', 'In Klärung')}
+                    ${filterButton('kommentar', 'Alle mit Kommentar')}
+                    ${filterButton('offen', 'Nicht verbaut')}
+                    ${filterButton('alle', 'Alle')}
+                </div>
+                ${sichtbar.length ? `
+                    <div class="table-container">
+                        <table class="gk-pruef-tabelle">
+                            <thead>
+                                <tr>
+                                    <th>Art</th>
+                                    <th>Bezeichnung</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>${zeilen}</tbody>
+                        </table>
+                    </div>
+                ` : `<p class="gk-leer">${escapeHtml(leertext)}</p>`}
+            </div>
+        </div>
+    `;
+    passeKommentarHoeheAn(box);
+}
+
+
+/**
  * Tastenkürzel des Arbeitsbereichs: / Suche, J/K Gruppe wechseln, ⌘/Strg+Enter abschließen.
  * @param {KeyboardEvent} event
  * @returns {void}
  */
 function gruppeTastenkuerzel(event) {
     if (!document.getElementById('view-gruppen')?.classList.contains('active')) return;
+    if (event.key === 'Escape' && prueflisteOffen) {
+        event.preventDefault();
+        gruppeTogglePruefliste(false);
+        return;
+    }
     if (document.querySelector('.editor-overlay, .picker-overlay, #modal-overlay.active, #bauteil-edit-overlay.active')) return;
 
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -1360,16 +1630,22 @@ function renderBauteilListe(bauteile, vorschlaege = []) {
     }
 
     const laengen = getGruppenVorgaben(getGruppe(aktiveGruppe)).bauteilLaengen || [];
-    const erfasst = bauteile.map(bauteil => `
-        <li>
+    const gesperrt = istSchreibgeschuetzt();
+    const erfasst = bauteile.map(bauteil => {
+        const stand = getPositionsBeschaffung('bauteile', bauteil);
+        return `
+        <li class="gk-bauteil-zeile">
             <button type="button" class="gk-bauteil${bauteil.artikelnummer ? '' : ' unvollstaendig'}${bauteil.id === aktivesBauteilId ? ' aktiv' : ''}"
                     title="${escapeAttr([getBauteilTypName(bauteil.typ), bauteil.artikelnummer || 'Artikel offen'].filter(Boolean).join(' · '))}"
                     onclick="gruppeEditBauteil('${jsArg(bauteil.id)}')">
                 <span>${escapeHtml(getBauteilLabel(bauteil))}</span>
                 <span class="gk-bauteil-anzahl">${Math.max(1, Number(bauteil.anzahl) || 1)}×</span>
             </button>
+            ${renderStandSelect('bauteile', bauteil.id, stand.status, gesperrt)}
+            ${renderStandKommentar('bauteile', bauteil.id, stand.kommentar, gesperrt)}
         </li>
-    `).join('');
+    `;
+    }).join('');
 
     const offen = vorschlaege.map(typ => {
         const id = jsArg(typ);
@@ -1398,6 +1674,7 @@ function renderBauteilListe(bauteile, vorschlaege = []) {
  */
 function aktualisiereBauteilTabelle() {
     renderGruppenRahmen();
+    passeKommentarHoeheAn(document.getElementById('gk-rechts'));
 }
 
 
@@ -1534,6 +1811,7 @@ function renderBauteilKarte(bauteil) {
                 <input type="text" value="${escapeHtml(bauteil.notiz || '')}" placeholder="z. B. Bedienpult links"${disabled}
                        oninput="gruppeUpdateBauteilText('${escapeHtml(bauteil.id)}', 'notiz', this.value)">
             </div>
+            ${renderStandFelder('bauteile', bauteil, gesperrt)}
             ${bauteil.artikelnummer ? `<p class="gruppen-karte-artikel">${escapeHtml(bauteil.bezeichnung || '')}
                 <strong>${escapeHtml(bauteil.artikelnummer)}</strong></p>` : ''}
             <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
@@ -1589,6 +1867,7 @@ function renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt) {
                 <input type="text" value="${escapeHtml(bauteil.notiz || '')}" placeholder="z. B. Kraftsensor Stößel"${disabled}
                        oninput="gruppeUpdateBauteilText('${id}', 'notiz', this.value)">
             </div>
+            ${renderStandFelder('bauteile', bauteil, gesperrt)}
             <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
                 ${gesperrt ? '' : `<button type="button" class="btn btn-danger"
                     onclick="gruppeDeleteBauteil('${id}')">Entfernen</button>`}
@@ -3666,6 +3945,80 @@ function renderVerbindung(leitung) {
 
 
 /**
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} id
+ * @param {string} status
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderStandSelect(art, id, status, gesperrt) {
+    const info = getStuecklisteStatusInfo({ status, lieferdatum: '' });
+    return `<select class="stueckliste-status-select gk-status-select ${info.klasse}"${gesperrt ? ' disabled' : ''}
+                aria-label="Status"
+                onchange="gruppeSetBeschaffung('${art}', '${jsArg(id)}', 'status', this.value)">
+            ${beschaffungStatusOptionen(status)}
+        </select>`;
+}
+
+
+/**
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} id
+ * @param {string} kommentar
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderStandKommentar(art, id, kommentar, gesperrt, placeholder = 'Warum fehlt etwas?') {
+    return `<textarea class="gk-kommentar-input" rows="1"${gesperrt ? ' disabled' : ''}
+                placeholder="${escapeHtml(placeholder)}" aria-label="Kommentar zum Stand"
+                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                onchange="gruppeSetBeschaffung('${art}', '${jsArg(id)}', 'kommentar', this.value)">${escapeHtml(kommentar)}</textarea>`;
+}
+
+
+/**
+ * Zieht Kommentarfelder auf die Höhe ihres Textes, damit nichts abgeschnitten wird.
+ * @param {ParentNode} [root]
+ * @returns {void}
+ */
+function passeKommentarHoeheAn(root = document) {
+    root.querySelectorAll('.gk-kommentar-input').forEach(feld => {
+        feld.style.height = 'auto';
+        feld.style.height = `${feld.scrollHeight}px`;
+    });
+}
+
+
+/**
+ * Status und Kommentar im Bearbeitungsdialog.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {object} item
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderStandFelder(art, item, gesperrt) {
+    const stand = getPositionsBeschaffung(art, item);
+    const disabled = gesperrt ? ' disabled' : '';
+    const info = getStuecklisteStatusInfo({ status: stand.status, lieferdatum: '' });
+    return `
+        <div class="gruppen-karte-stand">
+            <div class="form-group">
+                <label>Status</label>
+                <select class="stueckliste-status-select ${info.klasse}"${disabled}
+                        onchange="gruppeSetBeschaffung('${art}', '${jsArg(item.id)}', 'status', this.value)">
+                    ${beschaffungStatusOptionen(stand.status)}
+                </select>
+            </div>
+            <div class="form-group gruppen-karte-breit">
+                <label>Kommentar zum Stand</label>
+                ${renderStandKommentar(art, item.id, stand.kommentar, gesperrt, 'z. B. Länge noch nicht gemessen, wartet auf CAD')}
+            </div>
+        </div>
+    `;
+}
+
+
+/**
  * Leitungen der Gruppe: Verbindung, Leitung, Länge, Stück. Ein Klick auf die Zeile öffnet sie.
  * @param {object[]} leitungen
  * @returns {string}
@@ -3687,6 +4040,7 @@ function renderLeitungTabelle(leitungen) {
         const name = leitung.bezeichnung || getLeitungAusfuehrung(leitung);
         const meta = [leitung.hersteller, artikelnummer || 'Artikel offen', leitung.topoVerbindungId ? 'aus Topologie' : '']
             .filter(Boolean).join(' · ');
+        const stand = getPositionsBeschaffung('leitungen', leitung);
 
         return `
             <tr class="${klassen.join(' ')}" title="Klicken zum Bearbeiten" onclick="gruppeEditLeitung('${id}')">
@@ -3697,10 +4051,14 @@ function renderLeitungTabelle(leitungen) {
                 </td>
                 <td class="gk-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
                 <td class="gk-stueck">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
+                <td class="gk-stand" onclick="event.stopPropagation()">${renderStandSelect('leitungen', leitung.id, stand.status, gesperrt)}</td>
                 <td class="gk-aktion">${gesperrt ? '' : `
                     <button type="button" class="gk-loeschen" title="Leitung löschen" aria-label="Leitung löschen"
                             onclick="event.stopPropagation(); gruppeDeleteLeitung('${id}')">×</button>`}
                 </td>
+            </tr>
+            <tr class="gk-kommentar-zeile" onclick="event.stopPropagation()">
+                <td colspan="6">${renderStandKommentar('leitungen', leitung.id, stand.kommentar, gesperrt)}</td>
             </tr>
         `;
     }).join('');
@@ -3714,6 +4072,7 @@ function renderLeitungTabelle(leitungen) {
                         <th>Leitung</th>
                         <th class="gk-laenge">Länge</th>
                         <th class="gk-stueck">Stück</th>
+                        <th>Status</th>
                         <th class="gk-aktion"><span class="sr-only">Aktionen</span></th>
                     </tr>
                 </thead>
@@ -3735,6 +4094,7 @@ function aktualisiereLeitungsTabelle() {
     const gruppe = getGruppe(aktiveGruppe);
     if (vorschlaege && gruppe) vorschlaege.innerHTML = renderLeitungVorschlaege(gruppe);
     renderGruppenRahmen();
+    passeKommentarHoeheAn(container);
 }
 
 
@@ -3859,6 +4219,7 @@ function renderLeitungKarte(leitung) {
                        placeholder="z. B. Klemmkasten 1 → EP-Modul Stößel"${disabled}
                        oninput="gruppeUpdateLeitungText('${id}', 'bezeichnung', this.value)">
             </div>
+            ${renderStandFelder('leitungen', leitung, gesperrt)}
 
             <div class="leitung-auswahl">
                 ${typFrei ? renderKategorieChips(leitung, disabled) : ''}

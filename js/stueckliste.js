@@ -497,6 +497,214 @@ function renderStuecklisteFilter(alleEintraege) {
 }
 
 
+/** Reihenfolge vom offenen zum verbauten Stand. */
+const BESCHAFFUNG_RANG = {
+    offen: 0,
+    beosys: 1,
+    geliefert: 2,
+    kommissioniert: 3,
+    verbaut: 4
+};
+
+/** Statuswerte, die in Gruppe und Stückliste gleich heißen. */
+const BESCHAFFUNG_OPTIONEN = [
+    { id: 'offen', label: 'Offen' },
+    { id: 'beosys', label: 'In Beosys' },
+    { id: 'geliefert', label: 'Geliefert' },
+    { id: 'kommissioniert', label: 'Kommissioniert' },
+    { id: 'verbaut', label: 'Verbaut' }
+];
+
+
+/**
+ * @param {string} aktuell
+ * @returns {string}
+ */
+export function beschaffungStatusOptionen(aktuell) {
+    return BESCHAFFUNG_OPTIONEN.map(option =>
+        `<option value="${option.id}"${option.id === aktuell ? ' selected' : ''}>${option.label}</option>`
+    ).join('');
+}
+
+
+/**
+ * @param {string[]} werte
+ * @returns {string}
+ */
+function niedrigsterStatus(werte) {
+    return werte.slice().sort((a, b) => (BESCHAFFUNG_RANG[a] ?? 0) - (BESCHAFFUNG_RANG[b] ?? 0))[0] || 'offen';
+}
+
+
+/**
+ * Gleicher Schlüssel wie in der aggregierten Stückliste.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {object} item
+ * @returns {string}
+ */
+function schluesselFuer(art, item) {
+    if (art === 'leitungen') return getLeitungGruppenschluessel(item);
+    return normalizeArtikelnummer(item.artikelnummer) || `__einzel__${item.id}`;
+}
+
+
+/**
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} key
+ * @returns {object[]}
+ */
+function itemsMitSchluessel(art, key) {
+    const liste = art === 'leitungen'
+        ? (appState.currentProjekt?.leitungen || []).filter(isLeitungMeaningful)
+        : (appState.currentProjekt?.bauteile || []);
+    return liste.filter(item => schluesselFuer(art, item) === key);
+}
+
+
+/**
+ * Stand einer einzelnen Leitung oder eines Bauteils.
+ * Ohne eigenen Status gilt der bisherige Stücklisten-Status der Artikelnummer.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {object} item
+ * @returns {{status: string, kommentar: string, lieferdatum: string, key: string}}
+ */
+export function getPositionsBeschaffung(art, item) {
+    const key = schluesselFuer(art, item);
+    const store = getEintragStatus(art, key);
+    const status = item?.beschaffungStatus
+        ? normalisiereStatus({ status: item.beschaffungStatus })
+        : store.status;
+    return {
+        status,
+        kommentar: String(item?.statusKommentar || '').trim(),
+        lieferdatum: store.lieferdatum || '',
+        key
+    };
+}
+
+
+/**
+ * Status der Stücklisten-Zeile aus den einzelnen Positionen.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} key
+ * @returns {{status: string, lieferdatum: string, gemischt: boolean, kommentare: Array<{id: string, gruppe: string, text: string}>}}
+ */
+function aggregiereStatus(art, key) {
+    const store = getEintragStatus(art, key);
+    const items = itemsMitSchluessel(art, key);
+    if (!items.length) {
+        return { status: store.status, lieferdatum: store.lieferdatum, gemischt: false, kommentare: [] };
+    }
+
+    const statuses = items.map(item => (
+        item.beschaffungStatus
+            ? normalisiereStatus({ status: item.beschaffungStatus })
+            : store.status
+    ));
+    const eindeutig = new Set(statuses);
+    const kommentare = items
+        .map(item => ({
+            id: item.id,
+            gruppe: item.gruppe || '-',
+            text: String(item.statusKommentar || '').trim()
+        }))
+        .filter(eintrag => eintrag.text);
+
+    return {
+        status: eindeutig.size <= 1 ? (statuses[0] || 'offen') : niedrigsterStatus([...eindeutig]),
+        lieferdatum: store.lieferdatum || '',
+        gemischt: eindeutig.size > 1,
+        kommentare
+    };
+}
+
+
+/**
+ * Übernimmt den gemeinsamen Status in den Stücklisten-Speicher.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} key
+ * @returns {void}
+ */
+function schreibeAggregatAusPositionen(art, key) {
+    const items = itemsMitSchluessel(art, key);
+    const statuses = items.map(item => normalisiereStatus({ status: item.beschaffungStatus || 'offen' }));
+    const eindeutig = new Set(statuses);
+    const status = eindeutig.size <= 1 ? (statuses[0] || 'offen') : niedrigsterStatus([...eindeutig]);
+    const store = getStatusStore();
+    const bisher = store[art][key] || {};
+    store[art][key] = {
+        status,
+        lieferdatum: bisher.lieferdatum || ''
+    };
+}
+
+
+/**
+ * Setzt Status oder Kommentar an einer Position und hält die Stückliste dazu passend.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {object} item
+ * @param {'status'|'kommentar'} feld
+ * @param {string} wert
+ * @returns {void}
+ */
+export function setPositionsBeschaffung(art, item, feld, wert) {
+    if (!appState.currentProjekt || !item) return;
+    if (art !== 'leitungen' && art !== 'bauteile') return;
+
+    const key = schluesselFuer(art, item);
+    const geerbt = getEintragStatus(art, key).status;
+    itemsMitSchluessel(art, key).forEach(eintrag => {
+        if (!eintrag.beschaffungStatus) eintrag.beschaffungStatus = geerbt;
+    });
+
+    if (feld === 'status') {
+        item.beschaffungStatus = normalisiereStatus({ status: wert });
+    } else if (feld === 'kommentar') {
+        item.statusKommentar = String(wert || '').trim();
+    } else {
+        return;
+    }
+
+    schreibeAggregatAusPositionen(art, key);
+}
+
+
+/**
+ * Setzt den Status aller Positionen einer Stücklisten-Zeile.
+ * @param {'leitungen'|'bauteile'} art
+ * @param {string} key
+ * @param {string} status
+ * @returns {void}
+ */
+function setAggregatBeschaffung(art, key, status) {
+    const wert = normalisiereStatus({ status });
+    itemsMitSchluessel(art, key).forEach(item => {
+        item.beschaffungStatus = wert;
+    });
+    const store = getStatusStore();
+    const bisher = store[art][key] || {};
+    let lieferdatum = bisher.lieferdatum || '';
+    if (wert === 'geliefert' && !lieferdatum) lieferdatum = heuteISO();
+    store[art][key] = { status: wert, lieferdatum };
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {string}
+ */
+function renderStandKommentare(entry) {
+    const liste = entry.status?.kommentare || [];
+    if (!liste.length) return '';
+    return `<ul class="stueckliste-kommentare">${liste.map(eintrag => `
+        <li>
+            <span class="stueckliste-kommentar-gruppe">${escapeHtml(getGruppeDisplay(eintrag.gruppe))}</span>
+            ${escapeHtml(eintrag.text)}
+        </li>
+    `).join('')}</ul>`;
+}
+
+
 /**
  * Aggregierte Leitungspositionen inkl. Status (zusammengefasst nach Artikelnummer).
  * @returns {Array<object>}
@@ -556,6 +764,7 @@ function getLeitungEintraege() {
 
     return Array.from(grouped.values()).map(entry => ({
         ...entry,
+        status: aggregiereStatus('leitungen', entry.key),
         bezeichnung: entry.bezeichnungen.length > 1
             ? entry.bezeichnungen.join(' / ')
             : entry.bezeichnung
@@ -607,6 +816,7 @@ function getBauteilEintraege() {
 
     return Array.from(grouped.values()).map(entry => ({
         ...entry,
+        status: aggregiereStatus('bauteile', entry.key),
         gruppe: gruppeAnzeigeAusQuellen(entry.quellen)
     })).sort((a, b) => herstellerSortKey(a.hersteller).localeCompare(herstellerSortKey(b.hersteller), 'de')
         || a.artikelnummer.localeCompare(b.artikelnummer, 'de')
@@ -656,15 +866,20 @@ function renderStatusZellen(entry, gesperrt) {
     const key = encodeKey(entry.key);
     const art = entry.art;
     const disabled = gesperrt ? ' disabled' : '';
-    const hinweis = (info.id === 'faellig' || info.id === 'ueberfaellig')
-        ? `<span class="stueckliste-liefer-hinweis no-print ${info.klasse}">${escapeHtml(info.label)}</span>`
-        : '';
+    const hinweise = [];
+    if (info.id === 'faellig' || info.id === 'ueberfaellig') {
+        hinweise.push(`<span class="stueckliste-liefer-hinweis no-print ${info.klasse}">${escapeHtml(info.label)}</span>`);
+    }
+    if (s.gemischt) {
+        hinweise.push('<span class="stueckliste-liefer-hinweis no-print status-warn">In den Gruppen unterschiedlich</span>');
+    }
 
     const lieferdatumDruck = formatDatumDe(s.lieferdatum) || '–';
+    const druckLabel = s.gemischt ? `${info.label} (unterschiedlich)` : info.label;
 
     return `
         <td class="stueckliste-status">
-            <span class="stueckliste-print-only">${escapeHtml(info.label)}</span>
+            <span class="stueckliste-print-only">${escapeHtml(druckLabel)}</span>
             <select class="stueckliste-status-select no-print ${info.klasse}"${disabled}
                     aria-label="Status"
                     onchange="stuecklisteUpdateStatus('${art}', decodeURIComponent('${key}'), 'status', this.value)">
@@ -674,7 +889,7 @@ function renderStatusZellen(entry, gesperrt) {
                 <option value="kommissioniert"${wert === 'kommissioniert' ? ' selected' : ''}>Kommissioniert</option>
                 <option value="verbaut"${wert === 'verbaut' ? ' selected' : ''}>Verbaut</option>
             </select>
-            ${hinweis}
+            ${hinweise.join('')}
         </td>
         <td class="stueckliste-lieferdatum">
             <span class="stueckliste-print-only">${escapeHtml(lieferdatumDruck)}</span>
@@ -826,7 +1041,7 @@ export function renderStueckliste() {
     } else {
         tbody.innerHTML = leitungEintraege.map(entry => `
             <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
-                <td>${escapeHtml(entry.bezeichnung)}</td>
+                <td>${escapeHtml(entry.bezeichnung)}${renderStandKommentare(entry)}</td>
                 <td>${escapeHtml(entry.typText)}</td>
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
@@ -858,7 +1073,7 @@ export function renderStueckliste() {
     bauteileBody.innerHTML = bauteilEintraege.map(entry => `
         <tr class="${getStuecklisteStatusInfo(entry.status).klasse}">
             <td>${escapeHtml(entry.gruppe === 'mehrere' ? 'mehrere' : getGruppeDisplay(entry.gruppe))}</td>
-            <td>${escapeHtml(entry.bezeichnung)}</td>
+            <td>${escapeHtml(entry.bezeichnung)}${renderStandKommentare(entry)}</td>
             <td>${escapeHtml(getBauteilTypName(entry.typ))}</td>
             <td>${escapeHtml(entry.hersteller)}</td>
             <td>${escapeHtml(entry.artikelnummer)}</td>
@@ -902,21 +1117,17 @@ export function stuecklisteUpdateStatus(art, key, feld, wert) {
     const aktuell = getEintragStatus(art, key);
 
     if (feld === 'status') {
-        const status = normalisiereStatus({ status: wert });
-        aktuell.status = status;
-        if (status === 'geliefert' && !aktuell.lieferdatum) {
-            aktuell.lieferdatum = heuteISO();
-        }
+        setAggregatBeschaffung(art, key, wert);
     } else if (feld === 'lieferdatum') {
         aktuell.lieferdatum = String(wert || '').trim();
+        store[art][key] = {
+            status: aktuell.status,
+            lieferdatum: aktuell.lieferdatum
+        };
     } else {
         return;
     }
 
-    store[art][key] = {
-        status: aktuell.status,
-        lieferdatum: aktuell.lieferdatum
-    };
     persistCurrentProjekt();
     renderStueckliste();
 }

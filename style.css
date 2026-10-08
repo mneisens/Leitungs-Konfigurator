@@ -3974,6 +3974,27 @@ select.vorschlag-laenge:focus {
     box-shadow: 0 0 0 2px rgba(242, 124, 34, 0.15);
 }
 
+.stueckliste-kommentare {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #f4d7a1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.stueckliste-kommentare li {
+    margin-top: 0.15rem;
+}
+
+.stueckliste-kommentar-gruppe {
+    display: inline-block;
+    margin-right: 0.35rem;
+    font-weight: 700;
+}
+
 .stueckliste-nav-badge {
     display: inline-flex;
     align-items: center;
@@ -5522,6 +5543,135 @@ mark {
     color: var(--primary-color);
 }
 
+.gk-status-select {
+    width: 100%;
+    min-width: 8.5rem;
+    font-size: 0.8rem;
+}
+
+.gk-tabelle td.gk-stand {
+    min-width: 8.5rem;
+}
+
+.gk-tabelle tbody tr.gk-kommentar-zeile,
+.gk-kommentar-zeile {
+    cursor: default;
+}
+
+.gk-kommentar-input::placeholder {
+    color: var(--text-muted);
+}
+
+.gk-kommentar-zeile td {
+    padding-top: 0;
+}
+
+.gk-kommentar-input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.6rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--surface-raised);
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    resize: vertical;
+    overflow: hidden;
+    field-sizing: content;
+}
+
+.gk-pruef-tabelle .gk-kommentar-zeile td {
+    padding-bottom: 0.85rem;
+}
+
+.gruppen-karte-stand {
+    display: grid;
+    grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.gk-bauteil-zeile {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+}
+
+.gk-pruef-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: rgba(15, 23, 42, 0.28);
+    overflow: auto;
+}
+
+.gk-pruef-dialog {
+    width: min(1100px, 100%);
+    max-height: calc(100vh - 4rem);
+    overflow: auto;
+    padding: 1.25rem 1.5rem 1.5rem;
+    background: var(--card-bg, #fff);
+    border-radius: var(--radius-md, 8px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+}
+
+.gk-pruef-kopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.gk-pruef-kopf h2 {
+    margin: 0 0 0.25rem;
+}
+
+.gk-pruef-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.gk-pruef-filter .btn.active {
+    background: var(--primary-color, #f27c22);
+    color: #fff;
+    border-color: var(--primary-color, #f27c22);
+}
+
+.gk-pruef-tabelle {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.gk-pruef-tabelle th,
+.gk-pruef-tabelle td {
+    padding: 0.45rem 0.5rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.gk-pruef-gruppe td {
+    padding-top: 0.9rem;
+    font-weight: 700;
+    background: #f8fafc;
+}
+
+.gk-pruef-tabelle tr.hat-kommentar td:first-child {
+    box-shadow: inset 3px 0 0 #d97706;
+}
+
 .gk-bauteile {
     margin: 0 0 0.3rem;
     padding: 0;
@@ -5724,6 +5874,15 @@ mark {
         gap: 0.4rem 0.75rem;
         padding: 0.9rem 0;
         border-bottom: 1px solid var(--border-color);
+    }
+
+    .gk-tabelle tr.gk-kommentar-zeile {
+        display: block;
+    }
+
+    .gk-tabelle tr.gk-kommentar-zeile td {
+        display: block;
+        width: 100%;
     }
 
     .gk-tabelle td {

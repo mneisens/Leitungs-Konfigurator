@@ -117,6 +117,11 @@ import {
     gruppeAddLeitungWie,
     gruppeAbschliessen,
     gruppeWiederOeffnen,
+    gruppeTogglePruefliste,
+    gruppeOeffnePruefliste,
+    gruppeSetPrueflisteFilter,
+    gruppeZeigePosition,
+    gruppeSetBeschaffung,
     gruppeSucheOeffnen,
     gruppeStandardAngebotVerwerfen
 } from './js/gruppen-konfigurator.js';
@@ -320,6 +325,11 @@ Object.assign(window, {
     gruppeAddLeitungWie,
     gruppeAbschliessen,
     gruppeWiederOeffnen,
+    gruppeTogglePruefliste,
+    gruppeOeffnePruefliste,
+    gruppeSetPrueflisteFilter,
+    gruppeZeigePosition,
+    gruppeSetBeschaffung,
     gruppeSucheOeffnen,
     gruppeStandardAngebotVerwerfen,
     exportCSV,
