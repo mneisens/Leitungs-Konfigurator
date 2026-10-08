@@ -2,12 +2,28 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Leitungs-Konfigurator | Anlagenbau</title>
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('leitungskonfigurator_theme');
+                var theme = (stored === 'light' || stored === 'dark')
+                    ? stored
+                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-layout">
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+    <button type="button" class="theme-toggle theme-toggle-auth" data-theme-toggle onclick="toggleTheme()" aria-label="Darstellung wechseln">
+        <span data-theme-label>Hell</span>
+    </button>
 
     <div class="app-shell">
         <aside class="app-sidebar" id="app-sidebar">
@@ -52,6 +68,9 @@
             </nav>
 
             <div class="sidebar-footer">
+                <button type="button" class="sidebar-link theme-toggle" data-theme-toggle onclick="toggleTheme()" aria-label="Darstellung wechseln">
+                    Darstellung: <span data-theme-label>Hell</span>
+                </button>
                 <span class="nav-user hidden" id="nav-user"></span>
                 <button type="button" class="sidebar-link sidebar-logout hidden" id="nav-logout" onclick="logoutUser()">
                     Logout
@@ -65,6 +84,11 @@
                     Menü
                 </button>
                 <div class="topbar-title" id="topbar-title">Projekte</div>
+                <div class="topbar-actions">
+                    <button type="button" class="btn btn-secondary btn-small theme-toggle" data-theme-toggle onclick="toggleTheme()" aria-label="Darstellung wechseln">
+                        <span data-theme-label>Hell</span>
+                    </button>
+                </div>
             </header>
 
             <main class="app-main">
@@ -751,6 +775,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     
-    <script type="module" src="script.js?v=20261004-2"></script>
+    <script type="module" src="script.js?v=20261008-1"></script>
 </body>
 </html>

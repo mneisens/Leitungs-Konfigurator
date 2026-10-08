@@ -50,6 +50,7 @@ import {
 import { showView, toggleSidebar, closeSidebar } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
 import { exportAllProjects, importProjects, exportCSV, exportPDF } from './js/export.js';
+import { initTheme, toggleTheme } from './js/theme.js';
 import {
     filterGruppenListe,
     selectGruppe,
@@ -175,6 +176,7 @@ document.addEventListener('keydown', e => {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    initTheme();
     await loadTemplates();
     await loadKatalog();
     initFirebase();
@@ -225,6 +227,7 @@ Object.assign(window, {
     showView,
     toggleSidebar,
     closeSidebar,
+    toggleTheme,
     logoutUser,
     registerUser,
     loginUser,

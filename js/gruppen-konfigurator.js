@@ -615,6 +615,7 @@ function renderGruppenRahmen() {
     if (links) links.innerHTML = renderGruppeLinks();
     const rechts = document.getElementById('gk-rechts');
     if (rechts) rechts.innerHTML = renderGruppeRechts();
+    import('./theme.js').then(m => m.updateThemeToggleLabels()).catch(() => {});
 }
 
 
@@ -676,6 +677,9 @@ function renderGruppenKopf() {
             </div>
         </div>
         <nav class="gk-kopf-aktionen">
+            <button type="button" class="btn btn-secondary theme-toggle" data-theme-toggle onclick="toggleTheme()" aria-label="Darstellung wechseln">
+                <span data-theme-label>${document.documentElement.getAttribute('data-theme') === 'light' ? 'Dunkel' : 'Hell'}</span>
+            </button>
             <button type="button" class="btn btn-secondary" onclick="showView('uebersicht')">Übersicht</button>
             <button type="button" class="btn btn-secondary" onclick="gruppeOeffnePruefliste('klaerung')"
                     title="Leitungen und Bauteile mit Kommentar, die noch nicht verbaut sind">
