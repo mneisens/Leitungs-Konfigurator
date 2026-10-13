@@ -2786,6 +2786,32 @@ body.auth-layout .app-main {
     flex: 1 1 12rem;
 }
 
+.gruppen-karte-artikel-box.kopierbar {
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.gruppen-karte-artikel-box.kopierbar:hover,
+.gruppen-karte-artikel-box.kopierbar:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.gruppen-karte-artikel-box .artikel-copy-hint {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.gruppen-karte-artikel-box.kopiert .artikel-copy-hint {
+    color: var(--success-text, var(--success-color));
+}
+
 .gruppen-karte-artikel-box.match {
     border-color: var(--success-color);
     background: var(--success-soft);
@@ -5312,6 +5338,7 @@ mark {
 
 .gk-tabelle {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
 }
 
@@ -5332,6 +5359,36 @@ mark {
     padding: 1.1rem 0.6rem;
     border-bottom: 1px solid var(--border-color);
     vertical-align: middle;
+}
+
+.gk-tabelle th:nth-child(1),
+.gk-tabelle td.gk-verbindung {
+    width: 12.5rem;
+}
+
+.gk-tabelle th:nth-child(2),
+.gk-tabelle td.gk-leitung {
+    width: auto;
+}
+
+.gk-tabelle th.gk-laenge,
+.gk-tabelle td.gk-laenge {
+    width: 7.5rem;
+}
+
+.gk-tabelle th.gk-stueck,
+.gk-tabelle td.gk-stueck {
+    width: 5.5rem;
+}
+
+.gk-tabelle th:nth-child(5),
+.gk-tabelle td.gk-stand {
+    width: 8.5rem;
+}
+
+.gk-tabelle th.gk-aktion,
+.gk-tabelle td.gk-aktion {
+    width: 2.5rem;
 }
 
 .gk-tabelle tbody tr {
@@ -5355,13 +5412,18 @@ mark {
 }
 
 .gk-verbindung {
-    width: 15rem;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.gk-leitung {
+    min-width: 0;
+    overflow: hidden;
 }
 
 .gk-stecker {
     display: inline-block;
-    max-width: 6.5rem;
+    max-width: 5.75rem;
     padding: 0.3rem 0.55rem;
     border: 1px solid transparent;
     border-radius: 4px;
@@ -5372,6 +5434,7 @@ mark {
     font-weight: 500;
     line-height: 1.25;
     white-space: normal;
+    overflow-wrap: anywhere;
     vertical-align: middle;
 }
 
@@ -5393,6 +5456,7 @@ mark {
     display: block;
     font-size: 1.05rem;
     font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .gk-leitung-meta {
@@ -5941,6 +6005,44 @@ mark {
 }
 
 /* ----- Schmalere Bildschirme ----- */
+@media (max-width: 1680px) {
+    .gk {
+        grid-template-columns: minmax(220px, 18rem) minmax(0, 1fr) minmax(240px, 20rem);
+    }
+
+    .gk-mitte {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .gk-tabelle th:nth-child(1),
+    .gk-tabelle td.gk-verbindung {
+        width: 10.5rem;
+    }
+
+    .gk-stecker {
+        max-width: 4.6rem;
+        font-size: 0.78rem;
+        padding: 0.25rem 0.4rem;
+    }
+
+    .gk-tabelle th.gk-laenge,
+    .gk-tabelle td.gk-laenge {
+        width: 6.75rem;
+    }
+
+    .gk-laenge select,
+    .gk-laenge input,
+    .gk-laenge select.vorschlag-laenge {
+        width: 6.25rem;
+    }
+
+    .gk-tabelle th:nth-child(5),
+    .gk-tabelle td.gk-stand {
+        width: 7.5rem;
+    }
+}
+
 @media (max-width: 1280px) {
     body.fokus-layout .app-main {
         overflow-y: auto;

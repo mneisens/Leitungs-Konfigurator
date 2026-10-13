@@ -4239,16 +4239,10 @@ function renderLeitungKarte(leitung) {
                 <span class="leitung-karte-nummer">Leitung ${nummer} bearbeiten</span>
             </div>
 
-            <div class="artikel-vorschlag gruppen-karte-artikel-box leitung-ergebnis ${artikelInfo.klasse}">
-                <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
-                ${renderPreisKurz(leitung.artikelnummer)}
-                ${!gesperrt && artikelInfo.klasse === 'no-match' ? `
-                    <button type="button" class="btn btn-secondary btn-small"
-                            onclick="gruppeOpenLeitungFormularAusLeitung('${id}')">
-                        Im Katalog anlegen…
-                    </button>
-                ` : ''}
-            </div>
+            ${renderArtikelVorschlagBox(artikelInfo, leitung.artikelnummer, {
+                gesperrt,
+                leitungId: id
+            })}
 
             <div class="form-group">
                 <label>Verwendung</label>
@@ -4386,6 +4380,97 @@ export function gruppeEditLeitung(id) {
 export function gruppeCloseLeitungEditor() {
     aktiveLeitungId = '';
     renderGruppenPanel();
+}
+
+
+/**
+ * @param {string} klasse
+ * @param {string} artikelnummer
+ * @returns {boolean}
+ */
+function kannArtikelnummerKopieren(klasse, artikelnummer) {
+    return !!(artikelnummer && ['match', 'partial', 'manuell'].includes(klasse));
+}
+
+
+/**
+ * Artikelvorschau-Box; bei Treffer/Manuell Klick kopiert die Artikelnummer.
+ * @param {{text: string, klasse: string}} artikelInfo
+ * @param {string} artikelnummer
+ * @param {{gesperrt?: boolean, leitungId?: string}} [opts]
+ * @returns {string}
+ */
+function renderArtikelVorschlagBox(artikelInfo, artikelnummer, opts = {}) {
+    const kopierbar = kannArtikelnummerKopieren(artikelInfo.klasse, artikelnummer);
+    const anlegen = !opts.gesperrt && artikelInfo.klasse === 'no-match' && opts.leitungId
+        ? `<button type="button" class="btn btn-secondary btn-small"
+                onclick="event.stopPropagation(); gruppeOpenLeitungFormularAusLeitung('${escapeHtml(opts.leitungId)}')">
+                Im Katalog anlegen…
+           </button>`
+        : '';
+    const copyAttrs = kopierbar
+        ? `role="button" tabindex="0"
+            title="Artikelnummer kopieren"
+            aria-label="Artikelnummer ${escapeAttr(artikelnummer)} kopieren"
+            onclick="event.stopPropagation(); gruppeCopyArtikelnummer('${jsArg(artikelnummer)}', this)"
+            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();gruppeCopyArtikelnummer('${jsArg(artikelnummer)}',this);}"`
+        : '';
+
+    return `
+        <div class="artikel-vorschlag gruppen-karte-artikel-box leitung-ergebnis ${artikelInfo.klasse}${kopierbar ? ' kopierbar' : ''}"
+             ${copyAttrs}>
+            <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
+            ${renderPreisKurz(artikelnummer)}
+            ${kopierbar ? '<span class="artikel-copy-hint" aria-hidden="true">Kopieren</span>' : ''}
+            ${anlegen}
+        </div>
+    `;
+}
+
+
+/**
+ * Kopiert eine Artikelnummer in die Zwischenablage.
+ * @param {string} artikelnummer
+ * @param {HTMLElement} [el]
+ * @returns {Promise<void>}
+ */
+export async function gruppeCopyArtikelnummer(artikelnummer, el) {
+    const nr = String(artikelnummer || '').trim();
+    if (!nr) return;
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(nr);
+        } else {
+            const input = document.createElement('textarea');
+            input.value = nr;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            input.remove();
+        }
+    } catch (error) {
+        console.error('Artikelnummer konnte nicht kopiert werden:', error);
+        showModal(`Artikelnummer konnte nicht kopiert werden:\n${nr}`, {
+            type: 'warning',
+            title: 'Kopieren fehlgeschlagen'
+        });
+        return;
+    }
+
+    if (el) {
+        el.classList.add('kopiert');
+        const hint = el.querySelector('.artikel-copy-hint');
+        const vorher = hint?.textContent;
+        if (hint) hint.textContent = 'Kopiert';
+        window.setTimeout(() => {
+            el.classList.remove('kopiert');
+            if (hint && vorher) hint.textContent = vorher;
+        }, 1200);
+    }
 }
 
 
@@ -5071,8 +5156,9 @@ export function gruppeUpdateLeitungText(id, feld, wert) {
         uebernehmeLeitungInTopologie(leitung);
         const box = document.querySelector(`#leitung-karte-${CSS.escape(id)} .gruppen-karte-artikel-box`);
         if (box) {
-            box.className = `artikel-vorschlag gruppen-karte-artikel-box ${info.klasse}`;
-            box.innerHTML = `<span class="artikel-label">${escapeHtml(info.text)}</span>`;
+            const wrap = document.createElement('div');
+            wrap.innerHTML = renderArtikelVorschlagBox(info, leitung.artikelnummer, { gesperrt: false, leitungId: id });
+            box.replaceWith(wrap.firstElementChild);
         }
     }
     persistCurrentProjekt();
