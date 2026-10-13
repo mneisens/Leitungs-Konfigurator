@@ -14,6 +14,7 @@ export const appState = {
     currentLeitungIndex: 0,
     pendingGruppenCode: '',
     pendingGruppenEditLeitungId: '',
+    pendingZeitSchritt: '',
     currentArtikelVorschlag: null,
     modalResolve: null,
     projectsCache: [],

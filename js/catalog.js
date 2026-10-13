@@ -2,6 +2,7 @@
  * @file catalog.js – Laden und Erweitern des Leitungskatalogs.
  */
 import { appState } from './state.js';
+import { loadPreisliste } from './preise.js';
 
 /** Basis-Artikel aus data/leitungen.json (ohne Nachträge). */
 let baseArtikel = [];
@@ -42,6 +43,7 @@ export async function loadKatalog() {
             bauteiltypen: baseBauteiltypen.map(t => ({ ...t })),
             artikel: baseBauteileArtikel.map(a => ({ ...a }))
         };
+        await loadPreisliste();
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         appState.katalog = {

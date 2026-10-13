@@ -2,6 +2,7 @@
  * @file Katalog-Ansicht: Leitungen und Bauteile getrennt filtern und nachtragen.
  */
 import { appState } from './state.js';
+import { preisAnzeige } from './preise.js';
 import { escapeHtml } from './utils.js';
 import { showModal } from './modal.js';
 import {
@@ -589,6 +590,7 @@ export function renderKatalogBauteileListe() {
                 <td>${escapeHtml(getBauteilTypName(a.typ) || a.typ || '')}</td>
                 <td>${escapeHtml(gruppeLabel)}</td>
                 <td>${escapeHtml(a.lieferant || '–')}</td>
+                <td class="katalog-preis">${escapeHtml(preisAnzeige(a.artikelnummer)?.text || '–')}</td>
                 <td class="table-actions">${editBtn}${deleteBtn}</td>
             </tr>
         `;

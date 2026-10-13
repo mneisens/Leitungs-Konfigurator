@@ -130,6 +130,13 @@ import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortie
 import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 import { stuecklisteUpdateStatus, stuecklisteSetKategorieFilter, printStueckliste } from './js/stueckliste.js';
 import {
+    renderZeiterfassung,
+    zeitSpeichern,
+    zeitLoeschen,
+    zeitSchrittGeaendert,
+    zeitOeffnen
+} from './js/zeiterfassung.js';
+import {
     topoSetSchritt,
     topoAendereModulAnzahl,
     topoDreheModul,
@@ -349,6 +356,11 @@ Object.assign(window, {
     stuecklisteUpdateStatus,
     stuecklisteSetKategorieFilter,
     printStueckliste,
+    renderZeiterfassung,
+    zeitSpeichern,
+    zeitLoeschen,
+    zeitSchrittGeaendert,
+    zeitOeffnen,
     topoSetSchritt,
     topoAendereModulAnzahl,
     topoDreheModul,

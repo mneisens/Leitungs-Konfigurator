@@ -5598,6 +5598,79 @@ mark {
     color: var(--primary-color);
 }
 
+.zeit-summen {
+    display: grid;
+    grid-template-columns: minmax(10rem, 14rem) 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.zeit-summe {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 8px);
+    background: var(--card-bg);
+}
+
+.zeit-summe span {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.zeit-summe p {
+    margin: 0.2rem 0;
+}
+
+.zeit-summe-gesamt strong {
+    font-size: 1.6rem;
+}
+
+.zeit-formular {
+    margin-bottom: 1.25rem;
+}
+
+.zeit-tabelle td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .zeit-summen {
+        grid-template-columns: 1fr;
+    }
+}
+
+.preis-badge {
+    display: inline-block;
+    margin-top: 0.3rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(244, 166, 65, 0.18);
+    color: #f6d7a2;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.gk-bauteil-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.stueckliste-preis,
+.katalog-preis {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .gk-status-select {
     width: 100%;
     min-width: 8.5rem;

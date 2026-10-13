@@ -217,6 +217,9 @@ export function ensureWizardAnswers(projekt) {
     if (!Array.isArray(projekt.cadLinks)) {
         projekt.cadLinks = [];
     }
+    if (!Array.isArray(projekt.zeiterfassung)) {
+        projekt.zeiterfassung = [];
+    }
     if (!projekt.ethercatTopologie || typeof projekt.ethercatTopologie !== 'object') {
         projekt.ethercatTopologie = { module: [], verbindungen: [] };
     }

@@ -9,6 +9,7 @@ import { getArtikelByNummer, getBauteilTypName } from './catalog.js';
 import { getGruppeDisplay } from './overview.js';
 import { isLeitungMeaningful, getLeitungStueckzahl } from './leitung-utils.js';
 import { istMeterwareKategorie, getKategorien, getKategorieName } from './leitung-optionen.js';
+import { formatEuro, preisAnzeige } from './preise.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
 import { showModal } from './modal.js';
@@ -690,9 +691,24 @@ function setAggregatBeschaffung(art, key, status) {
 
 
 /**
+ * Listenpreis der Stücklistenposition. Bei Stückware die Summe, bei Meterware der Einzelpreis.
  * @param {object} entry
  * @returns {string}
  */
+function renderPreisZelle(entry) {
+    const anzeige = preisAnzeige(entry.artikelnummer);
+    if (!anzeige) return '<td class="stueckliste-preis">–</td>';
+    if (anzeige.betrag == null || entry.meterware) {
+        return `<td class="stueckliste-preis" title="${escapeHtml(anzeige.titel)}">${escapeHtml(anzeige.text)}</td>`;
+    }
+    const summe = anzeige.betrag * (Number(entry.count) || 0);
+    const titel = entry.count > 1
+        ? `${entry.count} × ${formatEuro(anzeige.betrag)}`
+        : anzeige.titel;
+    return `<td class="stueckliste-preis" title="${escapeHtml(titel)}">${escapeHtml(formatEuro(summe))}</td>`;
+}
+
+
 function renderStandKommentare(entry) {
     const liste = entry.status?.kommentare || [];
     if (!liste.length) return '';
@@ -1045,6 +1061,7 @@ export function renderStueckliste() {
                 <td>${escapeHtml(entry.typText)}</td>
                 <td>${escapeHtml(entry.hersteller)}</td>
                 <td>${escapeHtml(entry.artikelnummer)}</td>
+                ${renderPreisZelle(entry)}
                 <td class="stueckliste-anzahl">
                     <span class="stueckliste-anzahl-wert">${escapeHtml(formatAnzahlAnzeige(entry))}</span>
                     ${renderQuellenInfo(entry)}
@@ -1077,6 +1094,7 @@ export function renderStueckliste() {
             <td>${escapeHtml(getBauteilTypName(entry.typ))}</td>
             <td>${escapeHtml(entry.hersteller)}</td>
             <td>${escapeHtml(entry.artikelnummer)}</td>
+            ${renderPreisZelle(entry)}
             <td class="stueckliste-anzahl">
                 <span class="stueckliste-anzahl-wert">${entry.count}</span>
                 ${renderQuellenInfo(entry)}

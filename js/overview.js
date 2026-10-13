@@ -1,6 +1,22 @@
 /**
  * @file overview.js
  */
+
+/**
+ * Summe der Zeiterfassung als kurzer Text.
+ * @param {object|null} projekt
+ * @returns {string}
+ */
+function formatProjektZeit(projekt) {
+    const minuten = (projekt?.zeiterfassung || []).reduce((summe, eintrag) => summe + (Number(eintrag.minuten) || 0), 0);
+    if (!minuten) return '0 min';
+    const stunden = Math.floor(minuten / 60);
+    const rest = minuten % 60;
+    if (!stunden) return `${rest} min`;
+    if (!rest) return `${stunden} h`;
+    return `${stunden} h ${rest} min`;
+}
+
 import { appState } from './state.js';
 import { escapeHtml, formatDate } from './utils.js';
 import { showModal } from './modal.js';
@@ -76,6 +92,10 @@ export function renderUebersicht() {
             <span class="info-label">Liefertermin</span>
             <span class="info-value">${formatDate(appState.currentProjekt.liefertermin)}</span>
         </div>` : ''}
+        <div class="info-item">
+            <span class="info-label">Erfasste Zeit</span>
+            <span class="info-value">${escapeHtml(formatProjektZeit(appState.currentProjekt))}</span>
+        </div>
         <div class="info-item">
             <span class="info-label">Anzahl Leitungen</span>
             <span class="info-value">${appState.currentProjekt.leitungen ? appState.currentProjekt.leitungen.length : 0}</span>

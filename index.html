@@ -58,6 +58,9 @@
                     <button type="button" class="sidebar-link" data-nav="stueckliste" id="nav-stueckliste" onclick="showView('stueckliste')">
                         Stückliste
                     </button>
+                    <button type="button" class="sidebar-link" data-nav="zeiterfassung" id="nav-zeiterfassung" onclick="showView('zeiterfassung')">
+                        Zeiterfassung
+                    </button>
                     <button type="button" class="sidebar-link" data-nav="topologie" id="nav-topologie" onclick="showView('topologie')">
                         Topologie
                     </button>
@@ -286,6 +289,7 @@
                                     <th>Typ</th>
                                     <th>Gruppe</th>
                                     <th>Lieferant</th>
+                                    <th>Preis</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -489,6 +493,9 @@
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
                         Stückliste
                     </button>
+                    <button class="btn btn-secondary" onclick="showView('zeiterfassung')">
+                        Zeiterfassung
+                    </button>
                     <button class="btn btn-secondary" id="btn-projekt-freigabe" onclick="openProjectSharing()" hidden>
                         Freigaben
                     </button>
@@ -578,6 +585,15 @@
             <div id="topologie-root"></div>
         </section>
 
+        <!-- View: Zeiterfassung -->
+        <section id="view-zeiterfassung" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="zeit-titel">Zeiterfassung</h2>
+            </div>
+            <div id="zeit-inhalt"></div>
+        </section>
+
         <!-- View: Stückliste -->
         <section id="view-stueckliste" class="view">
             <div class="view-header stueckliste-view-header">
@@ -603,6 +619,7 @@
                                 <th>Leitungstyp</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
+                                <th>Preis</th>
                                 <th>Anzahl</th>
                                 <th>Status</th>
                                 <th>Lieferdatum</th>
@@ -629,6 +646,7 @@
                                 <th>Bauteiltyp</th>
                                 <th>Hersteller</th>
                                 <th>Artikelnummer</th>
+                                <th>Preis</th>
                                 <th>Anzahl</th>
                                 <th>Status</th>
                                 <th>Lieferdatum</th>

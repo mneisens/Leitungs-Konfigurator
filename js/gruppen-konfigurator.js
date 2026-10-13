@@ -43,6 +43,7 @@ import { compareGruppenCode, getAlleGruppenFuerProjekt, normalizeGruppenCode } f
 import { showModal } from './modal.js';
 import { syncTopologieLeitungen, uebernehmeLeitungInTopologie } from './topologie-sync.js';
 import { isLeitungMeaningful } from './leitung-utils.js';
+import { hinterlegePreis, preisAnzeige, preisSpanne } from './preise.js';
 import {
     beschaffungStatusOptionen,
     getPositionsBeschaffung,
@@ -687,6 +688,7 @@ function renderGruppenKopf() {
             </button>
             <button type="button" class="btn btn-secondary" onclick="gruppeTogglePruefliste()">Prüfliste</button>
             <button type="button" class="btn btn-secondary" onclick="showView('stueckliste')">Stückliste</button>
+            <button type="button" class="btn btn-secondary" onclick="zeitOeffnen('${jsArg(aktiveGruppe)}')">Zeit</button>
         </nav>
     `;
 }
@@ -1642,7 +1644,10 @@ function renderBauteilListe(bauteile, vorschlaege = []) {
             <button type="button" class="gk-bauteil${bauteil.artikelnummer ? '' : ' unvollstaendig'}${bauteil.id === aktivesBauteilId ? ' aktiv' : ''}"
                     title="${escapeAttr([getBauteilTypName(bauteil.typ), bauteil.artikelnummer || 'Artikel offen'].filter(Boolean).join(' · '))}"
                     onclick="gruppeEditBauteil('${jsArg(bauteil.id)}')">
-                <span>${escapeHtml(getBauteilLabel(bauteil))}</span>
+                <span class="gk-bauteil-text">
+                    <span>${escapeHtml(getBauteilLabel(bauteil))}</span>
+                    ${renderPreisKurz(bauteil.artikelnummer)}
+                </span>
                 <span class="gk-bauteil-anzahl">${Math.max(1, Number(bauteil.anzahl) || 1)}×</span>
             </button>
             ${renderStandSelect('bauteile', bauteil.id, stand.status, gesperrt)}
@@ -1779,7 +1784,7 @@ function renderBauteilKarte(bauteil) {
         { value: '', label: artikelliste.length ? '-- Bitte wählen --' : '-- Kein Katalogartikel --' },
         ...artikelliste.map(a => ({
             value: a.artikelnummer,
-            label: `${a.beschreibung}${a.hersteller ? ` (${a.hersteller})` : ''}${a.projektOnly ? ' · im Projekt' : ''}`
+            label: `${a.beschreibung}${a.hersteller ? ` (${a.hersteller})` : ''}${preisSuffix(a.artikelnummer)}${a.projektOnly ? ' · im Projekt' : ''}`
         })),
         { value: '__neu__', label: '➕ Bauteil neu anlegen…' }
     ];
@@ -1817,7 +1822,7 @@ function renderBauteilKarte(bauteil) {
             </div>
             ${renderStandFelder('bauteile', bauteil, gesperrt)}
             ${bauteil.artikelnummer ? `<p class="gruppen-karte-artikel">${escapeHtml(bauteil.bezeichnung || '')}
-                <strong>${escapeHtml(bauteil.artikelnummer)}</strong></p>` : ''}
+                <strong>${escapeHtml(bauteil.artikelnummer)}</strong>${renderPreisKurz(bauteil.artikelnummer)}</p>` : ''}
             <div class="leitung-karte-aktionen leitung-karte-aktionen-unten">
                 ${gesperrt ? '' : `<button type="button" class="btn btn-danger"
                     onclick="gruppeDeleteBauteil('${escapeHtml(bauteil.id)}')">Entfernen</button>`}
@@ -1853,7 +1858,7 @@ function renderBauteilKarteMitLaenge(bauteil, laengen, disabled, gesperrt) {
             <div class="gruppen-karte-grid">
                 <div class="form-group gruppen-karte-breit">
                     <label>Bauteil</label>
-                    <p class="gruppen-preset-info text-muted">${escapeHtml(typName)} · ${escapeHtml(artikelLabel)}</p>
+                    <p class="gruppen-preset-info text-muted">${escapeHtml(typName)} · ${escapeHtml(artikelLabel)}${renderPreisKurz(bauteil.artikelnummer)}</p>
                 </div>
                 <div class="form-group">
                     <label>Länge</label>
@@ -2017,6 +2022,7 @@ export async function gruppeAddBauteilAusArtikel(artikelnummer) {
         notiz: '',
         anzahl: 1
     };
+    hinterlegePreis(bauteil, bauteil.artikelnummer);
     appState.currentProjekt.bauteile.push(bauteil);
 
     persistCurrentProjekt();
@@ -2055,12 +2061,14 @@ export function gruppeUpdateBauteil(id, feld, wert) {
         bauteil.artikelnummer = artikel?.artikelnummer || '';
         bauteil.hersteller = artikel?.hersteller || '';
         bauteil.bezeichnung = artikel?.beschreibung || '';
+        hinterlegePreis(bauteil, bauteil.artikelnummer);
     } else if (feld === 'artikelnummer') {
         const artikel = getArtikelAuswahlFuerGruppe(bauteil.typ, bauteil.artikelnummer)
             .find(a => a.artikelnummer === wert) || null;
         bauteil.artikelnummer = wert;
         bauteil.hersteller = artikel?.hersteller || bauteil.hersteller;
         bauteil.bezeichnung = artikel?.beschreibung || bauteil.bezeichnung;
+        hinterlegePreis(bauteil, bauteil.artikelnummer);
     } else if (feld === 'anzahl') {
         const anzahl = parseInt(wert, 10);
         bauteil.anzahl = Number.isNaN(anzahl) || anzahl < 1 ? 1 : anzahl;
@@ -2131,6 +2139,27 @@ export async function gruppeDeleteBauteil(id) {
  * @param {{onclick: string, titel: string, meta: string, marke?: string}} eintrag
  * @returns {string}
  */
+/**
+ * @param {string} artikelnummer
+ * @returns {string}
+ */
+function preisSuffix(artikelnummer) {
+    const anzeige = preisAnzeige(artikelnummer);
+    return anzeige ? ` · ${anzeige.text}` : '';
+}
+
+
+/**
+ * @param {string} artikelnummer
+ * @returns {string}
+ */
+function renderPreisKurz(artikelnummer) {
+    const anzeige = preisAnzeige(artikelnummer);
+    if (!anzeige) return '';
+    return `<span class="preis-badge" title="${escapeAttr(anzeige.titel)}">${escapeHtml(anzeige.text)}</span>`;
+}
+
+
 function renderPickerEintrag(eintrag) {
     const knopf = `
         <button type="button" class="picker-eintrag" onclick="${eintrag.onclick}">
@@ -2342,20 +2371,22 @@ function formatKatalogReihenLabel(prefix, artikel) {
         const stecker = `${formatBeckhoffSteckerAnzeige(erste.steckerA)} → ${formatBeckhoffSteckerAnzeige(erste.steckerB)}`;
         return {
             titel,
-            meta: [stecker, erste.hersteller || '', laengenText].filter(Boolean).join(' · ')
+            meta: [stecker, erste.hersteller || '', laengenText, preisSpanne(artikel.map(a => a.artikelnummer))]
+                .filter(Boolean).join(' · ')
         };
     }
 
     if (artikel.length === 1) {
         return {
             titel: erste.beschreibung || erste.artikelnummer,
-            meta: `${erste.artikelnummer} · ${erste.hersteller || ''} · ${formatLaenge(erste.laenge)} m`
+            meta: `${erste.artikelnummer} · ${erste.hersteller || ''} · ${formatLaenge(erste.laenge)} m${preisSuffix(erste.artikelnummer)}`
         };
     }
 
     return {
         titel: ohneLaengenangabe(erste.beschreibung) || prefix,
-        meta: `Reihe ${prefix} · ${erste.hersteller || ''} · ${laengenText}`
+        meta: [`Reihe ${prefix}`, erste.hersteller || '', laengenText, preisSpanne(artikel.map(a => a.artikelnummer))]
+            .filter(Boolean).join(' · ')
     };
 }
 
@@ -2584,7 +2615,7 @@ function renderPickerBauteilArtikel(typ, suche) {
     const eintraege = artikelliste.map(artikel => renderPickerEintrag({
         onclick: `gruppeAddBauteilAusArtikel('${escapeHtml(artikel.artikelnummer)}')`,
         titel: artikel.beschreibung || artikel.artikelnummer,
-        meta: `${artikel.artikelnummer}${artikel.hersteller ? ` · ${artikel.hersteller}` : ''}`
+        meta: `${artikel.artikelnummer}${artikel.hersteller ? ` · ${artikel.hersteller}` : ''}${preisSuffix(artikel.artikelnummer)}`
     }));
 
     const treffer = renderPickerSektion(`${name} – Artikel wählen`, eintraege);
@@ -2632,7 +2663,7 @@ function renderPickerBauteile(suche) {
             .map(artikel => renderPickerEintrag({
                 onclick: `gruppeAddBauteilAusArtikel('${escapeHtml(artikel.artikelnummer)}')`,
                 titel: artikel.beschreibung || artikel.artikelnummer,
-                meta: `${artikel.artikelnummer} · ${artikel.hersteller || ''} · ${getBauteilTypName(artikel.typ)}`
+                meta: `${artikel.artikelnummer} · ${artikel.hersteller || ''} · ${getBauteilTypName(artikel.typ)}${preisSuffix(artikel.artikelnummer)}`
             }))
         : [];
 
@@ -4052,6 +4083,7 @@ function renderLeitungTabelle(leitungen) {
                 <td class="gk-leitung">
                     <span class="gk-leitung-name">${escapeHtml(name)}</span>
                     <span class="gk-leitung-meta">${escapeHtml(meta)}</span>
+                    ${renderPreisKurz(artikelnummer)}
                 </td>
                 <td class="gk-laenge">${renderLaengeZelle(leitung, gesperrt)}</td>
                 <td class="gk-stueck">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
@@ -4195,6 +4227,7 @@ function renderLeitungKarte(leitung) {
     const id = escapeHtml(leitung.id);
     const meterware = istMeterwareKategorie(leitung.kategorie);
     const artikelInfo = aktualisiereArtikel(leitung);
+    hinterlegePreis(leitung, leitung.artikelnummer);
 
     const nummer = getLeitungenDerGruppe(leitung.gruppe).findIndex(l => l.id === leitung.id) + 1;
     const zusatzOffen = leitung.artikelCustom || leitung.notiz ? ' open' : '';
@@ -4208,6 +4241,7 @@ function renderLeitungKarte(leitung) {
 
             <div class="artikel-vorschlag gruppen-karte-artikel-box leitung-ergebnis ${artikelInfo.klasse}">
                 <span class="artikel-label">${escapeHtml(artikelInfo.text)}</span>
+                ${renderPreisKurz(leitung.artikelnummer)}
                 ${!gesperrt && artikelInfo.klasse === 'no-match' ? `
                     <button type="button" class="btn btn-secondary btn-small"
                             onclick="gruppeOpenLeitungFormularAusLeitung('${id}')">
@@ -4691,6 +4725,7 @@ export function gruppeAddLeitung(presetId, options = {}) {
 
     appState.currentProjekt.leitungen.push(leitung);
     const artikelInfo = aktualisiereArtikel(leitung);
+    hinterlegePreis(leitung, leitung.artikelnummer);
     renumberLeitungen();
     persistCurrentProjekt();
 

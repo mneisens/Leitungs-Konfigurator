@@ -9,7 +9,8 @@ const PROJECT_VIEWS = new Set([
     'stueckliste',
     'topologie',
     'projekt-freigabe',
-    'projekt-form'
+    'projekt-form',
+    'zeiterfassung'
 ]);
 
 const VIEW_TITLES = {
@@ -21,7 +22,8 @@ const VIEW_TITLES = {
     uebersicht: 'Übersicht',
     'projekt-freigabe': 'Freigaben',
     stueckliste: 'Stückliste',
-    topologie: 'Topologie'
+    topologie: 'Topologie',
+    zeiterfassung: 'Zeiterfassung'
 };
 
 const NAV_ALIAS = {
@@ -121,7 +123,8 @@ function runViewHandler(viewName) {
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),
         'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
         stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),
-        topologie: () => import('./topologie.js').then(m => m.renderTopologie())
+        topologie: () => import('./topologie.js').then(m => m.renderTopologie()),
+        zeiterfassung: () => import('./zeiterfassung.js').then(m => m.renderZeiterfassung())
     };
     handlers[viewName]?.();
 }
