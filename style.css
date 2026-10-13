@@ -44,6 +44,12 @@
     --overlay-bg: rgba(0, 0, 0, 0.55);
     --focus-ring: rgba(244, 166, 65, 0.28);
     --scrollbar-thumb: #3a3d44;
+    --chip-bg: #26282d;
+    --input-bg: #1f2025;
+    --hover-fade: rgba(255, 255, 255, 0.04);
+    --row-hover: rgba(255, 255, 255, 0.025);
+    --price-bg: rgba(244, 166, 65, 0.18);
+    --price-text: #f4b860;
 
     --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
@@ -99,6 +105,12 @@
     --overlay-bg: rgba(26, 26, 26, 0.45);
     --focus-ring: rgba(242, 124, 34, 0.22);
     --scrollbar-thumb: #c9cccf;
+    --chip-bg: #eef0f2;
+    --input-bg: #ffffff;
+    --hover-fade: rgba(0, 0, 0, 0.04);
+    --row-hover: rgba(0, 0, 0, 0.03);
+    --price-bg: #fff4eb;
+    --price-text: #9a3412;
 
     --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -3104,7 +3116,8 @@ body.auth-layout .app-main {
     padding: 0.3rem 0.4rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm, 4px);
-    background: var(--card-bg);
+    background: var(--input-bg);
+    color: var(--text-color);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
 }
@@ -3264,7 +3277,8 @@ select.vorschlag-laenge {
     padding: 0.3rem 0.4rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm, 4px);
-    background: var(--card-bg);
+    background: var(--input-bg);
+    color: var(--text-color);
     font-size: 0.85rem;
 }
 
@@ -4927,7 +4941,7 @@ mark {
     padding: 0;
     border: none;
     border-radius: 2px;
-    background: #24262b;
+    background: var(--border-color);
     cursor: pointer;
     transition: filter 0.12s;
 }
@@ -4943,7 +4957,7 @@ mark {
 }
 
 .gk-seg.entfaellt {
-    background: #4a4e57;
+    background: var(--border-strong);
 }
 
 .gk-seg.fertig {
@@ -5227,7 +5241,7 @@ mark {
     overflow: hidden;
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    background: #1d1e23;
+    background: var(--card-bg);
     box-shadow: var(--shadow-lg);
 }
 
@@ -5271,7 +5285,7 @@ mark {
 .gk-dropdown .picker-eintrag:focus-visible,
 .gk-dropdown .picker-zeile:hover {
     border-color: transparent;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--hover-fade);
 }
 
 .gk-dropdown .picker-eintrag:focus-visible {
@@ -5326,7 +5340,7 @@ mark {
 }
 
 .gk-tabelle tbody tr:hover {
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--row-hover);
 }
 
 .gk-tabelle tbody tr.aktiv {
@@ -5351,7 +5365,8 @@ mark {
     padding: 0.3rem 0.55rem;
     border: 1px solid transparent;
     border-radius: 4px;
-    background: #26282d;
+    background: var(--chip-bg);
+    color: var(--text-color);
     font-family: var(--font-mono);
     font-size: 0.85rem;
     font-weight: 500;
@@ -5361,7 +5376,7 @@ mark {
 }
 
 .gk-stecker-b {
-    border: 1px dashed #4d5058;
+    border: 1px dashed var(--border-strong);
     background: transparent;
 }
 
@@ -5401,12 +5416,17 @@ mark {
     padding: 0.45rem 0.6rem;
     border: 1px solid var(--border-strong);
     border-radius: 6px;
-    background: #1f2025;
+    background: var(--input-bg);
     color: var(--text-color);
     font-family: var(--font-mono);
     font-size: 1rem;
     font-weight: 500;
     text-align: right;
+}
+
+.gk-laenge select option {
+    background: var(--card-bg);
+    color: var(--text-color);
 }
 
 .gk-laenge .laenge-zelle {
@@ -5501,7 +5521,7 @@ mark {
 .gk-vorschlag {
     display: inline-flex;
     align-items: center;
-    border: 1px dashed #4d5058;
+    border: 1px dashed var(--border-strong);
     border-radius: 999px;
     transition: border-color 0.12s;
 }
@@ -5649,8 +5669,8 @@ mark {
     margin-top: 0.3rem;
     padding: 0.12rem 0.45rem;
     border-radius: 4px;
-    background: rgba(244, 166, 65, 0.18);
-    color: #f6d7a2;
+    background: var(--price-bg);
+    color: var(--price-text);
     font-family: var(--font-mono);
     font-size: 0.82rem;
     font-weight: 600;
@@ -5850,7 +5870,7 @@ mark {
 
 .gk-bauteil-vorschlag > button:first-child {
     padding: 0.3rem 0.75rem;
-    border: 1px dashed #4d5058;
+    border: 1px dashed var(--border-strong);
     border-radius: 999px;
     background: none;
     color: var(--text-muted);
