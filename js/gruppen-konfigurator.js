@@ -3904,12 +3904,127 @@ export function gruppeAlleVorschlaegeUebernehmen() {
 
 
 /**
+ * @param {object} leitung
+ * @returns {object[]}
+ */
+function wegschritte(leitung) {
+    return Array.isArray(leitung?.wegschritte) ? leitung.wegschritte : [];
+}
+
+
+/**
+ * @param {object} leitung
+ * @returns {boolean}
+ */
+function hatWeg(leitung) {
+    return wegschritte(leitung).some(schritt => (schritt.name || '').trim() || Number(schritt.meter) > 0);
+}
+
+
+/**
+ * @param {object} leitung
+ * @returns {number}
+ */
+function wegSumme(leitung) {
+    const summe = wegschritte(leitung).reduce((gesamt, schritt) => gesamt + (Number(schritt.meter) || 0), 0);
+    return Math.round(summe * 1000) / 1000;
+}
+
+
+/**
+ * Summe der Abschnitte, solange schon Meter eingetragen sind.
+ * Sonst bleibt die bisherige Leitungslänge sichtbar.
+ * @param {object} leitung
+ * @returns {number}
+ */
+function anzeigeWegSumme(leitung) {
+    if (wegschritte(leitung).some(schritt => Number(schritt.meter) > 0)) return wegSumme(leitung);
+    return Number(leitung.laenge) || 0;
+}
+
+
+/**
+ * Die Summe der Wegabschnitte ist die Leitungslänge.
+ * @param {object} leitung
+ * @returns {void}
+ */
+function uebernehmeWegLaenge(leitung) {
+    if (!wegschritte(leitung).some(schritt => Number(schritt.meter) > 0)) return;
+    leitung.laenge = wegSumme(leitung);
+}
+
+
+/**
+ * @param {string|number} wert
+ * @returns {number}
+ */
+function parseMeter(wert) {
+    const zahl = parseFloat(String(wert ?? '').replace(',', '.'));
+    if (!Number.isFinite(zahl) || zahl <= 0) return 0;
+    return Math.round(zahl * 1000) / 1000;
+}
+
+
+/**
+ * @param {object} leitung
+ * @param {boolean} gesperrt
+ * @returns {string}
+ */
+function renderWeg(leitung, gesperrt) {
+    const id = jsArg(leitung.id);
+    const schritte = wegschritte(leitung);
+    const zeilen = schritte.map((schritt, index) => `
+        <li class="gk-weg-zeile">
+            <span class="gk-weg-nr">${index + 1}</span>
+            <input type="text" data-weg="${escapeHtml(schritt.id)}" value="${escapeHtml(schritt.name || '')}"${gesperrt ? ' disabled' : ''}
+                   placeholder="z. B. Schaltschrank bis Kabelrinne" aria-label="Bezeichnung Wegabschnitt ${index + 1}"
+                   onchange="gruppeUpdateWegschritt('${id}', '${jsArg(schritt.id)}', 'name', this.value)">
+            <input type="number" min="0" step="0.1" value="${schritt.meter || ''}"${gesperrt ? ' disabled' : ''}
+                   placeholder="m" aria-label="Meter Wegabschnitt ${index + 1}"
+                   onchange="gruppeUpdateWegschritt('${id}', '${jsArg(schritt.id)}', 'meter', this.value)">
+            ${gesperrt ? '' : `<button type="button" class="gk-weg-entfernen" title="Abschnitt entfernen" aria-label="Abschnitt entfernen"
+                    onclick="gruppeDeleteWegschritt('${id}', '${jsArg(schritt.id)}')">×</button>`}
+        </li>
+    `).join('');
+
+    return `
+        <div class="gk-weg-editor">
+            <div class="gk-weg-kopf">
+                <span class="chip-feld-label">Weg</span>
+                ${hatWeg(leitung) ? `<strong>${formatLaenge(anzeigeWegSumme(leitung))} m</strong>` : ''}
+            </div>
+            <p class="text-muted">Abschnitte nacheinander eintragen. Die Summe ist die Leitungslänge.</p>
+            ${zeilen ? `<ol class="gk-weg-liste">${zeilen}</ol>` : ''}
+            ${gesperrt ? '' : `<button type="button" class="gk-link" onclick="gruppeAddWegschritt('${id}')">+ Wegabschnitt</button>`}
+        </div>
+    `;
+}
+
+
+/**
  * Längenzelle einer erfassten Leitung – immer direkt in der Liste änderbar.
  * @param {object} leitung
  * @param {boolean} gesperrt
  * @returns {string}
  */
 function renderLaengeZelle(leitung, gesperrt) {
+    if (hatWeg(leitung)) {
+        const schritte = wegschritte(leitung).filter(schritt => (schritt.name || '').trim() || Number(schritt.meter) > 0);
+        const summe = anzeigeWegSumme(leitung);
+        return `
+            <div class="gk-weg-kurz" title="Weg im Bearbeitungsfenster ändern">
+                <strong>${summe ? `${formatLaenge(summe)} m` : '–'}</strong>
+                <ol>
+                    ${schritte.map(schritt => `
+                        <li>${escapeHtml((schritt.name || '').trim() || 'Abschnitt')}
+                            <span>${Number(schritt.meter) > 0 ? `${formatLaenge(schritt.meter)} m` : ''}</span>
+                        </li>
+                    `).join('')}
+                </ol>
+            </div>
+        `;
+    }
+
     if (gesperrt) {
         return leitung.laenge ? `${formatLaenge(leitung.laenge)} m` : '–';
     }
@@ -4065,6 +4180,7 @@ function renderLeitungTabelle(leitungen) {
     }
 
     const gesperrt = istSchreibgeschuetzt();
+    const mitWeg = leitungen.some(hatWeg);
     const zeilen = leitungen.map(leitung => {
         aktualisiereArtikel(leitung);
         const id = jsArg(leitung.id);
@@ -4101,7 +4217,7 @@ function renderLeitungTabelle(leitungen) {
 
     return `
         <div class="table-container gk-tabelle-wrap">
-            <table class="gk-tabelle">
+            <table class="gk-tabelle${mitWeg ? ' hat-weg' : ''}">
                 <thead>
                     <tr>
                         <th>Verbindung</th>
@@ -4266,6 +4382,8 @@ function renderLeitungKarte(leitung) {
                     ${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}
                 </div>
             </div>
+
+            ${renderWeg(leitung, gesperrt)}
 
             ${gesperrt ? '' : renderStandardAngebot(leitung)}
 
@@ -4626,6 +4744,11 @@ function formatSteckerChip(stecker) {
  * @returns {string}
  */
 function renderLaengenChips(leitung, laengen, disabled) {
+    if (wegschritte(leitung).length) {
+        const summe = anzeigeWegSumme(leitung);
+        return renderChipFeld('Länge', `<span class="chip-info">${summe ? `${formatLaenge(summe)} m aus dem Weg` : 'ergibt sich aus dem Weg'}</span>`);
+    }
+
     const id = escapeHtml(leitung.id);
     const aktuell = Number(leitung.laenge) || 0;
     const imKatalog = laengen.includes(aktuell);
@@ -5034,6 +5157,7 @@ export function gruppeUpdateLeitung(id, feld, wert) {
 
     if (feld === 'kategorie') {
         leitung.kategorie = wert;
+        leitung.wegschritte = [];
         const hersteller = getHerstellerFuerKategorie(wert);
         leitung.hersteller = hersteller.length === 1 ? hersteller[0] : '';
         leitung.steckerA = '';
@@ -5057,16 +5181,19 @@ export function gruppeUpdateLeitung(id, feld, wert) {
         leitung.steckerA = getFullSteckerTyp(wert, ausrichtung);
         leitung.steckerB = '';
         leitung.laenge = 0;
+        leitung.wegschritte = [];
         leitung.artikelnummer = '';
         leitung.artikelPrefix = '';
     } else if (feld === 'steckerB') {
         const ausrichtung = zerlegeStecker(leitung.steckerB).ausrichtung;
         leitung.steckerB = getFullSteckerTyp(wert, ausrichtung);
         leitung.laenge = 0;
+        leitung.wegschritte = [];
         leitung.artikelnummer = '';
         leitung.artikelPrefix = '';
     } else if (feld === 'laenge') {
         leitung.laenge = parseFloat(String(wert).replace(',', '.')) || 0;
+        leitung.wegschritte = [];
         // Bei Meterware bestimmt die Typauswahl die Artikelnummer, nicht die Länge.
         if (!istMeterwareKategorie(leitung.kategorie)) leitung.artikelnummer = '';
     } else if (feld === 'anzahl') {
@@ -5085,21 +5212,105 @@ export function gruppeUpdateLeitung(id, feld, wert) {
 
 
 /**
+ * @param {object} leitung
+ * @param {string} schrittId
+ * @returns {object|null}
+ */
+function findWegschritt(leitung, schrittId) {
+    return wegschritte(leitung).find(schritt => schritt.id === schrittId) || null;
+}
+
+
+/**
+ * Zeichnet Karte und Tabelle neu und setzt den Fokus auf den neuen Abschnitt.
+ * @param {object} leitung
+ * @param {string} [fokusSchrittId]
+ * @returns {void}
+ */
+function aktualisiereWeg(leitung, fokusSchrittId) {
+    uebernehmeWegLaenge(leitung);
+    aktualisiereArtikel(leitung);
+    persistCurrentProjekt();
+    if (document.getElementById(`leitung-karte-${leitung.id}`)) {
+        ersetzeKarte(`leitung-karte-${leitung.id}`, renderLeitungKarte(leitung));
+    }
+    aktualisiereLeitungsTabelle();
+    if (!fokusSchrittId) return;
+    document.querySelector(
+        `#leitung-karte-${CSS.escape(leitung.id)} .gk-weg-zeile input[data-weg="${CSS.escape(fokusSchrittId)}"]`
+    )?.focus();
+}
+
+
+/**
+ * Hängt einen leeren Wegabschnitt an.
+ * @param {string} leitungId
+ * @returns {void}
+ */
+export function gruppeAddWegschritt(leitungId) {
+    const leitung = findLeitung(leitungId);
+    if (!leitung || istSchreibgeschuetzt()) return;
+    if (!Array.isArray(leitung.wegschritte)) leitung.wegschritte = [];
+    const schritt = { id: generateId('weg'), name: '', meter: 0 };
+    leitung.wegschritte.push(schritt);
+    aktualisiereWeg(leitung, schritt.id);
+}
+
+
+/**
+ * @param {string} leitungId
+ * @param {string} schrittId
+ * @param {'name'|'meter'} feld
+ * @param {string} wert
+ * @returns {void}
+ */
+export function gruppeUpdateWegschritt(leitungId, schrittId, feld, wert) {
+    const leitung = findLeitung(leitungId);
+    const schritt = leitung ? findWegschritt(leitung, schrittId) : null;
+    if (!schritt || istSchreibgeschuetzt()) return;
+    if (feld === 'name') schritt.name = String(wert || '').trim();
+    else if (feld === 'meter') schritt.meter = parseMeter(wert);
+    else return;
+    if (feld === 'meter') leitung.laenge = wegSumme(leitung);
+    aktualisiereWeg(leitung);
+}
+
+
+/**
+ * @param {string} leitungId
+ * @param {string} schrittId
+ * @returns {void}
+ */
+export function gruppeDeleteWegschritt(leitungId, schrittId) {
+    const leitung = findLeitung(leitungId);
+    if (!leitung || istSchreibgeschuetzt()) return;
+    const entfernt = findWegschritt(leitung, schrittId);
+    leitung.wegschritte = wegschritte(leitung).filter(schritt => schritt.id !== schrittId);
+    if (wegschritte(leitung).length && Number(entfernt?.meter) > 0) {
+        leitung.laenge = wegSumme(leitung);
+    }
+    aktualisiereWeg(leitung);
+}
+
+
+/**
  * Behält die Länge nur, wenn es sie für die neue Steckerkombination gibt.
  * Gibt es genau eine Länge, wird sie gleich gesetzt.
  * @param {object} leitung
  * @returns {void}
  */
 function passeLaengeAn(leitung) {
+    const vorher = Number(leitung.laenge) || 0;
     if (!leitung.steckerA || !leitung.steckerB) {
         leitung.laenge = 0;
-        return;
+    } else {
+        const laengen = getLaengenOptionen(
+            leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
+        );
+        if (laengen.length === 1) leitung.laenge = laengen[0];
+        else if (laengen.length && !laengen.includes(Number(leitung.laenge))) leitung.laenge = 0;
     }
-    const laengen = getLaengenOptionen(
-        leitung.kategorie, leitung.hersteller, leitung.steckerA, leitung.steckerB, leitung.artikelPrefix
-    );
-    if (laengen.length === 1) leitung.laenge = laengen[0];
-    else if (laengen.length && !laengen.includes(Number(leitung.laenge))) leitung.laenge = 0;
+    if ((Number(leitung.laenge) || 0) !== vorher) leitung.wegschritte = [];
 }
 
 

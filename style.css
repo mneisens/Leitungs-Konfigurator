@@ -2066,6 +2066,29 @@ body.auth-layout .app-main {
     display: none !important;
 }
 
+.preisliste-leiste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 8px);
+    background: var(--card-bg);
+}
+
+.preisliste-leiste p {
+    margin: 0.2rem 0 0;
+}
+
+.preisliste-aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .katalog-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -3157,6 +3180,113 @@ body.auth-layout .app-main {
 .laenge-zelle-einheit {
     font-size: 0.8rem;
     color: var(--text-muted);
+}
+
+.gk-weg-kurz {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.gk-weg-kurz strong {
+    font-variant-numeric: tabular-nums;
+}
+
+.gk-weg-kurz ol {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.gk-weg-kurz li span {
+    margin-left: 0.35rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color);
+}
+
+.gk-tabelle.hat-weg th.gk-laenge,
+.gk-tabelle.hat-weg td.gk-laenge {
+    width: 16rem;
+}
+
+.gk-weg-editor {
+    margin: 0.75rem 0 0.25rem;
+}
+
+.gk-weg-kopf {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.gk-weg-kopf strong {
+    font-variant-numeric: tabular-nums;
+}
+
+.gk-weg-editor .text-muted {
+    margin: 0.2rem 0 0.55rem;
+    font-size: 0.85rem;
+}
+
+.gk-weg-liste {
+    list-style: none;
+    margin: 0 0 0.45rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.gk-weg-zeile {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr 5.5rem auto;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.gk-weg-nr {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.gk-weg-zeile input {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--input-bg);
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.gk-weg-zeile input[type="number"] {
+    font-variant-numeric: tabular-nums;
+}
+
+.gk-weg-zeile input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(242, 124, 34, 0.15);
+}
+
+.gk-weg-entfernen {
+    padding: 0.2rem 0.45rem;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.gk-weg-entfernen:hover {
+    color: #f0806f;
 }
 
 .leitung-tabelle-anzahl {
@@ -6029,6 +6159,11 @@ mark {
     .gk-tabelle th.gk-laenge,
     .gk-tabelle td.gk-laenge {
         width: 6.75rem;
+    }
+
+    .gk-tabelle.hat-weg th.gk-laenge,
+    .gk-tabelle.hat-weg td.gk-laenge {
+        width: 14rem;
     }
 
     .gk-laenge select,

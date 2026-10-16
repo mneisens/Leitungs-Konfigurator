@@ -48,6 +48,23 @@ function normalizeArtikelnummer(artikelnummer) {
 
 
 /**
+ * Benannte Wegabschnitte als nachvollziehbare Summe.
+ * @param {object} leitung
+ * @returns {string}
+ */
+function formatWeg(leitung) {
+    const schritte = (Array.isArray(leitung?.wegschritte) ? leitung.wegschritte : [])
+        .filter(schritt => (schritt.name || '').trim() || Number(schritt.meter) > 0);
+    if (!schritte.length) return '';
+    return schritte.map(schritt => {
+        const name = (schritt.name || '').trim() || 'Abschnitt';
+        const meter = Number(schritt.meter) > 0 ? `${formatLaenge(schritt.meter).replace('.', ',')} m` : '';
+        return [name, meter].filter(Boolean).join(' ');
+    }).join(' + ');
+}
+
+
+/**
  * @param {number|string} wert
  * @returns {string}
  */
@@ -196,6 +213,7 @@ function getLeitungMenge(leitung) {
 function sollQuellenInfoAnzeigen(entry) {
     if (!entry.quellen?.length) return false;
     if (entry.quellen.length > 1) return true;
+    if (entry.quellen.some(q => q.weg)) return true;
     return Boolean(entry.meterware);
 }
 
@@ -219,6 +237,7 @@ function formatQuelleZeile(q, entry) {
     }
 
     if (q.bezeichnung) teile.push(q.bezeichnung);
+    if (q.weg) teile.push(q.weg);
     return teile.join(' · ');
 }
 
@@ -412,6 +431,7 @@ function renderQuellenInfo(entry) {
                                 }</span>
                             </span>
                             <span class="stueckliste-quellen-text">${escapeHtml(q.bezeichnung)}</span>
+                            ${q.weg ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.weg)}</span>` : ''}
                             ${q.detail && !entry.meterware ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.detail)}</span>` : ''}
                             ${q.typ ? `<span class="stueckliste-quellen-detail">${escapeHtml(q.typ)}</span>` : ''}
                         </li>
@@ -745,7 +765,8 @@ function getLeitungEintraege() {
             stueck: menge.stueck,
             laenge: Number(l.laenge) || 0,
             meter: menge.meter,
-            detail: getLeitungstypText(l)
+            detail: getLeitungstypText(l),
+            weg: formatWeg(l)
         };
         const existing = grouped.get(key);
 

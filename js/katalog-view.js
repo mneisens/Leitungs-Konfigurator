@@ -2,7 +2,12 @@
  * @file Katalog-Ansicht: Leitungen und Bauteile getrennt filtern und nachtragen.
  */
 import { appState } from './state.js';
-import { preisAnzeige } from './preise.js';
+import {
+    preisAnzeige,
+    getPreislisteInfo,
+    importPreislisteAusDatei,
+    setzeStandardPreisliste
+} from './preise.js';
 import { escapeHtml } from './utils.js';
 import { showModal } from './modal.js';
 import {
@@ -951,4 +956,88 @@ export async function renderKatalogView() {
     }
 
     setKatalogTab(katalogTab);
+    renderPreislisteLeiste();
+}
+
+
+/**
+ * Zeigt, welche Beckhoff-Preisliste gerade gilt.
+ * @returns {void}
+ */
+export function renderPreislisteLeiste() {
+    const box = document.getElementById('preisliste-leiste');
+    if (!box) return;
+    const info = getPreislisteInfo();
+    const datum = info.importiertAm
+        ? new Date(info.importiertAm).toLocaleDateString('de-DE')
+        : '';
+    const herkunft = info.importiert
+        ? `Eingelesen${datum ? ` am ${datum}` : ''} aus ${info.dateiname}`
+        : `Mitgelieferte Liste${info.dateiname ? ` (${info.dateiname})` : ''}`;
+
+    box.innerHTML = `
+        <div>
+            <strong>Beckhoff-Preisliste</strong>
+            <p class="text-muted">${escapeHtml(info.titel)} · ${info.anzahl.toLocaleString('de-DE')} Artikel · ${escapeHtml(herkunft)}</p>
+        </div>
+        <div class="preisliste-aktionen">
+            <label class="btn btn-secondary btn-small">
+                Neue Liste einlesen
+                <input type="file" accept="application/json,.json" hidden onchange="preislisteDateiGewaehlt(this)">
+            </label>
+            ${info.importiert ? `<button type="button" class="btn btn-secondary btn-small" onclick="preislisteZuruecksetzen()">Mitgelieferte Liste</button>` : ''}
+        </div>
+    `;
+}
+
+
+/**
+ * @param {HTMLInputElement} input
+ * @returns {Promise<void>}
+ */
+export async function preislisteDateiGewaehlt(input) {
+    const datei = input?.files?.[0];
+    if (input) input.value = '';
+    if (!datei) return;
+
+    try {
+        const info = await importPreislisteAusDatei(datei);
+        renderPreislisteLeiste();
+        if (katalogTab === 'bauteile') renderKatalogBauteileListe();
+        else renderKatalogListe();
+        showModal(
+            `${info.dateiname} ist jetzt die aktive Preisliste (${info.anzahl.toLocaleString('de-DE')} Artikel, ${info.titel}).`,
+            { type: 'success', title: 'Preisliste eingelesen' }
+        );
+    } catch (error) {
+        showModal(error.message || 'Die Preisliste konnte nicht eingelesen werden.', {
+            type: 'danger',
+            title: 'Einlesen fehlgeschlagen'
+        });
+    }
+}
+
+
+/**
+ * @returns {Promise<void>}
+ */
+export async function preislisteZuruecksetzen() {
+    const bestaetigt = await showModal(
+        'Die eingelesene Preisliste verwerfen und wieder die mitgelieferte Liste verwenden?',
+        { type: 'warning', title: 'Preisliste zurücksetzen', confirmText: 'Zurücksetzen', cancelText: 'Abbrechen', showCancel: true }
+    );
+    if (!bestaetigt) return;
+
+    try {
+        const info = await setzeStandardPreisliste();
+        renderPreislisteLeiste();
+        if (katalogTab === 'bauteile') renderKatalogBauteileListe();
+        else renderKatalogListe();
+        showModal(
+            `Es gilt wieder ${info.dateiname} (${info.anzahl.toLocaleString('de-DE')} Artikel).`,
+            { type: 'success', title: 'Mitgelieferte Liste' }
+        );
+    } catch (error) {
+        showModal(error.message || 'Zurücksetzen fehlgeschlagen.', { type: 'danger', title: 'Fehler' });
+    }
 }

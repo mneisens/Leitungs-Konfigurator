@@ -32,7 +32,9 @@ import {
     deleteKatalogBauteil,
     editKatalogBauteil,
     cancelEditKatalogBauteil,
-    revertKatalogBauteil
+    revertKatalogBauteil,
+    preislisteDateiGewaehlt,
+    preislisteZuruecksetzen
 } from './js/katalog-view.js';
 import {
     loadProjects,
@@ -59,6 +61,9 @@ import {
     gruppeAddLeitung,
     gruppeUpdateLeitung,
     gruppeUpdateLeitungText,
+    gruppeAddWegschritt,
+    gruppeUpdateWegschritt,
+    gruppeDeleteWegschritt,
     gruppeCopyArtikelnummer,
     gruppeAendereAnzahl,
     gruppeDeleteLeitung,
@@ -270,6 +275,8 @@ Object.assign(window, {
     editKatalogBauteil,
     cancelEditKatalogBauteil,
     revertKatalogBauteil,
+    preislisteDateiGewaehlt,
+    preislisteZuruecksetzen,
     filterGruppenListe,
     selectGruppe,
     gruppeWechseln,
@@ -277,6 +284,9 @@ Object.assign(window, {
     gruppeAddLeitung,
     gruppeUpdateLeitung,
     gruppeUpdateLeitungText,
+    gruppeAddWegschritt,
+    gruppeUpdateWegschritt,
+    gruppeDeleteWegschritt,
     gruppeCopyArtikelnummer,
     gruppeAendereAnzahl,
     gruppeDeleteLeitung,
