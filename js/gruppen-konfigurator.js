@@ -4205,6 +4205,8 @@ function renderLeitungTabelle(leitungen) {
                 <td class="gk-stueck">${renderAnzahlStepper('leitung', leitung.id, leitung.anzahl, gesperrt)}</td>
                 <td class="gk-stand" onclick="event.stopPropagation()">${renderStandSelect('leitungen', leitung.id, stand.status, gesperrt)}</td>
                 <td class="gk-aktion">${gesperrt ? '' : `
+                    <button type="button" class="gk-kopieren" title="Leitung kopieren" aria-label="Leitung kopieren"
+                            onclick="event.stopPropagation(); gruppeKopiereLeitung('${id}')">⧉</button>
                     <button type="button" class="gk-loeschen" title="Leitung löschen" aria-label="Leitung löschen"
                             onclick="event.stopPropagation(); gruppeDeleteLeitung('${id}')">×</button>`}
                 </td>
@@ -4410,6 +4412,8 @@ function renderLeitungKarte(leitung) {
                             title="Diese Leitung künftig in dieser Gruppe vorschlagen"
                             onclick="gruppeSaveLeitungAlsButton('${id}')">Als Standard merken</button>
                     `}
+                    <button type="button" class="btn btn-secondary" title="Kopie anlegen und direkt anpassen"
+                            onclick="gruppeKopiereLeitung('${id}')">Kopieren</button>
                     <button type="button" class="btn btn-danger" title="Leitung löschen"
                             onclick="gruppeDeleteLeitung('${id}')">Löschen</button>
                 `}
@@ -5037,7 +5041,8 @@ export function gruppeAddLeitungWie(quelleId, laenge, imFenster = false) {
         festLeitungstyp: quelle.festLeitungstyp === true,
         notiz: '',
         anzahl: 1,
-        erledigt: false
+        erledigt: false,
+        wegschritte: laengeGeaendert ? [] : kloneWegschritte(quelle)
     };
 
     pickerState = null;
@@ -5050,6 +5055,50 @@ export function gruppeAddLeitungWie(quelleId, laenge, imFenster = false) {
     renderGruppenListe();
     renderGruppenPanel();
     if (imFenster) fokussiereLeitungEditor();
+}
+
+
+/**
+ * Wegabschnitte mit neuen Kennungen, damit Vorlage und Kopie unabhängig bleiben.
+ * @param {object} leitung
+ * @returns {object[]}
+ */
+function kloneWegschritte(leitung) {
+    return wegschritte(leitung).map(schritt => ({
+        id: generateId('weg'),
+        name: schritt.name || '',
+        meter: Number(schritt.meter) || 0
+    }));
+}
+
+
+/**
+ * Legt eine vollständige Kopie direkt hinter der Leitung an und öffnet sie.
+ * @param {string} id
+ * @returns {void}
+ */
+export function gruppeKopiereLeitung(id) {
+    if (!assertCanEdit('Leitungen kopieren')) return;
+    const quelle = findLeitung(id);
+    const liste = appState.currentProjekt?.leitungen;
+    if (!quelle || !liste) return;
+
+    const kopie = structuredClone(quelle);
+    kopie.id = generateId('ltg');
+    kopie.erledigt = false;
+    delete kopie.topoVerbindungId;
+    kopie.wegschritte = kloneWegschritte(quelle);
+
+    const index = liste.indexOf(quelle);
+    liste.splice(index + 1, 0, kopie);
+    aktualisiereArtikel(kopie);
+    renumberLeitungen();
+    persistCurrentProjekt();
+
+    aktiveLeitungId = kopie.id;
+    renderGruppenListe();
+    renderGruppenPanel();
+    fokussiereLeitungEditor();
 }
 
 

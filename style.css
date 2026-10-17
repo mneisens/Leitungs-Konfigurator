@@ -5518,7 +5518,7 @@ mark {
 
 .gk-tabelle th.gk-aktion,
 .gk-tabelle td.gk-aktion {
-    width: 2.5rem;
+    width: 4.2rem;
 }
 
 .gk-tabelle tbody tr {
@@ -5667,8 +5667,9 @@ mark {
 }
 
 .gk-aktion {
-    width: 2rem;
+    width: 4.2rem;
     text-align: right;
+    white-space: nowrap;
 }
 
 .gk-loeschen {
@@ -5689,6 +5690,26 @@ mark {
 
 .gk-loeschen:hover {
     color: #f0806f;
+}
+
+.gk-kopieren {
+    padding: 0.2rem 0.35rem;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.gk-tabelle tr:hover .gk-kopieren,
+.gk-kopieren:focus-visible {
+    opacity: 1;
+}
+
+.gk-kopieren:hover {
+    color: var(--primary-color);
 }
 
 .gk-tabelle-leer {
@@ -6283,7 +6304,8 @@ mark {
         opacity: 1;
     }
 
-    .gk-loeschen {
+    .gk-loeschen,
+    .gk-kopieren {
         opacity: 1;
     }
 }
