@@ -370,6 +370,149 @@ export function onProjektVorlageChange() {
 
 
 /**
+ * @param {*} value
+ * @returns {*}
+ */
+function cloneJson(value) {
+    return JSON.parse(JSON.stringify(value ?? null));
+}
+
+
+/**
+ * Baut eine vollständige Projektkopie mit neuen IDs (Projekt, Leitungen, Bauteile, Topologie).
+ * @param {object} quelle
+ * @returns {object}
+ */
+function buildProjektKopie(quelle) {
+    const src = cloneJson(quelle) || {};
+    const leitungIdMap = new Map();
+    const bauteilIdMap = new Map();
+    const modulIdMap = new Map();
+    const verbindungIdMap = new Map();
+
+    const leitungen = (src.leitungen || []).map((leitung, index) => {
+        const neuId = generateId('ltg');
+        if (leitung.id) leitungIdMap.set(leitung.id, neuId);
+        return {
+            ...leitung,
+            id: neuId,
+            position: index + 1
+        };
+    });
+
+    const bauteile = (src.bauteile || []).map(bauteil => {
+        const neuId = generateId('btl');
+        if (bauteil.id) bauteilIdMap.set(bauteil.id, neuId);
+        return {
+            ...bauteil,
+            id: neuId
+        };
+    });
+
+    const topoSrc = src.ethercatTopologie && typeof src.ethercatTopologie === 'object'
+        ? src.ethercatTopologie
+        : { module: [], verbindungen: [] };
+    const module = (topoSrc.module || []).map(modul => {
+        const neuId = generateId('ep');
+        if (modul.id) modulIdMap.set(modul.id, neuId);
+        return { ...modul, id: neuId };
+    });
+    const verbindungen = (topoSrc.verbindungen || []).map(verbindung => {
+        const neuId = generateId('ec');
+        if (verbindung.id) verbindungIdMap.set(verbindung.id, neuId);
+        return {
+            ...verbindung,
+            id: neuId,
+            vonModulId: modulIdMap.get(verbindung.vonModulId) || verbindung.vonModulId,
+            nachModulId: modulIdMap.get(verbindung.nachModulId) || verbindung.nachModulId
+        };
+    });
+
+    leitungen.forEach(leitung => {
+        if (leitung.topoVerbindungId && verbindungIdMap.has(leitung.topoVerbindungId)) {
+            leitung.topoVerbindungId = verbindungIdMap.get(leitung.topoVerbindungId);
+        }
+    });
+
+    const statusSrc = src.stuecklisteStatus || { leitungen: {}, bauteile: {} };
+    const stuecklisteStatus = { leitungen: {}, bauteile: {} };
+    Object.entries(statusSrc.leitungen || {}).forEach(([altId, status]) => {
+        const neuId = leitungIdMap.get(altId);
+        if (neuId) stuecklisteStatus.leitungen[neuId] = cloneJson(status);
+    });
+    Object.entries(statusSrc.bauteile || {}).forEach(([altId, status]) => {
+        const neuId = bauteilIdMap.get(altId);
+        if (neuId) stuecklisteStatus.bauteile[neuId] = cloneJson(status);
+    });
+
+    const nummer = String(src.projektnummer || '').trim();
+    const name = String(src.name || '').trim();
+
+    return {
+        id: generateId('proj'),
+        projektnummer: nummer ? `${nummer}-K` : 'KOPIE',
+        name: name ? `Kopie – ${name}` : 'Projektkopie',
+        kunde: src.kunde || '',
+        liefertermin: src.liefertermin || '',
+        notiz: src.notiz || '',
+        erstellt: new Date().toISOString(),
+        cadLinks: Array.isArray(src.cadLinks) ? cloneJson(src.cadLinks) : [],
+        leitungen,
+        bauteile,
+        wizardAnswers: cloneJson(src.wizardAnswers || {}),
+        wizardSkipped: cloneJson(src.wizardSkipped || {}),
+        gruppenStatus: cloneJson(src.gruppenStatus || {}),
+        zusaetzlicheGruppen: cloneJson(src.zusaetzlicheGruppen || []),
+        stuecklisteStatus,
+        zeiterfassung: [],
+        ethercatTopologie: { module, verbindungen }
+    };
+}
+
+
+/**
+ * Kopiert ein bestehendes Projekt inkl. Leitungen, Bauteile und Topologie.
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+export async function copyProjekt(id) {
+    const quelle = getProjects().find(p => p.id === id);
+    if (!quelle) return;
+
+    const confirmed = await showModal(
+        `Projekt „${quelle.projektnummer || ''} – ${quelle.name || ''}" als Kopie anlegen?\n\n`
+        + 'Leitungen, Bauteile, Gruppenstatus und Topologie werden übernommen. '
+        + 'Die Kopie gehört dir und kann danach bearbeitet werden.',
+        {
+            type: 'info',
+            title: 'Projekt kopieren',
+            showCancel: true,
+            confirmText: 'Kopieren',
+            cancelText: 'Abbrechen'
+        }
+    );
+    if (!confirmed) return;
+
+    const kopie = buildProjektKopie(quelle);
+    ensureProjectAccessFields(kopie, true);
+
+    const projects = getProjects();
+    projects.unshift(kopie);
+    saveProjects(projects);
+
+    appState.currentProjekt = kopie;
+    appState.currentLeitungIndex = 0;
+    ensureWizardAnswers(appState.currentProjekt);
+    showView('uebersicht');
+
+    showModal(
+        `Kopie angelegt:\n${kopie.projektnummer} – ${kopie.name}`,
+        { type: 'success', title: 'Projekt kopiert' }
+    );
+}
+
+
+/**
  * Kopiert Positionen und Gruppenstatus einer Vorlage in ein neues Projekt.
  * Ohne `mitWerten` bleiben Längen und Stückzahlen offen – die Positionen stehen
  * dann als Arbeitsliste bereit und müssen nur noch bemaßt werden.
@@ -833,6 +976,8 @@ export async function loadProjects() {
         if (!canDeleteProject(p) && deleteBtn) deleteBtn.style.display = 'none';
 
         editBtn?.addEventListener('click', e => { e.stopPropagation(); editProjekt(p.id); });
+        card.querySelector('[data-action="copy"]')
+            ?.addEventListener('click', e => { e.stopPropagation(); copyProjekt(p.id); });
         deleteBtn?.addEventListener('click', e => { e.stopPropagation(); deleteProjekt(p.id); });
         liste.appendChild(fragment);
     });

@@ -426,28 +426,17 @@
 
                 <aside class="gk-links">
                     <div id="gk-gruppe">
-                        <!-- Aktuelle Gruppe und „Als Nächstes“ -->
+                        <!-- Aktuelle Gruppe -->
                     </div>
 
-                    <details class="gk-alle" id="gk-alle">
-                        <summary>Alle Gruppen</summary>
+                    <div class="gk-alle" id="gk-alle">
+                        <p class="gk-label">Alle Gruppen</p>
                         <input type="search" id="gruppen-suche" class="gk-alle-suche" placeholder="Gruppe oder Bezeichnung…"
                                aria-label="Gruppen durchsuchen" oninput="filterGruppenListe()">
                         <div id="gruppen-liste" class="gruppen-liste"></div>
-                        <div id="gruppen-neu-form-wrap" class="gruppen-neu-form">
-                            <h4>Zusatzgruppe anlegen</h4>
-                            <p class="text-muted">Für projektspezifische Gruppen wie =050 Ziehkissen.</p>
-                            <div class="form-group">
-                                <label for="gruppen-neu-nummer">Gruppennummer</label>
-                                <input type="text" id="gruppen-neu-nummer" placeholder="z. B. 050">
-                            </div>
-                            <div class="form-group">
-                                <label for="gruppen-neu-bezeichnung">Bezeichnung</label>
-                                <input type="text" id="gruppen-neu-bezeichnung" placeholder="z. B. Ziehkissen">
-                            </div>
-                            <button type="button" class="btn btn-secondary btn-small btn-block" onclick="gruppeSaveNeueGruppe()">+ Gruppe hinzufügen</button>
-                        </div>
-                    </details>
+                        <button type="button" id="gruppen-neu-btn" class="btn btn-secondary btn-small btn-block gk-gruppe-neu-btn"
+                                onclick="gruppeOpenNeueGruppe()">Gruppe hinzufügen</button>
+                    </div>
 
                     <dl class="gk-tasten">
                         <dt><kbd>J</kbd> / <kbd>K</kbd></dt><dd>Gruppe wechseln</dd>
@@ -748,6 +737,32 @@
         </div>
     </div>
 
+    <!-- Zusatzgruppe anlegen -->
+    <div id="gruppen-neu-overlay" class="modal-overlay" onclick="gruppeCloseNeueGruppe()">
+        <div class="modal-container" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Gruppe hinzufügen</h3>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Projektspezifische Zusatzgruppe, z. B. =050 Ziehkissen.</p>
+                <div class="form-group">
+                    <label for="gruppen-neu-nummer">Gruppennummer</label>
+                    <input type="text" id="gruppen-neu-nummer" placeholder="z. B. 050" autocomplete="off"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('gruppen-neu-bezeichnung')?.focus();}">
+                </div>
+                <div class="form-group">
+                    <label for="gruppen-neu-bezeichnung">Bezeichnung</label>
+                    <input type="text" id="gruppen-neu-bezeichnung" placeholder="z. B. Ziehkissen" autocomplete="off"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();gruppeSaveNeueGruppe();}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="gruppeCloseNeueGruppe()">Abbrechen</button>
+                <button type="button" class="btn btn-primary" onclick="gruppeSaveNeueGruppe()">Anlegen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bauteil bearbeiten -->
     <div id="bauteil-edit-overlay" class="modal-overlay" onclick="closeBauteilEdit()">
         <div class="modal-container" onclick="event.stopPropagation()">
@@ -795,6 +810,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     
-    <script type="module" src="script.js?v=20261013-1"></script>
+    <script type="module" src="script.js?v=20261018-4"></script>
 </body>
 </html>

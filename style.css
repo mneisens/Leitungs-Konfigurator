@@ -2581,12 +2581,18 @@ body.auth-layout .app-main {
 }
 
 .gruppen-listen-eintrag:hover {
-    background: var(--primary-soft);
+    background: var(--surface-raised);
+    border-color: var(--border-strong);
 }
 
 .gruppen-listen-eintrag.active {
-    background: var(--primary-soft);
+    background: var(--surface-raised);
     border-color: var(--primary-color);
+}
+
+.gruppen-listen-eintrag:hover .gruppen-code,
+.gruppen-listen-eintrag.active .gruppen-code {
+    color: var(--text-color);
 }
 
 .gruppen-listen-eintrag.entfaellt .gruppen-name {
@@ -2597,7 +2603,7 @@ body.auth-layout .app-main {
 .gruppen-listen-eintrag .gruppen-code {
     grid-area: code;
     font-family: var(--font-mono);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary-color);
 }
 
@@ -5087,25 +5093,32 @@ mark {
 
 .gk-segmente {
     display: flex;
+    align-items: stretch;
     gap: 3px;
+    min-height: 28px;
 }
 
 .gk-seg {
     flex: 1 1 0;
-    min-width: 3px;
-    height: 14px;
+    min-width: 4px;
+    height: 22px;
     padding: 0;
     border: none;
-    border-radius: 2px;
+    border-radius: 3px;
     background: var(--border-color);
     cursor: pointer;
-    transition: filter 0.12s;
+    transition: filter 0.12s, flex-basis 0.15s, min-width 0.15s;
 }
 
 .gk-seg:hover,
 .gk-seg:focus-visible {
-    filter: brightness(1.5);
+    filter: brightness(1.15);
     outline: none;
+}
+
+.gk-seg.aktiv:hover,
+.gk-seg.aktiv:focus-visible {
+    filter: none;
 }
 
 .gk-seg.befuellt {
@@ -5121,22 +5134,40 @@ mark {
 }
 
 .gk-seg.aktiv {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.4rem;
+    height: 28px;
+    padding: 0 0.45rem;
     background: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 3.5px var(--primary-color);
+    box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--primary-color);
+}
+
+.gk-seg-label {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .gk-fortschritt-text {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 0.55rem;
+    margin-top: 0.65rem;
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     color: var(--text-muted);
 }
 
 .gk-fortschritt-text .gk-akzent {
     text-align: center;
+    font-weight: 600;
 }
 
 .gk-kopf-aktionen {
@@ -5159,13 +5190,17 @@ mark {
     min-height: 0;
     padding: 2.25rem 2.25rem 1.75rem;
     border-right: 1px solid var(--border-color);
-    overflow-y: auto;
+    overflow: hidden;
+}
+
+#gk-gruppe {
+    flex-shrink: 0;
 }
 
 .gk-code {
-    margin: 0.4rem 0 0.9rem;
+    margin: 0.25rem 0 0.55rem;
     font-family: var(--font-mono);
-    font-size: clamp(3.5rem, 6.2vw, 6.5rem);
+    font-size: clamp(2.4rem, 4.5vw, 4rem);
     font-weight: 600;
     line-height: 0.95;
     letter-spacing: -0.05em;
@@ -5173,29 +5208,11 @@ mark {
 }
 
 .gk-name {
-    margin: 0 0 0.6rem;
-    font-size: 1.6rem;
+    margin: 0 0 0.75rem;
+    font-size: 1.35rem;
     font-weight: 600;
     line-height: 1.25;
     letter-spacing: -0.01em;
-}
-
-.gk-meta {
-    margin: 0 0 0.4rem;
-    font-size: 0.95rem;
-    line-height: 1.55;
-    color: var(--text-muted);
-}
-
-.gk-meta a {
-    color: var(--text-color);
-    text-decoration: underline;
-    text-decoration-color: var(--border-strong);
-    text-underline-offset: 3px;
-}
-
-.gk-meta a:hover {
-    color: var(--primary-color);
 }
 
 .gk-optionen {
@@ -5203,7 +5220,7 @@ mark {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem 1.25rem;
-    margin: 0.9rem 0 2.25rem;
+    margin: 1.25rem 0 0.75rem;
 }
 
 .gk-schalter {
@@ -5219,71 +5236,21 @@ mark {
     accent-color: var(--primary-color);
 }
 
-.gk-naechste {
-    margin: 0 0 1.5rem;
-    padding: 0;
-    list-style: none;
-}
-
-.gk-naechste button {
-    display: flex;
-    align-items: baseline;
-    gap: 1.1rem;
-    width: 100%;
-    padding: 0.8rem 0;
-    border: none;
-    border-bottom: 1px solid var(--border-color);
-    background: none;
-    color: var(--text-color);
-    font: inherit;
-    font-size: 1.05rem;
-    text-align: left;
-    cursor: pointer;
-}
-
-.gk-naechste button:hover,
-.gk-naechste button:focus-visible {
-    color: var(--primary-color);
-    outline: none;
-}
-
-.gk-naechste-code {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.95rem;
-}
-
-.gk-naechste .entfaellt,
-.gk-naechste .fertig {
-    color: var(--text-muted);
-}
-
-.gk-naechste .fertig .gk-naechste-code {
-    color: var(--fertig-color);
-}
-
 .gk-alle {
-    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 0.5rem 0 0;
 }
 
-.gk-alle summary {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    cursor: pointer;
-}
-
-.gk-alle summary:hover {
-    color: var(--primary-color);
-}
-
-.gk-alle[open] summary {
-    margin-bottom: 0.75rem;
+.gk-alle > .gk-label {
+    flex-shrink: 0;
+    margin-bottom: 0.55rem;
 }
 
 .gk-alle-suche {
+    flex-shrink: 0;
     width: 100%;
     margin-bottom: 0.6rem;
     padding: 0.5rem 0.7rem;
@@ -5296,12 +5263,16 @@ mark {
 }
 
 .gk-alle .gruppen-liste {
-    max-height: 22rem;
+    flex: 1;
+    min-height: 8rem;
+    max-height: none;
     overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
-.gk-alle .gruppen-neu-form {
-    margin-top: 1rem;
+.gk-gruppe-neu-btn {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
 }
 
 .gk-tasten {
@@ -5309,8 +5280,9 @@ mark {
     grid-template-columns: auto 1fr;
     gap: 0.7rem 1.1rem;
     align-items: center;
-    margin: auto 0 0;
-    padding-top: 1.5rem;
+    flex-shrink: 0;
+    margin: 1rem 0 0;
+    padding-top: 1rem;
     font-size: 0.92rem;
     color: var(--text-muted);
 }
@@ -6311,14 +6283,25 @@ mark {
 }
 
 @media (max-width: 820px) {
-    /* Auf dem Handy über die Fortschrittsleiste wechseln – die Tabelle soll schnell sichtbar sein. */
-    .gk-naechste,
-    .gk-naechste-label {
-        display: none;
+    .gk-links {
+        overflow: visible;
     }
 
-    .gk-optionen {
-        margin-bottom: 1rem;
+    .gk-alle {
+        flex: none;
+    }
+
+    .gk-alle .gruppen-liste {
+        max-height: 14rem;
+    }
+
+    .gk-seg.aktiv {
+        min-width: 2.8rem;
+        height: 24px;
+    }
+
+    .gk-seg-label {
+        font-size: 0.7rem;
     }
 }
 

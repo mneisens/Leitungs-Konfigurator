@@ -379,13 +379,41 @@ function renderGruppenListe() {
 
 
 /**
- * Blendet das Formular für Zusatzgruppen je nach Schreibrecht ein/aus.
+ * Blendet den Button „Gruppe hinzufügen“ je nach Schreibrecht ein/aus.
  * @returns {void}
  */
 function updateGruppenNeuFormular() {
-    const wrap = document.getElementById('gruppen-neu-form-wrap');
-    if (!wrap) return;
-    wrap.hidden = istSchreibgeschuetzt();
+    const btn = document.getElementById('gruppen-neu-btn');
+    if (!btn) return;
+    btn.hidden = istSchreibgeschuetzt();
+}
+
+
+/**
+ * Öffnet den Dialog zum Anlegen einer Zusatzgruppe.
+ * @returns {void}
+ */
+export function gruppeOpenNeueGruppe() {
+    if (!assertCanEdit('Zusatzgruppen anlegen')) return;
+    const overlay = document.getElementById('gruppen-neu-overlay');
+    if (!overlay) return;
+
+    const nummer = document.getElementById('gruppen-neu-nummer');
+    const bezeichnung = document.getElementById('gruppen-neu-bezeichnung');
+    if (nummer) nummer.value = '';
+    if (bezeichnung) bezeichnung.value = '';
+
+    overlay.classList.add('active');
+    requestAnimationFrame(() => nummer?.focus());
+}
+
+
+/**
+ * Schließt den Dialog zum Anlegen einer Zusatzgruppe.
+ * @returns {void}
+ */
+export function gruppeCloseNeueGruppe() {
+    document.getElementById('gruppen-neu-overlay')?.classList.remove('active');
 }
 
 
@@ -439,9 +467,7 @@ export function gruppeSaveNeueGruppe() {
     persistCurrentProjekt();
     aktiveGruppe = code;
 
-    document.getElementById('gruppen-neu-nummer').value = '';
-    document.getElementById('gruppen-neu-bezeichnung').value = '';
-
+    gruppeCloseNeueGruppe();
     renderGruppenListe();
     renderGruppenPanel();
     showModal(`Gruppe ${code} ${bezeichnung} wurde angelegt.`, {
@@ -538,6 +564,10 @@ export function selectGruppe(code) {
     renderGruppenListe();
     renderGruppenPanel();
     document.getElementById('gruppen-main')?.scrollTo({ top: 0 });
+    requestAnimationFrame(() => {
+        document.querySelector('#gruppen-liste .gruppen-listen-eintrag.active')
+            ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
 }
 
 
@@ -656,12 +686,16 @@ function renderGruppenKopf() {
     const fertig = gruppen.filter(g => leseGruppenStatus(g.code).abgeschlossen).length;
     const zustandText = { fertig: 'abgeschlossen', entfaellt: 'nicht benötigt', befuellt: 'in Arbeit', offen: 'offen' };
 
+    const aktive = gruppen[index];
     const segmente = gruppen.map(g => {
         const zustand = getGruppenZustand(g);
-        const aktiv = g.code === aktiveGruppe ? ' aktiv' : '';
+        const istAktiv = g.code === aktiveGruppe;
+        const aktiv = istAktiv ? ' aktiv' : '';
         const titel = `${g.code} ${g.bezeichnung} – ${zustandText[zustand]}`;
+        const label = istAktiv ? `<span class="gk-seg-label">${escapeHtml(g.code)}</span>` : '';
         return `<button type="button" class="gk-seg ${zustand}${aktiv}" title="${escapeAttr(titel)}"
-                        aria-label="${escapeAttr(titel)}" onclick="selectGruppe('${jsArg(g.code)}')"></button>`;
+                        aria-label="${escapeAttr(titel)}" aria-current="${istAktiv ? 'true' : 'false'}"
+                        onclick="selectGruppe('${jsArg(g.code)}')">${label}</button>`;
     }).join('');
 
     return `
@@ -673,7 +707,7 @@ function renderGruppenKopf() {
             <div class="gk-segmente">${segmente}</div>
             <div class="gk-fortschritt-text">
                 <span>${escapeHtml(gruppen[0]?.code || '')}</span>
-                <span class="gk-akzent">Gruppe ${index + 1} / ${gruppen.length} · ${fertig} abgeschlossen</span>
+                <span class="gk-akzent">${escapeHtml(aktive?.code || '–')} · ${index + 1} / ${gruppen.length} · ${fertig} abgeschlossen</span>
                 <span>${escapeHtml(gruppen[gruppen.length - 1]?.code || '')}</span>
             </div>
         </div>
@@ -695,57 +729,20 @@ function renderGruppenKopf() {
 
 
 /**
- * Linke Spalte: aktuelle Gruppe groß, Hinweise, CAD und die nächsten Gruppen.
+ * Linke Spalte: aktuelle Gruppe kompakt; die vollständige Liste ist darunter scrollbar.
  * @returns {string}
  */
 function renderGruppeLinks() {
     const gruppe = getGruppe(aktiveGruppe);
     if (!gruppe) return '';
 
-    const gesperrt = istSchreibgeschuetzt();
     const status = leseGruppenStatus(gruppe.code);
-    const vorgaben = getGruppenVorgaben(gruppe);
-    const gruppen = getGruppen();
-    const index = gruppen.findIndex(g => g.code === gruppe.code);
-    const naechste = gruppen.slice(index + 1, index + 6);
-
-    const cad = (appState.currentProjekt?.cadLinks || []).filter(l => l?.url).map(link => {
-        const label = (link.label || '').trim() || 'CAD öffnen';
-        return `<a href="${escapeAttr(link.url)}" target="_blank" rel="noopener noreferrer"
-                   title="${escapeAttr(link.url)}">${escapeHtml(label)}</a>`;
-    });
 
     return `
         <p class="gk-label gk-akzent">Aktuelle Gruppe${status.abgeschlossen ? ' · abgeschlossen ✓' : ''}</p>
         <div class="gk-code">${escapeHtml(gruppe.code)}</div>
         <h2 class="gk-name">${escapeHtml(gruppe.bezeichnung)}</h2>
         ${gruppe.custom ? '<span class="gruppen-badge zusaetzlich">Zusatzgruppe</span>' : ''}
-        ${vorgaben.hinweis ? `<p class="gk-meta">${escapeHtml(vorgaben.hinweis)}</p>` : ''}
-        ${cad.length ? `<p class="gk-meta">CAD: ${cad.join(' · ')}</p>` : ''}
-
-        <div class="gk-optionen">
-            <label class="gk-schalter">
-                <input type="checkbox" ${status.nichtBenoetigt ? 'checked' : ''}${gesperrt ? ' disabled' : ''}
-                       onchange="toggleGruppeNichtBenoetigt(this.checked)">
-                Nicht benötigt
-            </label>
-            ${!gesperrt && gruppe.custom ? `<button type="button" class="gk-link gk-link-gefahr"
-                    onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
-        </div>
-
-        ${naechste.length ? `
-            <p class="gk-label gk-naechste-label">Als Nächstes</p>
-            <ol class="gk-naechste">
-                ${naechste.map(g => `
-                    <li>
-                        <button type="button" class="${getGruppenZustand(g)}" onclick="selectGruppe('${jsArg(g.code)}')">
-                            <span class="gk-naechste-code">${escapeHtml(g.code)}</span>
-                            <span>${escapeHtml(g.bezeichnung)}</span>
-                        </button>
-                    </li>
-                `).join('')}
-            </ol>
-        ` : ''}
     `;
 }
 
@@ -763,7 +760,6 @@ function renderGruppeRechts() {
     const leitungen = getLeitungenDerGruppe(gruppe.code);
     const bauteile = getBauteileDerGruppe(gruppe.code);
     const bauteilVorschlaege = getOffeneBauteilVorschlaege(gruppe.code);
-    const zeigeBauteile = !vorgaben.nurLeitungen || bauteile.length > 0;
 
     const stueck = liste => liste.reduce((summe, e) => summe + (Number(e.anzahl) || 1), 0);
     const gesamtLaenge = leitungen.reduce((summe, l) => summe + (Number(l.laenge) || 0) * (Number(l.anzahl) || 1), 0);
@@ -778,11 +774,19 @@ function renderGruppeRechts() {
             <div class="${offen ? 'gk-akzent' : ''}"><strong>${offen}</strong><span>Vorschläge offen</span></div>
         </div>
 
-        ${zeigeBauteile ? `
-            <p class="gk-label">Bauteile</p>
-            <div id="gruppen-bauteile-tabelle">${renderBauteilListe(bauteile, gesperrt ? [] : bauteilVorschlaege)}</div>
-            ${gesperrt ? '' : `<button type="button" class="gk-link" onclick="gruppeOpenPicker('bauteil')">+ Bauteil</button>`}
-        ` : ''}
+        <p class="gk-label">Bauteile</p>
+        <div id="gruppen-bauteile-tabelle">${renderBauteilListe(bauteile, gesperrt ? [] : bauteilVorschlaege)}</div>
+        ${gesperrt ? '' : `<button type="button" class="gk-link" onclick="gruppeOpenPicker('bauteil')">+ Bauteil</button>`}
+
+        <div class="gk-optionen">
+            <label class="gk-schalter">
+                <input type="checkbox" ${leseGruppenStatus(gruppe.code).nichtBenoetigt ? 'checked' : ''}${gesperrt ? ' disabled' : ''}
+                       onchange="toggleGruppeNichtBenoetigt(this.checked)">
+                Nicht benötigt
+            </label>
+            ${!gesperrt && gruppe.custom ? `<button type="button" class="gk-link gk-link-gefahr"
+                    onclick="gruppeDeleteZusaetzlicheGruppe()">Gruppe entfernen</button>` : ''}
+        </div>
 
         <div class="gk-abschluss">${renderGruppenAbschluss(gruppe, gesperrt)}</div>
     `;
@@ -1107,7 +1111,12 @@ function gruppeTastenkuerzel(event) {
         gruppeTogglePruefliste(false);
         return;
     }
-    if (document.querySelector('.editor-overlay, .picker-overlay, #modal-overlay.active, #bauteil-edit-overlay.active')) return;
+    if (event.key === 'Escape' && document.getElementById('gruppen-neu-overlay')?.classList.contains('active')) {
+        event.preventDefault();
+        gruppeCloseNeueGruppe();
+        return;
+    }
+    if (document.querySelector('.editor-overlay, .picker-overlay, #modal-overlay.active, #bauteil-edit-overlay.active, #gruppen-neu-overlay.active')) return;
 
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         event.preventDefault();
