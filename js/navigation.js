@@ -5,6 +5,7 @@ import { appState } from './state.js';
 
 const PROJECT_VIEWS = new Set([
     'uebersicht',
+    'ea-liste',
     'gruppen',
     'stueckliste',
     'topologie',
@@ -20,6 +21,7 @@ const VIEW_TITLES = {
     'projekt-form': 'Projekt',
     gruppen: 'Gruppen',
     uebersicht: 'Übersicht',
+    'ea-liste': 'EA-Liste',
     'projekt-freigabe': 'Freigaben',
     stueckliste: 'Stückliste',
     topologie: 'Topologie',
@@ -44,6 +46,7 @@ export function showView(viewName) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const view = document.getElementById('view-' + viewName);
     if (view) view.classList.add('active');
+    appState.currentView = viewName;
 
     updateShellNav(viewName);
     closeSidebar();
@@ -121,6 +124,7 @@ function runViewHandler(viewName) {
         'projekt-form': () => {},
         gruppen: () => import('./gruppen-konfigurator.js').then(m => m.renderGruppenKonfigurator()),
         uebersicht: () => import('./overview.js').then(m => m.renderUebersicht()),
+        'ea-liste': () => import('./ea-liste.js').then(m => m.renderEaListe()),
         'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
         stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),
         topologie: () => import('./topologie.js').then(m => m.renderTopologie()),

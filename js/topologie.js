@@ -5,7 +5,7 @@
  * und pro Linie Typ/Länge der EtherCAT-Leitung setzen.
  */
 import { appState } from './state.js';
-import { escapeHtml, generateId } from './utils.js';
+import { escapeHtml, jsArg, generateId, formatLaenge } from './utils.js';
 import { showView } from './navigation.js';
 import { getBauteileByTyp } from './catalog.js';
 import { deriveArtikelPrefix, getKonfektionierteKatalogArtikel } from './leitung-optionen.js';
@@ -144,16 +144,6 @@ function ohneLaenge(text) {
 
 
 /**
- * @param {number} wert
- * @returns {string}
- */
-function formatLaenge(wert) {
-    if (wert == null || wert === '') return '';
-    return String(wert).replace('.', ',');
-}
-
-
-/**
  * Einstieg: Topologie-Ansicht öffnen.
  * @returns {void}
  */
@@ -270,11 +260,11 @@ function renderAuswahlSchritt() {
                             <div class="topo-modul-wahl-anzahl">
                                 <button type="button" class="btn btn-secondary btn-small btn-icon"
                                         ${gesperrt || anzahl <= 0 ? 'disabled' : ''}
-                                        onclick="topoAendereModulAnzahl('${escapeHtml(a.artikelnummer)}', -1)">−</button>
+                                        onclick="topoAendereModulAnzahl('${jsArg(a.artikelnummer)}', -1)">−</button>
                                 <span>${anzahl}</span>
                                 <button type="button" class="btn btn-secondary btn-small btn-icon"
                                         ${gesperrt ? 'disabled' : ''}
-                                        onclick="topoAendereModulAnzahl('${escapeHtml(a.artikelnummer)}', 1)">+</button>
+                                        onclick="topoAendereModulAnzahl('${jsArg(a.artikelnummer)}', 1)">+</button>
                             </div>
                         </div>
                     `;
@@ -473,7 +463,7 @@ function renderModulKarte(modul, verbindenAktiv, gesperrt) {
              data-modul-id="${escapeHtml(modul.id)}"
              style="left:${Number(modul.x) || 0}px;top:${Number(modul.y) || 0}px;width:${w}px;height:${h}px;"
              title="${escapeHtml(modul.beschreibung || nr)}"
-             onmouseenter="topoHebeModulHervor('${escapeHtml(modul.id)}')"
+             onmouseenter="topoHebeModulHervor('${jsArg(modul.id)}')"
              onmouseleave="topoHebeModulHervor('')">
             <span class="topo-modul-kuerzel" style="${kuerzelVersatz}">${escapeHtml(getModulKuerzel(modul))}</span>
             <div class="topo-modul-face${safety}${rotClass}${schmal}${ioLayout}">
@@ -503,7 +493,7 @@ function renderModulKarte(modul, verbindenAktiv, gesperrt) {
             </div>
             ${!gesperrt ? `
                 <button type="button" class="topo-modul-drehen" title="Drehen (90°)" style="${drehenVersatz}"
-                        onclick="event.stopPropagation(); topoDreheModul('${escapeHtml(modul.id)}')">↻</button>
+                        onclick="event.stopPropagation(); topoDreheModul('${jsArg(modul.id)}')">↻</button>
             ` : ''}
         </div>
     `;
@@ -1344,7 +1334,7 @@ function renderLeitungEditor(verbindungId, gesperrt) {
                         <div class="form-group">
                             <label for="topo-leitung-reihe">Leitungstyp / Reihe</label>
                             <select id="topo-leitung-reihe" ${gesperrt ? 'disabled' : ''}
-                                    onchange="topoUpdateLeitung('${escapeHtml(verbindungId)}', 'reihe', this.value)">
+                                    onchange="topoUpdateLeitung('${jsArg(verbindungId)}', 'reihe', this.value)">
                                 <option value="">-- Bitte wählen --</option>
                                 ${reihen.map(r => `
                                     <option value="${escapeHtml(r.prefix)}"${r.prefix === verbindung.reihe ? ' selected' : ''}>
@@ -1357,7 +1347,7 @@ function renderLeitungEditor(verbindungId, gesperrt) {
                             <label for="topo-leitung-laenge">Länge (m)</label>
                             ${laengen.length ? `
                                 <select id="topo-leitung-laenge" ${gesperrt ? 'disabled' : ''}
-                                        onchange="topoUpdateLeitung('${escapeHtml(verbindungId)}', 'laenge', this.value)">
+                                        onchange="topoUpdateLeitung('${jsArg(verbindungId)}', 'laenge', this.value)">
                                     <option value="">-- Länge --</option>
                                     ${laengen.map(l => `
                                         <option value="${l}"${Number(verbindung.laenge) === Number(l) ? ' selected' : ''}>
@@ -1369,7 +1359,7 @@ function renderLeitungEditor(verbindungId, gesperrt) {
                                 <input type="number" id="topo-leitung-laenge" min="0" step="0.1"
                                        value="${verbindung.laenge || ''}" ${gesperrt ? 'disabled' : ''}
                                        placeholder="z. B. 1,5"
-                                       onchange="topoUpdateLeitung('${escapeHtml(verbindungId)}', 'laenge', this.value)">
+                                       onchange="topoUpdateLeitung('${jsArg(verbindungId)}', 'laenge', this.value)">
                             `}
                         </div>
                     </div>
@@ -1379,7 +1369,7 @@ function renderLeitungEditor(verbindungId, gesperrt) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" ${gesperrt ? 'disabled' : ''}
-                            onclick="topoLoescheLeitung('${escapeHtml(verbindungId)}')">Leitung entfernen</button>
+                            onclick="topoLoescheLeitung('${jsArg(verbindungId)}')">Leitung entfernen</button>
                     <button type="button" class="btn btn-primary" onclick="topoSchliesseLeitungEditor()">Fertig</button>
                 </div>
             </div>

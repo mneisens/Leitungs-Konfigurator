@@ -5,6 +5,7 @@ import { appState } from './state.js';
 import { formatDate, formatDateForFile } from './utils.js';
 import { showModal } from './modal.js';
 import { getProjects, saveProjects, loadProjects } from './projects.js';
+import { saveProjectNow } from './project-save.js';
 import { getGruppeDisplay } from './overview.js';
 /**
  * exportAllProjects.
@@ -81,8 +82,8 @@ export function importProjects(event) {
                 }
             }
             
-            // Projekte speichern
             saveProjects(importData.projects);
+            importData.projects.forEach(projekt => saveProjectNow(projekt, { force: true }));
             loadProjects();
             
             showModal(`${importCount} Projekt(e) wurden erfolgreich importiert.`, { type: 'success', title: 'Import erfolgreich' });
@@ -97,6 +98,111 @@ export function importProjects(event) {
     };
     
     reader.readAsText(file);
+}
+
+
+/**
+ * Startet den Download einer CSV-Datei (Semikolon, UTF-8 mit BOM für Excel).
+ * @param {string[]} zeilen
+ * @param {string} dateiname
+ * @returns {void}
+ */
+function ladeCsvHerunter(zeilen, dateiname) {
+    const blob = new Blob(['\uFEFF' + zeilen.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = dateiname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+
+/**
+ * @param {Array<string|number>} zellen
+ * @returns {string}
+ */
+function csvZeile(zellen) {
+    return zellen.map(zelle => `"${String(zelle ?? '').replace(/"/g, '""')}"`).join(';');
+}
+
+
+/**
+ * Zahl mit Dezimalkomma, damit Excel (de) damit rechnen kann.
+ * @param {number|null} wert
+ * @returns {string}
+ */
+function csvZahl(wert) {
+    if (wert == null || Number.isNaN(Number(wert))) return '';
+    return (Math.round(Number(wert) * 100) / 100).toFixed(2).replace('.', ',');
+}
+
+
+/**
+ * Aggregierte Stückliste (Leitungen + Bauteile) mit Listenpreisen als CSV.
+ * @returns {Promise<void>}
+ */
+export async function exportStuecklisteCSV() {
+    const projekt = appState.currentProjekt;
+    if (!projekt) return;
+
+    const {
+        getStuecklistePositionen,
+        positionsPreis,
+        positionsGruppen,
+        getStuecklisteStatusInfo
+    } = await import('./stueckliste.js');
+    const { getBauteilTypName } = await import('./catalog.js');
+    const { leitungen, bauteile } = getStuecklistePositionen();
+
+    if (!leitungen.length && !bauteile.length) {
+        showModal('Keine Positionen zum Exportieren vorhanden.', { type: 'warning', title: 'Hinweis' });
+        return;
+    }
+
+    const zeilen = [
+        `# Stückliste: ${projekt.projektnummer || ''} - ${projekt.name || ''}`,
+        `# Kunde: ${projekt.kunde || '-'}`,
+        `# Liefertermin: ${projekt.liefertermin ? formatDate(projekt.liefertermin) : '-'}`,
+        `# Erstellt: ${new Date().toLocaleDateString('de-DE')}`,
+        '',
+        csvZeile(['Art', 'Gruppen', 'Bezeichnung', 'Typ', 'Hersteller', 'Artikelnummer',
+            'Menge', 'Einheit', 'Einzelpreis (EUR)', 'Gesamtpreis (EUR)', 'Status'])
+    ];
+
+    let summe = 0;
+    let ohnePreis = 0;
+    const ausgeben = (art, entry, typ) => {
+        const preis = positionsPreis(entry);
+        if (preis.summe != null) summe += preis.summe;
+        else ohnePreis += 1;
+        zeilen.push(csvZeile([
+            art,
+            positionsGruppen(entry),
+            entry.bezeichnung,
+            typ,
+            entry.hersteller === '-' ? '' : entry.hersteller,
+            entry.artikelnummer === '-' ? '' : entry.artikelnummer,
+            entry.meterware ? csvZahl(entry.count) : entry.count,
+            entry.meterware ? 'm' : 'Stk',
+            csvZahl(preis.einzel),
+            csvZahl(preis.summe),
+            getStuecklisteStatusInfo(entry.status).label
+        ]));
+    };
+
+    leitungen.forEach(entry => ausgeben('Leitung', entry, entry.typText));
+    bauteile.forEach(entry => ausgeben('Bauteil', entry, getBauteilTypName(entry.typ)));
+
+    zeilen.push('');
+    zeilen.push(csvZeile(['Summe Listenpreise', '', '', '', '', '', '', '', '', csvZahl(summe), '']));
+    if (ohnePreis) {
+        zeilen.push(csvZeile([`${ohnePreis} Position(en) ohne berechenbaren Preis (fehlt in der Preisliste oder Meterware)`]));
+    }
+
+    ladeCsvHerunter(zeilen, `Stueckliste_${projekt.projektnummer || 'Projekt'}_${formatDateForFile(new Date())}.csv`);
 }
 
 
@@ -160,21 +266,11 @@ export function exportCSV() {
                 l.steckerB || '',
                 l.notiz || ''
             ];
-            csvRows.push(row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'));
+            csvRows.push(csvZeile(row));
         });
     });
-    
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Leitungsliste_${appState.currentProjekt.projektnummer}_${formatDateForFile(new Date())}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    ladeCsvHerunter(csvRows, `Leitungsliste_${appState.currentProjekt.projektnummer}_${formatDateForFile(new Date())}.csv`);
 }
 
 

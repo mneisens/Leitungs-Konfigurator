@@ -1,0 +1,4 @@
+#!/bin/sh
+# Aktualisiert die Versions-Hashes in index.html, damit Browser geänderte Module neu laden.
+python3 scripts/version-assets.py >/dev/null || exit 1
+git add index.html

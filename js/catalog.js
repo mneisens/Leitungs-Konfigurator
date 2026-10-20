@@ -17,10 +17,12 @@ let baseBauteiltypen = [];
  */
 export async function loadKatalog() {
     try {
+        // no-cache: der Browser fragt nach, ob es eine neuere Datei gibt (304, wenn unverändert).
+        const preislisteGeladen = loadPreisliste();
         const [katalogResponse, gruppenResponse, bauteileResponse] = await Promise.all([
-            fetch('data/leitungen.json'),
-            fetch('data/gruppen.json'),
-            fetch('data/bauteile.json')
+            fetch('data/leitungen.json', { cache: 'no-cache' }),
+            fetch('data/gruppen.json', { cache: 'no-cache' }),
+            fetch('data/bauteile.json', { cache: 'no-cache' })
         ]);
 
         appState.katalog = await katalogResponse.json();
@@ -43,7 +45,7 @@ export async function loadKatalog() {
             bauteiltypen: baseBauteiltypen.map(t => ({ ...t })),
             artikel: baseBauteileArtikel.map(a => ({ ...a }))
         };
-        await loadPreisliste();
+        await preislisteGeladen;
     } catch (error) {
         console.error('Fehler beim Laden des Katalogs:', error);
         appState.katalog = {

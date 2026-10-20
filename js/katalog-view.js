@@ -8,7 +8,7 @@ import {
     importPreislisteAusDatei,
     setzeStandardPreisliste
 } from './preise.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, jsArg, debounce } from './utils.js';
 import { showModal } from './modal.js';
 import {
     mergeKatalogAdditions,
@@ -106,12 +106,65 @@ export function onKatalogKategorieChange() {
 }
 
 
+const SORTIERUNG = new Intl.Collator('de', { numeric: true });
+/** Mehr Zeilen auf einmal machen die Tabelle beim Tippen spürbar träge. */
+const ANZEIGE_LIMIT = 300;
+const suchtexte = new WeakMap();
+const alleAnzeigen = { leitungen: false, bauteile: false };
+
+
 /**
+ * Suchtext eines Artikels, einmal berechnet und dann zwischengespeichert.
+ * @param {object} artikel
+ * @param {() => Array<string|undefined>} felder
+ * @returns {string}
+ */
+function suchtext(artikel, felder) {
+    let text = suchtexte.get(artikel);
+    if (text === undefined) {
+        text = felder().filter(Boolean).join(' ').toLowerCase();
+        suchtexte.set(artikel, text);
+    }
+    return text;
+}
+
+
+/**
+ * Zeile unter der Tabelle, wenn nicht alle Treffer angezeigt werden.
+ * @param {'leitungen'|'bauteile'} liste
+ * @param {number} angezeigt
+ * @param {number} gesamt
+ * @param {number} spalten
+ * @returns {string}
+ */
+function renderMehrAnzeigen(liste, angezeigt, gesamt, spalten) {
+    if (angezeigt >= gesamt) return '';
+    return `
+        <tr class="katalog-mehr">
+            <td colspan="${spalten}">
+                ${angezeigt} von ${gesamt} angezeigt – Suche eingrenzen oder
+                <button type="button" class="btn btn-secondary btn-small" onclick="katalogAlleAnzeigen('${liste}')">alle anzeigen</button>
+            </td>
+        </tr>
+    `;
+}
+
+
+/**
+ * @param {'leitungen'|'bauteile'} liste
  * @returns {void}
  */
-export function onKatalogSearch() {
-    renderKatalogListe();
+export function katalogAlleAnzeigen(liste) {
+    alleAnzeigen[liste] = true;
+    if (liste === 'leitungen') renderKatalogListe();
+    else renderKatalogBauteileListe();
 }
+
+
+export const onKatalogSearch = debounce(() => {
+    alleAnzeigen.leitungen = false;
+    renderKatalogListe();
+}, 150);
 
 
 /**
@@ -124,22 +177,15 @@ function getFilteredArtikel() {
 
     return artikel
         .filter(a => !kategorie || a.kategorie === kategorie)
-        .filter(a => {
-            if (!search) return true;
-            const hay = [
-                a.artikelnummer,
-                a.beschreibung,
-                a.hersteller,
-                a.steckerA,
-                a.steckerB
-            ].join(' ').toLowerCase();
-            return hay.includes(search);
-        })
-        .sort((a, b) => {
-            const herstellerCmp = (a.hersteller || '').localeCompare(b.hersteller || '', 'de');
-            if (herstellerCmp !== 0) return herstellerCmp;
-            return (a.artikelnummer || '').localeCompare(b.artikelnummer || '', 'de', { numeric: true });
-        });
+        .filter(a => !search || suchtext(a, () => [
+            a.artikelnummer,
+            a.beschreibung,
+            a.hersteller,
+            a.steckerA,
+            a.steckerB
+        ]).includes(search))
+        .sort((a, b) => SORTIERUNG.compare(a.hersteller || '', b.hersteller || '')
+            || SORTIERUNG.compare(a.artikelnummer || '', b.artikelnummer || ''));
 }
 
 
@@ -167,7 +213,8 @@ export function renderKatalogListe() {
         return;
     }
 
-    tbody.innerHTML = rows.map(a => {
+    const sichtbar = alleAnzeigen.leitungen ? rows : rows.slice(0, ANZEIGE_LIMIT);
+    tbody.innerHTML = sichtbar.map(a => {
         const laengeText = a.meterware
             ? 'Meterware'
             : (a.laenge != null ? `${a.laenge} m` : '–');
@@ -175,7 +222,7 @@ export function renderKatalogListe() {
             ? '<span class="katalog-badge-custom">Nachgetragen</span>'
             : '';
         const deleteBtn = a.custom
-            ? `<button type="button" class="btn btn-danger btn-small" onclick='deleteKatalogArtikel(${JSON.stringify(a.artikelnummer || "")})'>Entfernen</button>`
+            ? `<button type="button" class="btn btn-danger btn-small" onclick="deleteKatalogArtikel('${jsArg(a.artikelnummer)}')">Entfernen</button>`
             : '';
 
         return `
@@ -193,7 +240,7 @@ export function renderKatalogListe() {
                 <td class="table-actions">${deleteBtn}</td>
             </tr>
         `;
-    }).join('');
+    }).join('') + renderMehrAnzeigen('leitungen', sichtbar.length, rows.length, 8);
 }
 
 
@@ -496,12 +543,10 @@ export function onKatalogBauteilGruppeChange() {
 }
 
 
-/**
- * @returns {void}
- */
-export function onKatalogBauteilSearch() {
+export const onKatalogBauteilSearch = debounce(() => {
+    alleAnzeigen.bauteile = false;
     renderKatalogBauteileListe();
-}
+}, 150);
 
 
 /**
@@ -516,24 +561,17 @@ function getFilteredBauteile() {
     return artikel
         .filter(a => !typ || a.typ === typ)
         .filter(a => !gruppe || bauteilPasstZuGruppe(a, gruppe))
-        .filter(a => {
-            if (!search) return true;
-            const hay = [
-                a.artikelnummer,
-                a.beschreibung,
-                a.hersteller,
-                a.typ,
-                a.gruppe,
-                a.lieferant,
-                getBauteilTypName(a.typ)
-            ].join(' ').toLowerCase();
-            return hay.includes(search);
-        })
-        .sort((a, b) => {
-            const typCmp = (getBauteilTypName(a.typ) || '').localeCompare(getBauteilTypName(b.typ) || '', 'de');
-            if (typCmp !== 0) return typCmp;
-            return (a.artikelnummer || '').localeCompare(b.artikelnummer || '', 'de', { numeric: true });
-        });
+        .filter(a => !search || suchtext(a, () => [
+            a.artikelnummer,
+            a.beschreibung,
+            a.hersteller,
+            a.typ,
+            a.gruppe,
+            a.lieferant,
+            getBauteilTypName(a.typ)
+        ]).includes(search))
+        .sort((a, b) => SORTIERUNG.compare(getBauteilTypName(a.typ) || '', getBauteilTypName(b.typ) || '')
+            || SORTIERUNG.compare(a.artikelnummer || '', b.artikelnummer || ''));
 }
 
 
@@ -561,7 +599,8 @@ export function renderKatalogBauteileListe() {
         return;
     }
 
-    tbody.innerHTML = rows.map(a => {
+    const sichtbar = alleAnzeigen.bauteile ? rows : rows.slice(0, ANZEIGE_LIMIT);
+    tbody.innerHTML = sichtbar.map(a => {
         const placeholderBadge = a.placeholder
             ? '<span class="katalog-badge-placeholder">Platzhalter</span>'
             : '';
@@ -572,14 +611,15 @@ export function renderKatalogBauteileListe() {
             ? '<span class="katalog-badge-modified">Geändert</span>'
             : '';
         const gruppeLabel = formatBauteilGruppeLabel(a.gruppe);
+        const nr = jsArg(a.artikelnummer);
         const editBtn = `<button type="button" class="btn btn-secondary btn-small"
-            onclick='editKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Bearbeiten</button>`;
+            onclick="editKatalogBauteil('${nr}')">Bearbeiten</button>`;
         const deleteBtn = (a.custom && !a.modified) || a.placeholder
             ? `<button type="button" class="btn btn-danger btn-small"
-                onclick='deleteKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Entfernen</button>`
+                onclick="deleteKatalogBauteil('${nr}')">Entfernen</button>`
             : (a.modified
                 ? `<button type="button" class="btn btn-secondary btn-small"
-                    onclick='revertKatalogBauteil(${JSON.stringify(a.artikelnummer || "")})'>Zurücksetzen</button>`
+                    onclick="revertKatalogBauteil('${nr}')">Zurücksetzen</button>`
                 : '');
 
         return `
@@ -599,7 +639,7 @@ export function renderKatalogBauteileListe() {
                 <td class="table-actions">${editBtn}${deleteBtn}</td>
             </tr>
         `;
-    }).join('');
+    }).join('') + renderMehrAnzeigen('bauteile', sichtbar.length, rows.length, 8);
 }
 
 

@@ -31,6 +31,7 @@ import {
     VISIBILITY_PRIVATE
 } from './project-access.js';
 import { METERWARE_KATEGORIEN } from './leitung-optionen.js';
+import { scheduleProjectSave, saveProjectNow } from './project-save.js';
 
 /**
  * getProjects.
@@ -42,60 +43,31 @@ export function getProjects() {
 
 
 /**
- * saveProjects.
+ * Legt die Projektliste lokal ab und merkt die geänderten Projekte zum Speichern in Firestore vor.
+ * Nur die übergebenen Projekte werden geschrieben – sonst würden veraltete Kopien
+ * anderer Projekte deren aktuellen Stand überschreiben.
+ * @param {object[]} projects
+ * @param {object[]} [geaendert]
  * @returns {void}
  */
-export function saveProjects(projects) {
+export function saveProjects(projects, geaendert = []) {
     appState.projectsCache = Array.isArray(projects) ? projects : [];
     localStorage.setItem(getProjectsStorageKey(), JSON.stringify(appState.projectsCache));
     if (!appState.currentUser) {
         localStorage.setItem('leitungskonfigurator_projekte', JSON.stringify(appState.projectsCache));
     }
 
-    if (appState.firebaseReady && appState.currentUser) {
-        appState.projectsCache.forEach(projekt => {
-            saveProjectToFirestore(projekt);
-        });
-    } else {
-        const ref = getUserProjectsDoc();
-        if (ref) {
-            ref.set({
-                projects: appState.projectsCache,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(handleFirestoreSaveError);
-        }
-    }
+    geaendert.filter(Boolean).forEach(scheduleProjectSave);
 }
 
 
 /**
- * @param {Error} error
- * @returns {void}
- */
-function handleFirestoreSaveError(error) {
-    console.error('Fehler beim Speichern in Firestore:', error);
-    if (!appState.firestoreErrorShown) {
-        appState.firestoreErrorShown = true;
-        showModal(`Firestore-Speichern fehlgeschlagen:\n${error.message}`, {
-            type: 'danger',
-            title: 'Firebase Fehler'
-        });
-    }
-}
-
-
-/**
+ * Schreibt ein Projekt sofort nach Firestore (ohne Bündelung).
  * @param {object} projekt
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export function saveProjectToFirestore(projekt) {
-    if (!appState.firebaseReady || !appState.currentUser || !projekt?.id) return;
-    if (!canEditProject(projekt)) return;
-
-    const ref = getProjectDocRef(projekt.id);
-    if (!ref) return;
-
-    ref.set(projectToFirestore(projekt)).catch(handleFirestoreSaveError);
+    return saveProjectNow(projekt);
 }
 
 
@@ -132,7 +104,11 @@ async function loadProjectsFromFirestore() {
 
     const projects = Array.from(byId.values());
 
-    await migrateLegacyProjects(projects, uid);
+    try {
+        await migrateLegacyProjects(projects, uid);
+    } catch (error) {
+        console.warn('Alte Projektliste konnte nicht übernommen werden:', error);
+    }
     return projects;
 }
 
@@ -189,7 +165,7 @@ export function persistCurrentProjekt() {
     } else {
         projects.unshift(appState.currentProjekt);
     }
-    saveProjects(projects);
+    saveProjects(projects, [appState.currentProjekt]);
 }
 
 
@@ -230,15 +206,17 @@ export function ensureWizardAnswers(projekt) {
 
 
 /**
- * Ergänzt fehlendes http(s)-Schema an CAD-URLs.
+ * Ergänzt fehlendes http(s)-Schema an CAD-URLs. Nur http(s) und file sind erlaubt –
+ * Schemata wie `javascript:` würden beim Klick Code ausführen.
  * @param {string} url
  * @returns {string}
  */
 export function normalizeCadLinkUrl(url) {
     const wert = String(url || '').trim();
     if (!wert) return '';
-    if (/^[a-z][a-z0-9+.-]*:/i.test(wert)) return wert;
-    return `https://${wert}`;
+    const schema = wert.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+    if (!schema) return `https://${wert}`;
+    return ['http', 'https', 'file'].includes(schema) ? wert : '';
 }
 
 
@@ -248,7 +226,7 @@ export function normalizeCadLinkUrl(url) {
  * @returns {string}
  */
 function cadLinkZeileMarkup(label = '', url = '') {
-    const esc = wert => escapeHtml(wert).replace(/"/g, '&quot;');
+    const esc = escapeHtml;
     return `
         <div class="cad-link-zeile">
             <input type="text" class="cad-link-label" placeholder="Bezeichnung (optional)"
@@ -354,7 +332,7 @@ export function fillProjektVorlagen(sichtbar = true) {
             if (p.leitungen?.length) teile.push(`${p.leitungen.length} Leitungen`);
             if (p.bauteile?.length) teile.push(`${p.bauteile.length} Bauteile`);
             const label = `${p.projektnummer || ''} ${p.name || ''} (${teile.join(', ')})`.trim();
-            return `<option value="${p.id}">${label}</option>`;
+            return `<option value="${escapeHtml(p.id)}">${escapeHtml(label)}</option>`;
         }).join('');
 
     onProjektVorlageChange();
@@ -468,6 +446,8 @@ function buildProjektKopie(quelle) {
         zusaetzlicheGruppen: cloneJson(src.zusaetzlicheGruppen || []),
         stuecklisteStatus,
         zeiterfassung: [],
+        leitungswege: Array.isArray(src.leitungswege) ? src.leitungswege : [],
+        eaListe: src.eaListe && Array.isArray(src.eaListe.positionen) ? cloneJson(src.eaListe) : null,
         ethercatTopologie: { module, verbindungen }
     };
 }
@@ -484,7 +464,7 @@ export async function copyProjekt(id) {
 
     const confirmed = await showModal(
         `Projekt „${quelle.projektnummer || ''} – ${quelle.name || ''}" als Kopie anlegen?\n\n`
-        + 'Leitungen, Bauteile, Gruppenstatus und Topologie werden übernommen. '
+        + 'Leitungen, Bauteile, Gruppenstatus, Leitungswege, EA-Liste und Topologie werden übernommen. '
         + 'Die Kopie gehört dir und kann danach bearbeitet werden.',
         {
             type: 'info',
@@ -501,7 +481,7 @@ export async function copyProjekt(id) {
 
     const projects = getProjects();
     projects.unshift(kopie);
-    saveProjects(projects);
+    saveProjects(projects, [kopie]);
 
     appState.currentProjekt = kopie;
     appState.currentLeitungIndex = 0;
@@ -581,38 +561,35 @@ export function saveProjekt(event) {
         return;
     }
 
-    const projekt = {
-        id: id,
+    const formular = {
         projektnummer: document.getElementById('projektnummer').value.trim(),
         name: document.getElementById('projektname').value.trim(),
         kunde: document.getElementById('kunde').value.trim(),
         liefertermin: document.getElementById('liefertermin').value,
         notiz: document.getElementById('projekt-notiz').value.trim(),
-        cadLinks: collectCadLinksFromForm(),
-        erstellt: isNew ? new Date().toISOString() : undefined,
-        leitungen: [],
-        bauteile: [],
-        wizardAnswers: {},
-        gruppenStatus: {},
-        zusaetzlicheGruppen: []
+        cadLinks: collectCadLinksFromForm()
     };
-    
+
+    // Beim Bearbeiten nur die Formularfelder ersetzen, damit Zeiterfassung, Leitungswege,
+    // Revision usw. erhalten bleiben.
+    const projekt = existingIndex >= 0
+        ? {
+            ...projects[existingIndex],
+            ...formular,
+            visibility: projects[existingIndex].visibility || VISIBILITY_PUBLIC
+        }
+        : {
+            id,
+            ...formular,
+            erstellt: new Date().toISOString(),
+            leitungen: [],
+            bauteile: [],
+            wizardAnswers: {},
+            gruppenStatus: {},
+            zusaetzlicheGruppen: []
+        };
+
     if (existingIndex >= 0) {
-        projekt.erstellt = projects[existingIndex].erstellt;
-        projekt.leitungen = projects[existingIndex].leitungen || [];
-        projekt.bauteile = projects[existingIndex].bauteile || [];
-        projekt.wizardAnswers = projects[existingIndex].wizardAnswers || {};
-        projekt.wizardSkipped = projects[existingIndex].wizardSkipped || {};
-        projekt.gruppenStatus = projects[existingIndex].gruppenStatus || {};
-        projekt.zusaetzlicheGruppen = projects[existingIndex].zusaetzlicheGruppen || [];
-        projekt.stuecklisteStatus = projects[existingIndex].stuecklisteStatus || { leitungen: {}, bauteile: {} };
-        projekt.cadLinks = collectCadLinksFromForm();
-        projekt.ethercatTopologie = projects[existingIndex].ethercatTopologie || { module: [], verbindungen: [] };
-        projekt.ownerId = projects[existingIndex].ownerId;
-        projekt.ownerEmail = projects[existingIndex].ownerEmail;
-        projekt.members = projects[existingIndex].members;
-        projekt.memberIds = projects[existingIndex].memberIds;
-        projekt.visibility = projects[existingIndex].visibility || VISIBILITY_PUBLIC;
         projects[existingIndex] = projekt;
     } else {
         const vorlageId = document.getElementById('projekt-vorlage')?.value || '';
@@ -623,7 +600,7 @@ export function saveProjekt(event) {
         projects.unshift(projekt);
     }
     
-    saveProjects(projects);
+    saveProjects(projects, [projekt]);
     appState.currentProjekt = projekt;
     appState.currentLeitungIndex = 0;
     ensureWizardAnswers(appState.currentProjekt);

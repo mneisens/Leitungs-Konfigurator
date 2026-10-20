@@ -34,14 +34,14 @@ import {
     cancelEditKatalogBauteil,
     revertKatalogBauteil,
     preislisteDateiGewaehlt,
-    preislisteZuruecksetzen
+    preislisteZuruecksetzen,
+    katalogAlleAnzeigen
 } from './js/katalog-view.js';
 import {
     loadProjects,
     filterProjektListe,
     openNewProjektForm,
     saveProjekt,
-    copyProjekt,
     shareProjectWithUser,
     removeProjectShare,
     openProjectSharing,
@@ -52,7 +52,7 @@ import {
 } from './js/projects.js';
 import { showView, toggleSidebar, closeSidebar } from './js/navigation.js';
 import { closeModal } from './js/modal.js';
-import { exportAllProjects, importProjects, exportCSV, exportPDF } from './js/export.js';
+import { exportAllProjects, importProjects, exportCSV, exportPDF, exportStuecklisteCSV } from './js/export.js';
 import { initTheme, toggleTheme } from './js/theme.js';
 import {
     filterGruppenListe,
@@ -146,16 +146,16 @@ import {
     gruppeSucheOeffnen,
     gruppeStandardAngebotVerwerfen
 } from './js/gruppen-konfigurator.js';
-import { editLeitung, deleteLeitung, deleteBauteil, setUebersichtLeitungenSortierung } from './js/overview.js';
-import { openBauteilEdit, closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
+import { editLeitung, deleteLeitung, setUebersichtLeitungenSortierung } from './js/overview.js';
+import { closeBauteilEdit, saveBauteilEdit, filterBauteilEditHersteller } from './js/bauteil-edit.js';
 import { stuecklisteUpdateStatus, stuecklisteSetKategorieFilter, printStueckliste } from './js/stueckliste.js';
 import {
-    renderZeiterfassung,
     zeitSpeichern,
     zeitLoeschen,
     zeitSchrittGeaendert,
     zeitOeffnen
 } from './js/zeiterfassung.js';
+import { exportEaListe, eaListeZuruecksetzen } from './js/ea-liste.js';
 import {
     topoSetSchritt,
     topoAendereModulAnzahl,
@@ -204,8 +204,9 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
+    // Katalog und Preisliste laden, während Anmeldung und Projekte parallel laufen.
+    const katalogGeladen = loadKatalog();
     await loadTemplates();
-    await loadKatalog();
     initFirebase();
 
     if (appState.firebaseReady) {
@@ -222,12 +223,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             appState.currentUser = user;
             await ensureUserProfile(user);
+            await katalogGeladen;
             await loadKatalogAdditions();
             await loadProjects();
             updateAuthUI();
             showView('home');
         });
     } else {
+        await katalogGeladen;
         await loadProjects();
         updateAuthUI();
         const { mergeKatalogAdditions } = await import('./js/catalog.js');
@@ -265,7 +268,6 @@ Object.assign(window, {
     filterProjektListe,
     openNewProjektForm,
     saveProjekt,
-    copyProjekt,
     shareProjectWithUser,
     removeProjectShare,
     openProjectSharing,
@@ -292,6 +294,7 @@ Object.assign(window, {
     revertKatalogBauteil,
     preislisteDateiGewaehlt,
     preislisteZuruecksetzen,
+    katalogAlleAnzeigen,
     filterGruppenListe,
     selectGruppe,
     gruppeWechseln,
@@ -318,7 +321,6 @@ Object.assign(window, {
     gruppeKopiereLeitung,
     gruppeEditLeitung,
     gruppeCloseLeitungEditor,
-    gruppeCloseAktivenEditor,
     gruppeEditBauteil,
     gruppeCloseBauteilEditor,
     gruppeAddBauteil,
@@ -384,19 +386,19 @@ Object.assign(window, {
     gruppeStandardAngebotVerwerfen,
     exportCSV,
     exportPDF,
+    exportStuecklisteCSV,
+    exportEaListe,
+    eaListeZuruecksetzen,
     closeModal,
     editLeitung,
     deleteLeitung,
-    deleteBauteil,
     setUebersichtLeitungenSortierung,
-    openBauteilEdit,
     closeBauteilEdit,
     saveBauteilEdit,
     filterBauteilEditHersteller,
     stuecklisteUpdateStatus,
     stuecklisteSetKategorieFilter,
     printStueckliste,
-    renderZeiterfassung,
     zeitSpeichern,
     zeitLoeschen,
     zeitSchrittGeaendert,

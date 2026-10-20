@@ -2,7 +2,7 @@
  * @file Zugriffsrechte und Projekt-Freigaben.
  */
 import { appState } from './state.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, jsArg } from './utils.js';
 import { showModal } from './modal.js';
 import { loadRegisteredUsers } from './firebase.js';
 import { showView } from './navigation.js';
@@ -175,12 +175,15 @@ export function projectToFirestore(projekt) {
         cadLinks: Array.isArray(projekt.cadLinks) ? projekt.cadLinks : [],
         zeiterfassung: Array.isArray(projekt.zeiterfassung) ? projekt.zeiterfassung : [],
         leitungswege: Array.isArray(projekt.leitungswege) ? projekt.leitungswege : [],
+        eaListe: projekt.eaListe || null,
         ethercatTopologie: projekt.ethercatTopologie || { module: [], verbindungen: [] },
         visibility: projekt.visibility || VISIBILITY_PUBLIC,
         ownerId: projekt.ownerId || null,
         ownerEmail: projekt.ownerEmail || '',
         members: projekt.members || {},
         memberIds: projekt.memberIds || [],
+        updatedBy: appState.currentUser?.uid || null,
+        updatedByEmail: (appState.currentUser?.email || '').toLowerCase(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 }
@@ -210,12 +213,14 @@ export function projectFromFirestore(data) {
         cadLinks: Array.isArray(data.cadLinks) ? data.cadLinks : [],
         zeiterfassung: Array.isArray(data.zeiterfassung) ? data.zeiterfassung : [],
         leitungswege: Array.isArray(data.leitungswege) ? data.leitungswege : [],
+        eaListe: data.eaListe && Array.isArray(data.eaListe.positionen) ? data.eaListe : null,
         ethercatTopologie: data.ethercatTopologie || { module: [], verbindungen: [] },
         visibility: data.visibility || VISIBILITY_PUBLIC,
         ownerId: data.ownerId || null,
         ownerEmail: data.ownerEmail || '',
         members: data.members || {},
-        memberIds: data.memberIds || []
+        memberIds: data.memberIds || [],
+        revision: Number(data.revision) || 0
     };
 }
 
@@ -376,7 +381,7 @@ export function renderProjectSharingView() {
                     <span class="share-email">${escapeHtml(m.email || m.uid)}</span>
                     <span class="share-role-badge">${escapeHtml(getRoleLabel(m.role))}</span>
                     <button type="button" class="btn btn-danger btn-small"
-                        onclick="removeProjectShare('${escapeHtml(m.uid)}')">Entfernen</button>
+                        onclick="removeProjectShare('${jsArg(m.uid)}')">Entfernen</button>
                 </li>
             `).join('')}
         </ul>

@@ -2,7 +2,7 @@
  * @file Zeiterfassung je Projekt, Schritt und Person.
  */
 import { appState } from './state.js';
-import { escapeHtml, generateId } from './utils.js';
+import { escapeHtml, jsArg, generateId } from './utils.js';
 import { showView } from './navigation.js';
 import { persistCurrentProjekt } from './projects.js';
 import { canEditProject } from './project-access.js';
@@ -259,7 +259,7 @@ export function renderZeiterfassung() {
                                     <td>${escapeHtml(eintrag.person || '')}</td>
                                     <td>${escapeHtml(formatDauer(eintrag.minuten))}</td>
                                     <td>${escapeHtml(eintrag.notiz || '')}</td>
-                                    <td>${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small" onclick="zeitLoeschen('${escapeHtml(eintrag.id)}')">Entfernen</button>`}</td>
+                                    <td>${gesperrt ? '' : `<button type="button" class="btn btn-danger btn-small" onclick="zeitLoeschen('${jsArg(eintrag.id)}')">Entfernen</button>`}</td>
                                 </tr>
                             `).join('')}
                         </tbody>

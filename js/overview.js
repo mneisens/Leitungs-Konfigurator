@@ -673,7 +673,7 @@ export async function deleteLeitung(index) {
     const idx = projects.findIndex(p => p.id === appState.currentProjekt.id);
     if (idx >= 0) {
         projects[idx] = appState.currentProjekt;
-        saveProjects(projects);
+        saveProjects(projects, [appState.currentProjekt]);
     }
     
     renderOverviewLists();

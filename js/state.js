@@ -11,6 +11,7 @@ export const appState = {
     bauteileKatalog: null,
     leitungGruppen: [],
     currentProjekt: null,
+    currentView: '',
     currentLeitungIndex: 0,
     pendingGruppenCode: '',
     pendingGruppenEditLeitungId: '',

@@ -18,7 +18,7 @@ export async function loadTemplates() {
         return;
     }
 
-    const response = await fetch('templates/ui.html');
+    const response = await fetch('templates/ui.html', { cache: 'no-cache' });
     const html = await response.text();
     const container = document.createElement('div');
     container.id = 'templates-root';

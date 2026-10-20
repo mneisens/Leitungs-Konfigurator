@@ -269,18 +269,6 @@ export function getMeterwareArtikel(kategorie, hersteller, artikelWhitelist) {
 
 
 /**
- * Kurztext für die Anzeige eines Artikels.
- * @param {object} artikel
- * @returns {string}
- */
-export function getArtikelLabel(artikel) {
-    if (!artikel) return '';
-    const teile = [artikel.beschreibung, artikel.artikelnummer].filter(Boolean);
-    return teile.join(' · ');
-}
-
-
-/**
  * Leitungsreihe aus einer Katalog-Artikelnummer ableiten (z. B. ZK2000-6200-0100 → ZK2000-6200).
  * @param {string} artikelnummer
  * @returns {string}

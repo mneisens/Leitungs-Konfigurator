@@ -1,58 +1,101 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     function isMember(projectData) {
-      return request.auth != null
+      return signedIn()
         && projectData.memberIds.hasAny([request.auth.uid]);
     }
 
+    function isOwner(projectData) {
+      return signedIn() && projectData.ownerId == request.auth.uid;
+    }
+
     function canEditProject(projectData) {
-      return request.auth != null && (
-        projectData.ownerId == request.auth.uid
+      return signedIn() && (
+        isOwner(projectData)
         || (projectData.members[request.auth.uid].role == 'edit')
       );
     }
 
     function isPublic(projectData) {
-      return request.auth != null
+      return signedIn()
         && projectData.visibility == 'public';
     }
 
+    // Felder, die nur der Eigentümer ändern darf (Freigaben, Sichtbarkeit).
+    function sharingUnchanged() {
+      return !request.resource.data.diff(resource.data)
+        .affectedKeys().hasAny(['members', 'memberIds', 'visibility']);
+    }
+
     match /projects/{projectId} {
-      allow read: if isMember(resource.data) || isPublic(resource.data);
-      allow create: if request.auth != null
+      // get und list getrennt: resource == null darf nur beim Einzelabruf stehen.
+      // In allow read würde Firestore jede Listenabfrage ablehnen (insufficient permissions),
+      // weil eine Abfrage nicht zusichern kann, dass ein Dokument nicht existiert.
+      allow get: if signedIn() && (
+        resource == null
+        || isMember(resource.data)
+        || isPublic(resource.data)
+      );
+      allow list: if isMember(resource.data) || isPublic(resource.data);
+      allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds.hasAny([request.auth.uid]);
-      allow update: if canEditProject(resource.data);
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      allow update: if canEditProject(resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && (isOwner(resource.data) || sharingUnchanged());
+      allow delete: if isOwner(resource.data);
     }
 
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow read: if signedIn();
+
+      // Alte Projektliste, wird einmalig in die Sammlung projects übernommen.
+      match /app/{docId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+      // Die Rolle wird nur in der Firebase-Konsole vergeben, nie vom Client.
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.role == 'user';
+      allow update: if signedIn() && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    // Katalog-Nachträge: jeder eingeloggte Nutzer darf nachtragen, aber nur die Liste
+    // `additions` ändern und nur unter der eigenen Nutzer-ID. Löschen nur für Admins.
+    function katalogNachtragErlaubt() {
+      return signedIn()
+        && request.resource.data.additions is list
+        && request.resource.data.updatedBy == request.auth.uid
+        && (resource == null
+          || request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['additions', 'updatedBy', 'updatedAt']));
     }
 
     match /config/leitungenKatalog {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
+      allow read: if signedIn();
+      allow create, update: if katalogNachtragErlaubt();
+      allow delete: if isAdmin();
     }
 
     match /config/bauteileKatalog {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
-    }
-
-    // Assistenten-Fragen: vorerst alle eingeloggten Nutzer (Inline-Edit im Wizard)
-    match /config/wizardQuestions {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
+      allow read: if signedIn();
+      allow create, update: if katalogNachtragErlaubt();
+      allow delete: if isAdmin();
     }
 
     match /config/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
   }
 }

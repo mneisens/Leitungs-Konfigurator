@@ -1,0 +1,640 @@
+{
+  "version": 1,
+  "beistellung": [
+    "synchropress",
+    "Auftragnehmer",
+    "synchropress/Auftragnehmer"
+  ],
+  "abschnitte": [
+    "Baumüller",
+    "Sensoren",
+    "Peripherie",
+    "Gewählte Optionen",
+    "EtherCAT Leitungen",
+    "Powerleitungen EP-Module",
+    "Ölflex-Leitungen"
+  ],
+  "positionen": [
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Motoren",
+      "typ": "DSD2-100LO64W-12-54-NBA-MNP-K-AN-O-999",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 1,
+      "bezeichnung": "Einspeise/ - Rückspeiseeinheit",
+      "typ": "BM5174-ST00-0000-0128-00-01",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Regler",
+      "typ": "BM5335-SG02-0100-0128-00-01-E80-#01",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Safety Karte",
+      "typ": "BM5-O-SAF-002-000-002-#01-004-004",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 1,
+      "bezeichnung": "Netzdrossel",
+      "typ": "NWR-Drossel 365x170x260 BL-3-100 0,6mH 400V 100A",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 1,
+      "bezeichnung": "Netzfilter",
+      "typ": "Netfilter 84143A0150R410 150A NWR",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Kapazitätsmodul",
+      "typ": "BM5-O-CAP-2S54-03135-000",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": "werden nicht verbaut, der Platz dafür soll eingeplant werden"
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Geberleitung",
+      "typ": "GEB.KABEL BSC-SAFE HIPERFACE SCHLEPPF.20M SpeedTec",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Baumüller",
+      "anzahl": 4,
+      "bezeichnung": "Motorleitung",
+      "typ": "4x4+4X0,75mm²",
+      "hersteller": "Baumüller",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 8,
+      "bezeichnung": "Kraftmesssystem DMS",
+      "typ": "DZ-1",
+      "hersteller": "Lorenz",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": "zukünftig mit Stecker (je Spindel 1x EP3356-0022 auf Stößel, Beistellung Auftragnehmer)"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 4,
+      "bezeichnung": "Linearmaßstab",
+      "typ": "RH5 M A 450M  01 D56 1 U111",
+      "hersteller": "MTS",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 4,
+      "bezeichnung": "Türabfragen Verkleidung/Schutzzaun",
+      "typ": "SAFIX W3-A-10M | SAFIX T5",
+      "hersteller": "Pilz",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "inkl. 10m Leitung"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 4,
+      "bezeichnung": "Temperaturfühler - Lager",
+      "typ": "TM4411",
+      "hersteller": "IFM",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 4,
+      "bezeichnung": "Temperaturfühler - Spindelmutter",
+      "typ": "TS2659",
+      "hersteller": "IFM",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": "EP3204-0002 auf dem Stößel, Beistellung Auftragnehmer"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 0,
+      "bezeichnung": "Elektrische Druckluftüberwachung",
+      "typ": "SPAU-P16R-T-R14M-L-PNLK-PNVBA-",
+      "hersteller": "Landefeld",
+      "beistellung": "synchropress",
+      "bemerkung": "1x Stößel (Druckluft Bremsen | Input 6 bei der EP1018-0001 ), 1x an Wartungseinheit SS"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 0,
+      "bezeichnung": "Sensor - Bremse geöffnet (Lüftüberwachung)",
+      "typ": "wird von Ringspann geliefert",
+      "hersteller": "Ringspann",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": "Input 1-4 bei der EP1018-0001 auf dem Stößel, Beistellung Auftragnehmer"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 2,
+      "bezeichnung": "Progressivverteiler Schmierung - mit Endlagenüberwachung",
+      "typ": "",
+      "hersteller": "Bekamax",
+      "beistellung": "synchropress",
+      "bemerkung": "1x Input 5 bei der EP1018-0001 auf dem Stößel und 1x im Klemmkasten Tisch (Schmierung Lager)"
+    },
+    {
+      "abschnitt": "Sensoren",
+      "anzahl": 1,
+      "bezeichnung": "Ventil Schmierung in K1 einplanen",
+      "typ": "2/3 Wegeventil VP 1 Z-1/4-GM 24",
+      "hersteller": "HAWE",
+      "beistellung": "synchropress",
+      "bemerkung": "https://downloads.hawe.com/7/9/D7915-de.pdf"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Pneumatikbremsen",
+      "typ": "DH 010 FPM-012M-12 BK6905",
+      "hersteller": "Ringspann",
+      "beistellung": "synchropress",
+      "bemerkung": "inkl. Lüftüberwachung (siehe Abschnitt \"Sensoren\")"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Bremsen - Sicherheitsventil (je 2 Spulen und 2 Stellungsabfragen)",
+      "typ": "VOFA-L26-T32C-M-G14-1C1-APP",
+      "hersteller": "Festo",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": "2x EP1957-0022 auf Stößel (1x für Spindel 1 und 2 und 1x für Spindel 3 und 4), Beistellung Auftragnehmer"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Bedienpanel",
+      "typ": "",
+      "hersteller": "Beckhoff",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Joystick (HBA)",
+      "typ": "",
+      "hersteller": "Beckhoff",
+      "beistellung": "synchropress/Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 2,
+      "bezeichnung": "Not-Halt-Taster",
+      "typ": "C22-PV-K02-P10 (mit M12-Stecker) + Not-Halt-Schild",
+      "hersteller": "Eaton",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "1x am Panel (integriert) | 1x Spindel 1 | 1x Spindel 4"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Druckluft Wartungseinheit",
+      "typ": "MSB6-AGD:C4:J2:D20:A1:F1-WP",
+      "hersteller": "Landefeld",
+      "beistellung": "synchropress",
+      "bemerkung": "am Schaltschrank (mit elektr. Hauptschalter, der auf Dauerspannung 24VDC gelegt wird)"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Schmiersystem",
+      "typ": "Bekamax Pico",
+      "hersteller": "Beka",
+      "beistellung": "synchropress",
+      "bemerkung": "Eine Schmiereinheit versorgt zwei Progressivverteiler"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Beleuchtung Presseninnenraum",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Kühlgerät",
+      "typ": "Hydac FLKS-2EC5/1.2/W/H2-4G0/0/59",
+      "hersteller": "Hydac",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "elektrische Hubtür vorne",
+      "typ": "TSG Antrieb für TSG4xx Links mit beidseitigem Wellenabgang 24V/1:15",
+      "hersteller": "Langer&Laumann",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "elektrische Hubtür hinten",
+      "typ": "TSG Antrieb für TSG4xx Links mit beidseitigem Wellenabgang 24V/1:15",
+      "hersteller": "Langer&Laumann",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "elektrische Hubtüren Steuergeräte",
+      "typ": "TSG V4 Safety Door Operator 400V-> intern",
+      "hersteller": "Langer&Laumann",
+      "beistellung": "synchropress",
+      "bemerkung": "8.20.40415.04"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Taster in Verkleidung Tür hinten",
+      "typ": "",
+      "hersteller": "Eaton",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "In Verkleidung bei Spindel 2 montiert"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 0,
+      "bezeichnung": "Taster in Verkleidung Tür vorne",
+      "typ": "",
+      "hersteller": "Eaton",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Taster in Verkleidung Stopp OT",
+      "typ": "",
+      "hersteller": "Eaton",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "In Verkleidung bei Spindel 2 montiert"
+    },
+    {
+      "abschnitt": "Peripherie",
+      "anzahl": 1,
+      "bezeichnung": "Taster für Vorschub öffnen am Vorschub  ?????????",
+      "typ": "",
+      "hersteller": "Eaton",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "in Aufbaubox mit Leuchtdrucktaster"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Beckhoff Service Tool mit Acronis 32GB",
+      "typ": "C9900-H391",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Elektrisch betätigter Hauptschalter mit Fernbedienung",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Schnittstelle externe Peripherie",
+      "typ": "(ehem. Schnittstelle Kommunikation Bandanlage)",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Standard Schnittstelle"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Schnittstelle externe Peripherie + 400V Versorgung",
+      "typ": "(ehem. Schnittstelle Kommunikation Bandanlage)",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Schnittstelle Förderband",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "synchropress",
+      "bemerkung": "inkl. Laufüberwachung, schaltbar (Harting Bauteile von synchropress)"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Schnittstelle Vorschub",
+      "typ": "EV22AK SS",
+      "hersteller": "Bandmotion",
+      "beistellung": "synchropress",
+      "bemerkung": "Vorschub soll nur eingeplant werden, wird erstmal nicht verbaut| Regler: AX5106-0000-0202 | Motor AM8033-0E10"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Schnittstelle Bandbeölung (spezial)",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Schnittstelle Bandbeölung (standard)",
+      "typ": "2x Magnetventil, 1x Leermeldung",
+      "hersteller": "Raziol",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Steckdose 400V",
+      "typ": "CEE",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "mit RCD"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Steckdose 400V schaltbar",
+      "typ": "CEE",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "mit RCD, (1x pro Achse)"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 2,
+      "bezeichnung": "Steckdose 230V nicht geschaltet",
+      "typ": "Einzelsteckdose",
+      "hersteller": "",
+      "beistellung": "synchropress",
+      "bemerkung": "mit RCD, (1x pro Achse)"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Steckdose 230V schaltbar",
+      "typ": "Einzelsteckdose",
+      "hersteller": "",
+      "beistellung": "synchropress",
+      "bemerkung": "mit RCD, (1x pro Achse)"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Eingangsbox 8 Sensoren, digital",
+      "typ": "EP1018-0001",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Bedienseite links"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Ausgangsbox 8 Aktoren, digital",
+      "typ": "EP2008-0022 (8x M12 Steckplätze mit je 0,5A)",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Bedienseite rechts"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Eingangsbox 4 Sensoren, analog",
+      "typ": "EP3174-0002 (4x M12 Steckplätze ±10 V, 0/4…20 mA)",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Bedienseite links"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Ausgangsbox 4 Aktoren, analog",
+      "typ": "EP4174-0002",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Bedienseite rechts"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Magnetspannplatte",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Schnittstelle Schutzzaun (inkl. Hardware)",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "",
+      "bemerkung": "Türen mit magnetischer Zuhaltung. Je Tür ein Bedienpult"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "gesteuerte Druckluft",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Zustandsanzeige (Ampel)",
+      "typ": "SBT-RGB-R50-3S-B5",
+      "hersteller": "di-soric",
+      "beistellung": "",
+      "bemerkung": "per IO-Link ansteuern"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "BDE/MDE-Schnittstelle",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "OPC-UA Schnittstelle",
+      "typ": "TF6100 für Performance Level 80",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Ethernet Router zur Netzwerkanbindung",
+      "typ": "IE-SR-6GT-LAN (2535940000)",
+      "hersteller": "Weidmüller",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Selektivitätsmodule nach Bedarf",
+      "typ": "wie gehabt",
+      "hersteller": "Siemens",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 0,
+      "bezeichnung": "Leistungsmessung in Schaltschranktür",
+      "typ": "Energy Meter 750-24 (2540900000)",
+      "hersteller": "Weidmüller",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Überspannungsschutz",
+      "typ": "VPU AC I 3+1 R 275/25 LCF S 2PE (2726770000)",
+      "hersteller": "Weidmüller",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Zusätzliches Bedienpult (Zweihand + Not Halt)",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Siemens 3SU1803-3NB00-1AE1, K1"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Fußtaster",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "zum quittieren und starten der Presse, noch in Klärung, K1"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "BWS",
+      "typ": "EOS4 601 A",
+      "hersteller": "SSP (Reer)",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Lichtschranke vorne"
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 1,
+      "bezeichnung": "Trennklemme 24V",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Gewählte Optionen",
+      "anzahl": 4,
+      "bezeichnung": "Kühlverteiler/Durchflussmesser Spindelmutter",
+      "typ": "Vortex-Durchflusssensor SV3150",
+      "hersteller": "ifm",
+      "beistellung": "synchropress",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "EtherCAT Leitungen",
+      "anzahl": 0,
+      "bezeichnung": "Junction Klemme für Verbindung Ziehkissen Schrank",
+      "typ": "EK1122",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "Für den zusätzlichen Ziehkissen-Schrank muss eine EK1122 Klemme vorgesehen werden"
+    },
+    {
+      "abschnitt": "Powerleitungen EP-Module",
+      "anzahl": 1,
+      "bezeichnung": "ZS2020-4308 | Powerverteiler-Box",
+      "typ": "ZS2020-4308",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": "zur Verteilung vom EtherCAT und der Spannungsversorgung auf dem Stößel"
+    },
+    {
+      "abschnitt": "Powerleitungen EP-Module",
+      "anzahl": 1,
+      "bezeichnung": "ZK2030-1400-0100 | Powerleitung, PUR, 5 x 1,5 mm², schleppkettentauglich",
+      "typ": "ZK2030-1400-0100",
+      "hersteller": "Beckhoff",
+      "beistellung": "Auftragnehmer",
+      "bemerkung": ""
+    },
+    {
+      "abschnitt": "Powerleitungen EP-Module",
+      "anzahl": null,
+      "bezeichnung": "EK1100 gegen EK1100-0008 tauschen (RJ45 gegen M8)",
+      "typ": "",
+      "hersteller": "",
+      "beistellung": "",
+      "bemerkung": "Alle EtherCAT-Verbindungen mit M8/M12 ausführen"
+    }
+  ]
+}

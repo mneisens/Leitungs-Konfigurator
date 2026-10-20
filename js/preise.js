@@ -146,7 +146,7 @@ export async function loadPreisliste() {
     }
 
     try {
-        const response = await fetch(STANDARD_DATEI);
+        const response = await fetch(STANDARD_DATEI, { cache: 'no-cache' });
         if (!response.ok) throw new Error(`Preisliste HTTP ${response.status}`);
         uebernehmePreisliste(await response.json(), {
             dateiname: STANDARD_DATEI.split('/').pop(),

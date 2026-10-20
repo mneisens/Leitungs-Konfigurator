@@ -17,10 +17,11 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=5861d6f0" data-asset-version>
 </head>
 <body class="auth-layout">
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+    <div id="save-status" class="save-status" role="status" aria-live="polite" hidden></div>
     <button type="button" class="theme-toggle theme-toggle-auth" data-theme-toggle onclick="toggleTheme()" aria-label="Darstellung wechseln">
         <span data-theme-label>Hell</span>
     </button>
@@ -51,6 +52,9 @@
                     <p class="sidebar-project-name" id="nav-project-name"></p>
                     <button type="button" class="sidebar-link" data-nav="uebersicht" id="nav-uebersicht" onclick="showView('uebersicht')">
                         Übersicht
+                    </button>
+                    <button type="button" class="sidebar-link" data-nav="ea-liste" id="nav-ea-liste" onclick="showView('ea-liste')">
+                        EA-Liste
                     </button>
                     <button type="button" class="sidebar-link" data-nav="gruppen" id="nav-gruppen" onclick="showView('gruppen')">
                         Gruppen
@@ -473,7 +477,10 @@
 
             <div class="uebersicht-actions">
                 <div class="uebersicht-add-row">
-                    <button class="btn btn-primary" onclick="showView('gruppen')">
+                    <button class="btn btn-primary" onclick="showView('ea-liste')">
+                        EA-Liste
+                    </button>
+                    <button class="btn btn-secondary" onclick="showView('gruppen')">
                         Gruppen-Konfigurator
                     </button>
                     <button class="btn btn-secondary" onclick="showView('topologie')">
@@ -490,11 +497,13 @@
                     <button class="btn btn-secondary" id="btn-projekt-freigabe" onclick="openProjectSharing()" hidden>
                         Freigaben
                     </button>
-                    <button class="btn btn-success" data-allow-readonly onclick="exportCSV()">
-                        Export CSV
+                    <button class="btn btn-success" data-allow-readonly onclick="exportCSV()"
+                            title="Alle Leitungen einzeln, ohne Bauteile und Preise">
+                        Leitungsliste CSV
                     </button>
-                    <button class="btn btn-success" data-allow-readonly onclick="exportPDF()">
-                        Export PDF
+                    <button class="btn btn-success" data-allow-readonly onclick="exportPDF()"
+                            title="Alle Leitungen einzeln, ohne Bauteile und Preise">
+                        Leitungsliste PDF
                     </button>
                 </div>
             </div>
@@ -523,6 +532,23 @@
                     Gruppen-Konfigurator starten
                 </button>
             </div>
+        </section>
+
+        <!-- View: EA-Liste -->
+        <section id="view-ea-liste" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="ea-titel">EA-Liste</h2>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-secondary" id="ea-reset" onclick="eaListeZuruecksetzen()">
+                        Standard wiederherstellen
+                    </button>
+                    <button type="button" class="btn btn-success" data-allow-readonly onclick="exportEaListe()">
+                        Excel exportieren
+                    </button>
+                </div>
+            </div>
+            <div id="ea-root"></div>
         </section>
 
         <!-- View: Projekt-Freigaben -->
@@ -590,6 +616,10 @@
             <div class="view-header stueckliste-view-header">
                 <button class="btn btn-back no-print" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
                 <h2 id="stueckliste-titel">Stückliste</h2>
+                <button type="button" class="btn btn-secondary no-print" data-allow-readonly onclick="exportStuecklisteCSV()"
+                        title="Stückliste mit Listenpreisen als CSV (Excel)">
+                    Export CSV
+                </button>
                 <button type="button" class="btn btn-secondary no-print" onclick="printStueckliste()" title="Stückliste drucken">
                     Drucken
                 </button>
@@ -810,6 +840,52 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     
-    <script type="module" src="script.js?v=20261020-1"></script>
+    <!-- asset-versions:start – wird von scripts/version-assets.py erzeugt -->
+    <script type="importmap">
+        {
+        "imports": {
+                "./js/bauteil-edit.js": "./js/bauteil-edit.js?v=94d4a013",
+                "./js/catalog.js": "./js/catalog.js?v=a549e772",
+                "./js/ea-liste.js": "./js/ea-liste.js?v=5dc42d73",
+                "./js/export.js": "./js/export.js?v=2c865287",
+                "./js/firebase.js": "./js/firebase.js?v=5d12fa91",
+                "./js/gk-bauteile.js": "./js/gk-bauteile.js?v=ad7ecb07",
+                "./js/gk-eigene-buttons.js": "./js/gk-eigene-buttons.js?v=b4a69983",
+                "./js/gk-gruppen.js": "./js/gk-gruppen.js?v=538643b0",
+                "./js/gk-leitung-formular.js": "./js/gk-leitung-formular.js?v=29708ffc",
+                "./js/gk-leitungen.js": "./js/gk-leitungen.js?v=f9b18043",
+                "./js/gk-picker.js": "./js/gk-picker.js?v=9108e204",
+                "./js/gk-state.js": "./js/gk-state.js?v=729617a8",
+                "./js/gk-vorschlaege.js": "./js/gk-vorschlaege.js?v=78688020",
+                "./js/gk-wege.js": "./js/gk-wege.js?v=8fcf434b",
+                "./js/gruppen-config.js": "./js/gruppen-config.js?v=45d40e9c",
+                "./js/gruppen-konfigurator.js": "./js/gruppen-konfigurator.js?v=1598bd54",
+                "./js/gruppen-preset-store.js": "./js/gruppen-preset-store.js?v=12641eea",
+                "./js/katalog-additions.js": "./js/katalog-additions.js?v=aa484c58",
+                "./js/katalog-view.js": "./js/katalog-view.js?v=0fc83594",
+                "./js/leitung-optionen.js": "./js/leitung-optionen.js?v=2e700def",
+                "./js/leitung-utils.js": "./js/leitung-utils.js?v=4b382785",
+                "./js/modal.js": "./js/modal.js?v=4a1163a1",
+                "./js/navigation.js": "./js/navigation.js?v=6b30eba4",
+                "./js/overview.js": "./js/overview.js?v=4db49a48",
+                "./js/preise.js": "./js/preise.js?v=14c6df8a",
+                "./js/project-access.js": "./js/project-access.js?v=00b646d0",
+                "./js/project-save.js": "./js/project-save.js?v=af483340",
+                "./js/projects.js": "./js/projects.js?v=c57c067e",
+                "./js/state.js": "./js/state.js?v=86631cf8",
+                "./js/stecker-utils.js": "./js/stecker-utils.js?v=a072df9f",
+                "./js/stueckliste.js": "./js/stueckliste.js?v=41e5bd0c",
+                "./js/templates.js": "./js/templates.js?v=3cc2c409",
+                "./js/theme.js": "./js/theme.js?v=918fd501",
+                "./js/topologie-sync.js": "./js/topologie-sync.js?v=98253453",
+                "./js/topologie.js": "./js/topologie.js?v=c4d42378",
+                "./js/utils.js": "./js/utils.js?v=9e8cbc80",
+                "./js/xlsx-writer.js": "./js/xlsx-writer.js?v=61c76fa2",
+                "./js/zeiterfassung.js": "./js/zeiterfassung.js?v=38c787bf"
+        }
+}
+    </script>
+    <script type="module" src="script.js?v=a38927e4"></script>
+    <!-- asset-versions:end -->
 </body>
 </html>

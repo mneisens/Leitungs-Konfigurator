@@ -721,21 +721,53 @@ function setAggregatBeschaffung(art, key, status) {
 
 
 /**
- * Listenpreis der Stücklistenposition. Bei Stückware die Summe, bei Meterware der Einzelpreis.
+ * Listenpreis einer Stücklistenposition. Bei Meterware bleibt die Summe offen, weil die
+ * Preisliste nicht eindeutig sagt, ob der Preis je Meter oder je Ring gilt.
  * @param {object} entry
- * @returns {string}
+ * @returns {{einzel: number|null, summe: number|null, text: string, titel: string}}
  */
-function renderPreisZelle(entry) {
+export function positionsPreis(entry) {
     const anzeige = preisAnzeige(entry.artikelnummer);
-    if (!anzeige) return '<td class="stueckliste-preis">–</td>';
+    if (!anzeige) return { einzel: null, summe: null, text: '–', titel: '' };
     if (anzeige.betrag == null || entry.meterware) {
-        return `<td class="stueckliste-preis" title="${escapeHtml(anzeige.titel)}">${escapeHtml(anzeige.text)}</td>`;
+        return { einzel: anzeige.betrag, summe: null, text: anzeige.text, titel: anzeige.titel };
     }
     const summe = anzeige.betrag * (Number(entry.count) || 0);
     const titel = entry.count > 1
         ? `${entry.count} × ${formatEuro(anzeige.betrag)}`
         : anzeige.titel;
-    return `<td class="stueckliste-preis" title="${escapeHtml(titel)}">${escapeHtml(formatEuro(summe))}</td>`;
+    return { einzel: anzeige.betrag, summe, text: formatEuro(summe), titel };
+}
+
+
+/**
+ * @param {object} entry
+ * @returns {string}
+ */
+function renderPreisZelle(entry) {
+    const preis = positionsPreis(entry);
+    const titel = preis.titel ? ` title="${escapeHtml(preis.titel)}"` : '';
+    return `<td class="stueckliste-preis"${titel}>${escapeHtml(preis.text)}</td>`;
+}
+
+
+/**
+ * Aggregierte Positionen des aktuellen Projekts – dieselben Zahlen wie in der Stückliste.
+ * @returns {{leitungen: object[], bauteile: object[]}}
+ */
+export function getStuecklistePositionen() {
+    return { leitungen: getLeitungEintraege(), bauteile: getBauteilEintraege() };
+}
+
+
+/**
+ * Gruppen einer Position als Text, z. B. „=010, =026“.
+ * @param {object} entry
+ * @returns {string}
+ */
+export function positionsGruppen(entry) {
+    const gruppen = [...new Set((entry.quellen || []).map(q => q.gruppe).filter(g => g && g !== '-'))];
+    return gruppen.map(getGruppeDisplay).join(', ');
 }
 
 

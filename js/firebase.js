@@ -431,6 +431,8 @@ export async function logoutUser() {
     }
 
     if (appState.firebaseReady && appState.firebaseAuth) {
+        const { flushProjectSaves } = await import('./project-save.js');
+        await flushProjectSaves();
         await appState.firebaseAuth.signOut();
     } else {
         appState.currentUser = null;
