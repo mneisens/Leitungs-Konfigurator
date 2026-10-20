@@ -223,7 +223,8 @@ export function normalizeGruppeNummer(code) {
 export function bauteilPasstZuGruppe(artikel, gruppeCode) {
     const nummer = normalizeGruppeNummer(gruppeCode);
     if (!nummer) return true;
-    if (!artikel?.gruppe) return false;
+    // Ohne Gruppenzuordnung: in jeder Gruppe wählbar (z. B. importierte Beckhoff-Artikel).
+    if (!artikel?.gruppe) return true;
 
     return String(artikel.gruppe)
         .split('/')

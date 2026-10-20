@@ -837,10 +837,19 @@ export function getGruppenVorgaben(gruppe) {
     weitereIds = Array.from(new Set(weitereIds)).filter(id => !standardIds.includes(id));
 
     const standardBauteilTypen = fest.bauteile || [];
-    const nurFest = fest.nurFestgelegteBauteile || fest.nurBauteile || fest.nurLeitungen;
-    const weitereBauteilTypen = nurFest
+    // nurLeitungen = keine festen Bauteil-Vorschläge, Katalog-Typen bleiben wählbar.
+    // nurFestgelegteBauteile / nurBauteile = wirklich nur die hinterlegten Typen.
+    let weitereBauteilTypen = (fest.nurFestgelegteBauteile || fest.nurBauteile)
         ? []
         : getBauteilTypenAusKatalog(code).filter(typ => !standardBauteilTypen.includes(typ));
+
+    // Wenn weder Standard noch gruppenbezogene Typen existieren: alle Katalog-Typen anbieten.
+    if (!fest.nurFestgelegteBauteile && !fest.nurBauteile
+        && !standardBauteilTypen.length && !weitereBauteilTypen.length) {
+        weitereBauteilTypen = (appState.bauteileKatalog?.bauteiltypen || [])
+            .map(t => t.id)
+            .filter(Boolean);
+    }
 
     const standardLeitungen = toPresets(standardIds);
     const weitereLeitungen = toPresets(weitereIds);
