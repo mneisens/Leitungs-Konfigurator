@@ -220,6 +220,9 @@ export function ensureWizardAnswers(projekt) {
     if (!Array.isArray(projekt.zeiterfassung)) {
         projekt.zeiterfassung = [];
     }
+    if (!Array.isArray(projekt.leitungswege)) {
+        projekt.leitungswege = [];
+    }
     if (!projekt.ethercatTopologie || typeof projekt.ethercatTopologie !== 'object') {
         projekt.ethercatTopologie = { module: [], verbindungen: [] };
     }

@@ -3265,8 +3265,13 @@ body.auth-layout .app-main {
     font-size: 0.9rem;
 }
 
-.gk-weg-zeile input[type="number"] {
+.gk-weg-zeile input.gk-weg-meter {
     font-variant-numeric: tabular-nums;
+}
+
+.gk-weg-gewaehlt .gk-weg-liste,
+.gk-weg-gewaehlt > li > .gk-link {
+    grid-column: 1 / -1;
 }
 
 .gk-weg-zeile input:focus {
@@ -3287,6 +3292,134 @@ body.auth-layout .app-main {
 
 .gk-weg-entfernen:hover {
     color: #f0806f;
+}
+
+.gk-weg-gewaehlt,
+.gk-weg-bibliothek-liste {
+    list-style: none;
+    margin: 0.35rem 0 0.7rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.gk-weg-gewaehlt > li,
+.gk-weg-vorlage {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.35rem 0.6rem;
+    align-items: center;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+}
+
+.gk-weg-vorlage {
+    grid-template-columns: 1fr;
+}
+
+.gk-weg-vorlage.aktiv {
+    border-color: var(--primary-color);
+}
+
+.gk-weg-vorlage-kopf {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.gk-weg-vorlage-kopf.ohne-wahl {
+    grid-template-columns: 1fr auto auto;
+}
+
+.gk-weg-vorlage-wahl {
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.gk-weg-vorlage.aktiv .gk-weg-vorlage-wahl {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.gk-weg-vorlage-kopf input,
+.gk-weg-merken input {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--card-bg);
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.gk-weg-formel,
+.gk-weg-kurz small {
+    display: block;
+    grid-column: 1 / -1;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.gk-weg-auswahl {
+    margin-top: 0.75rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.gk-weg-auswahl select,
+.gk-weg-vorlage-kopf input,
+.gk-weg-merken input {
+    width: 100%;
+}
+
+.gk-weg-auswahl select {
+    padding: 0.45rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--card-bg);
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.gk-weg-auswahl-aktionen {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+}
+
+.gk-weg-auswahl-aktionen .gk-weg-merken {
+    width: 100%;
+}
+
+.gk-wege-overlay {
+    z-index: 1300;
+}
+
+.gk-wege-overlay .gk-weg-bibliothek-liste {
+    margin-top: 0.2rem;
+}
+
+.gk-weg-merken {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .leitung-tabelle-anzahl {

@@ -53,14 +53,24 @@ function normalizeArtikelnummer(artikelnummer) {
  * @returns {string}
  */
 function formatWeg(leitung) {
+    const teile = [];
+    const vorlagen = appState.currentProjekt?.leitungswege || [];
+    const gewaehlt = new Set(Array.isArray(leitung?.wegVorlagen) ? leitung.wegVorlagen : []);
+    vorlagen.filter(vorlage => gewaehlt.has(vorlage.id)).forEach(vorlage => {
+        const formel = (vorlage.schritte || [])
+            .filter(schritt => Number(schritt.meter) > 0)
+            .map(schritt => `${formatLaenge(schritt.meter).replace('.', ',')} m`)
+            .join(' + ');
+        teile.push(formel ? `${vorlage.name} (${formel})` : vorlage.name);
+    });
     const schritte = (Array.isArray(leitung?.wegschritte) ? leitung.wegschritte : [])
         .filter(schritt => (schritt.name || '').trim() || Number(schritt.meter) > 0);
-    if (!schritte.length) return '';
-    return schritte.map(schritt => {
+    schritte.forEach(schritt => {
         const name = (schritt.name || '').trim() || 'Abschnitt';
         const meter = Number(schritt.meter) > 0 ? `${formatLaenge(schritt.meter).replace('.', ',')} m` : '';
-        return [name, meter].filter(Boolean).join(' ');
-    }).join(' + ');
+        teile.push([name, meter].filter(Boolean).join(' '));
+    });
+    return teile.join(' + ');
 }
 
 
