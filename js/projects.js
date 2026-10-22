@@ -199,6 +199,9 @@ export function ensureWizardAnswers(projekt) {
     if (!Array.isArray(projekt.leitungswege)) {
         projekt.leitungswege = [];
     }
+    if (!Array.isArray(projekt.beschriftung)) {
+        projekt.beschriftung = [];
+    }
     if (!projekt.ethercatTopologie || typeof projekt.ethercatTopologie !== 'object') {
         projekt.ethercatTopologie = { module: [], verbindungen: [] };
     }
@@ -447,6 +450,7 @@ function buildProjektKopie(quelle) {
         stuecklisteStatus,
         zeiterfassung: [],
         leitungswege: Array.isArray(src.leitungswege) ? src.leitungswege : [],
+        beschriftung: Array.isArray(src.beschriftung) ? cloneJson(src.beschriftung) : [],
         eaListe: src.eaListe && Array.isArray(src.eaListe.positionen) ? cloneJson(src.eaListe) : null,
         ethercatTopologie: { module, verbindungen }
     };
@@ -464,7 +468,7 @@ export async function copyProjekt(id) {
 
     const confirmed = await showModal(
         `Projekt „${quelle.projektnummer || ''} – ${quelle.name || ''}" als Kopie anlegen?\n\n`
-        + 'Leitungen, Bauteile, Gruppenstatus, Leitungswege, EA-Liste und Topologie werden übernommen. '
+        + 'Leitungen, Bauteile, Gruppenstatus, Leitungswege, EA-Liste, Beschriftung und Topologie werden übernommen. '
         + 'Die Kopie gehört dir und kann danach bearbeitet werden.',
         {
             type: 'info',

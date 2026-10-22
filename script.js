@@ -157,6 +157,12 @@ import {
 } from './js/zeiterfassung.js';
 import { exportEaListe, eaListeZuruecksetzen } from './js/ea-liste.js';
 import {
+    beschriftungHinzufuegen,
+    beschriftungSetzen,
+    beschriftungLoeschen,
+    beschriftungFilter
+} from './js/beschriftung.js';
+import {
     topoSetSchritt,
     topoAendereModulAnzahl,
     topoDreheModul,
@@ -389,6 +395,10 @@ Object.assign(window, {
     exportStuecklisteCSV,
     exportEaListe,
     eaListeZuruecksetzen,
+    beschriftungHinzufuegen,
+    beschriftungSetzen,
+    beschriftungLoeschen,
+    beschriftungFilter,
     closeModal,
     editLeitung,
     deleteLeitung,

@@ -8,6 +8,7 @@ const PROJECT_VIEWS = new Set([
     'ea-liste',
     'gruppen',
     'stueckliste',
+    'beschriftung',
     'topologie',
     'projekt-freigabe',
     'projekt-form',
@@ -24,6 +25,7 @@ const VIEW_TITLES = {
     'ea-liste': 'EA-Liste',
     'projekt-freigabe': 'Freigaben',
     stueckliste: 'Stückliste',
+    beschriftung: 'Beschriftung',
     topologie: 'Topologie',
     zeiterfassung: 'Zeiterfassung'
 };
@@ -127,6 +129,7 @@ function runViewHandler(viewName) {
         'ea-liste': () => import('./ea-liste.js').then(m => m.renderEaListe()),
         'projekt-freigabe': () => import('./project-access.js').then(m => m.renderProjectSharingView()),
         stueckliste: () => import('./stueckliste.js').then(m => m.renderStueckliste()),
+        beschriftung: () => import('./beschriftung.js').then(m => m.renderBeschriftung()),
         topologie: () => import('./topologie.js').then(m => m.renderTopologie()),
         zeiterfassung: () => import('./zeiterfassung.js').then(m => m.renderZeiterfassung())
     };

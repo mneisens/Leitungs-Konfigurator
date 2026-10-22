@@ -17,7 +17,7 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="style.css?v=5861d6f0" data-asset-version>
+    <link rel="stylesheet" href="style.css?v=c78de317" data-asset-version>
 </head>
 <body class="auth-layout">
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
@@ -61,6 +61,9 @@
                     </button>
                     <button type="button" class="sidebar-link" data-nav="stueckliste" id="nav-stueckliste" onclick="showView('stueckliste')">
                         Stückliste
+                    </button>
+                    <button type="button" class="sidebar-link" data-nav="beschriftung" id="nav-beschriftung" onclick="showView('beschriftung')">
+                        Beschriftung
                     </button>
                     <button type="button" class="sidebar-link" data-nav="zeiterfassung" id="nav-zeiterfassung" onclick="showView('zeiterfassung')">
                         Zeiterfassung
@@ -491,6 +494,9 @@
                     <button class="btn btn-secondary" onclick="showView('stueckliste')">
                         Stückliste
                     </button>
+                    <button class="btn btn-secondary" onclick="showView('beschriftung')">
+                        Beschriftung
+                    </button>
                     <button class="btn btn-secondary" onclick="showView('zeiterfassung')">
                         Zeiterfassung
                     </button>
@@ -609,6 +615,15 @@
                 <h2 id="zeit-titel">Zeiterfassung</h2>
             </div>
             <div id="zeit-inhalt"></div>
+        </section>
+
+        <!-- View: Beschriftung -->
+        <section id="view-beschriftung" class="view">
+            <div class="view-header">
+                <button class="btn btn-back" onclick="showView('uebersicht')">← Zur Projektübersicht</button>
+                <h2 id="beschriftung-titel">Beschriftung</h2>
+            </div>
+            <div id="beschriftung-inhalt"></div>
         </section>
 
         <!-- View: Stückliste -->
@@ -844,48 +859,49 @@
     <script type="importmap">
         {
         "imports": {
-                "./js/bauteil-edit.js": "./js/bauteil-edit.js?v=94d4a013",
-                "./js/catalog.js": "./js/catalog.js?v=a549e772",
-                "./js/ea-liste.js": "./js/ea-liste.js?v=5dc42d73",
-                "./js/export.js": "./js/export.js?v=2c865287",
-                "./js/firebase.js": "./js/firebase.js?v=5d12fa91",
-                "./js/gk-bauteile.js": "./js/gk-bauteile.js?v=ad7ecb07",
-                "./js/gk-eigene-buttons.js": "./js/gk-eigene-buttons.js?v=b4a69983",
-                "./js/gk-gruppen.js": "./js/gk-gruppen.js?v=538643b0",
-                "./js/gk-leitung-formular.js": "./js/gk-leitung-formular.js?v=29708ffc",
-                "./js/gk-leitungen.js": "./js/gk-leitungen.js?v=f9b18043",
-                "./js/gk-picker.js": "./js/gk-picker.js?v=9108e204",
-                "./js/gk-state.js": "./js/gk-state.js?v=729617a8",
-                "./js/gk-vorschlaege.js": "./js/gk-vorschlaege.js?v=78688020",
-                "./js/gk-wege.js": "./js/gk-wege.js?v=8fcf434b",
-                "./js/gruppen-config.js": "./js/gruppen-config.js?v=45d40e9c",
-                "./js/gruppen-konfigurator.js": "./js/gruppen-konfigurator.js?v=1598bd54",
-                "./js/gruppen-preset-store.js": "./js/gruppen-preset-store.js?v=12641eea",
+                "./js/bauteil-edit.js": "./js/bauteil-edit.js?v=e8229452",
+                "./js/beschriftung.js": "./js/beschriftung.js?v=21d3173f",
+                "./js/catalog.js": "./js/catalog.js?v=1cbde1a5",
+                "./js/ea-liste.js": "./js/ea-liste.js?v=7c16db23",
+                "./js/export.js": "./js/export.js?v=9b2864ea",
+                "./js/firebase.js": "./js/firebase.js?v=5ab87290",
+                "./js/gk-bauteile.js": "./js/gk-bauteile.js?v=f75ac804",
+                "./js/gk-eigene-buttons.js": "./js/gk-eigene-buttons.js?v=0ade9d50",
+                "./js/gk-gruppen.js": "./js/gk-gruppen.js?v=b693ddd9",
+                "./js/gk-leitung-formular.js": "./js/gk-leitung-formular.js?v=e140cf07",
+                "./js/gk-leitungen.js": "./js/gk-leitungen.js?v=8a5e3dfd",
+                "./js/gk-picker.js": "./js/gk-picker.js?v=60764c88",
+                "./js/gk-state.js": "./js/gk-state.js?v=ad666031",
+                "./js/gk-vorschlaege.js": "./js/gk-vorschlaege.js?v=b9978985",
+                "./js/gk-wege.js": "./js/gk-wege.js?v=a8581348",
+                "./js/gruppen-config.js": "./js/gruppen-config.js?v=cc22f53d",
+                "./js/gruppen-konfigurator.js": "./js/gruppen-konfigurator.js?v=c57bf8ef",
+                "./js/gruppen-preset-store.js": "./js/gruppen-preset-store.js?v=1c40b657",
                 "./js/katalog-additions.js": "./js/katalog-additions.js?v=aa484c58",
-                "./js/katalog-view.js": "./js/katalog-view.js?v=0fc83594",
-                "./js/leitung-optionen.js": "./js/leitung-optionen.js?v=2e700def",
-                "./js/leitung-utils.js": "./js/leitung-utils.js?v=4b382785",
-                "./js/modal.js": "./js/modal.js?v=4a1163a1",
-                "./js/navigation.js": "./js/navigation.js?v=6b30eba4",
-                "./js/overview.js": "./js/overview.js?v=4db49a48",
-                "./js/preise.js": "./js/preise.js?v=14c6df8a",
-                "./js/project-access.js": "./js/project-access.js?v=00b646d0",
-                "./js/project-save.js": "./js/project-save.js?v=af483340",
-                "./js/projects.js": "./js/projects.js?v=c57c067e",
-                "./js/state.js": "./js/state.js?v=86631cf8",
-                "./js/stecker-utils.js": "./js/stecker-utils.js?v=a072df9f",
-                "./js/stueckliste.js": "./js/stueckliste.js?v=41e5bd0c",
-                "./js/templates.js": "./js/templates.js?v=3cc2c409",
-                "./js/theme.js": "./js/theme.js?v=918fd501",
-                "./js/topologie-sync.js": "./js/topologie-sync.js?v=98253453",
-                "./js/topologie.js": "./js/topologie.js?v=c4d42378",
-                "./js/utils.js": "./js/utils.js?v=9e8cbc80",
-                "./js/xlsx-writer.js": "./js/xlsx-writer.js?v=61c76fa2",
-                "./js/zeiterfassung.js": "./js/zeiterfassung.js?v=38c787bf"
+                "./js/katalog-view.js": "./js/katalog-view.js?v=6f7754dc",
+                "./js/leitung-optionen.js": "./js/leitung-optionen.js?v=1cbb847d",
+                "./js/leitung-utils.js": "./js/leitung-utils.js?v=d376d080",
+                "./js/modal.js": "./js/modal.js?v=fb61ca39",
+                "./js/navigation.js": "./js/navigation.js?v=770f387b",
+                "./js/overview.js": "./js/overview.js?v=98f6b8f5",
+                "./js/preise.js": "./js/preise.js?v=7f16fe81",
+                "./js/project-access.js": "./js/project-access.js?v=1c14ba38",
+                "./js/project-save.js": "./js/project-save.js?v=7b1cc5df",
+                "./js/projects.js": "./js/projects.js?v=e31e411b",
+                "./js/state.js": "./js/state.js?v=327e7108",
+                "./js/stecker-utils.js": "./js/stecker-utils.js?v=5bcda816",
+                "./js/stueckliste.js": "./js/stueckliste.js?v=107a13dd",
+                "./js/templates.js": "./js/templates.js?v=38be54d8",
+                "./js/theme.js": "./js/theme.js?v=629c0855",
+                "./js/topologie-sync.js": "./js/topologie-sync.js?v=1247554c",
+                "./js/topologie.js": "./js/topologie.js?v=906e382e",
+                "./js/utils.js": "./js/utils.js?v=61b2392b",
+                "./js/xlsx-writer.js": "./js/xlsx-writer.js?v=cf3f1f86",
+                "./js/zeiterfassung.js": "./js/zeiterfassung.js?v=01155fb6"
         }
 }
     </script>
-    <script type="module" src="script.js?v=a38927e4"></script>
+    <script type="module" src="script.js?v=d5e2ef4d"></script>
     <!-- asset-versions:end -->
 </body>
 </html>
